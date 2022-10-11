@@ -48,7 +48,7 @@ int *THPC_Sensor(){
 
 /* representando el nivel de bateria del aparato, debera ser un valor entre 1 y 100*/
 int  Batt_sensor(){
-
+    return (rand() % (100 - 1 + 1)) + 1;
 }
 
 /*representa un sensor de vibraciones, midiendo en los tres ejes y sacando
