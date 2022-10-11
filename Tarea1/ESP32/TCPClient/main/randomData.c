@@ -34,7 +34,15 @@ estos aspectos, genere su medición usando los siguientes valores:
 – P res = Valor aletorio entre 1000 y 1200
 – CO2 = Valor aletorio entre 30.0 y 200.0
 */
-int  THPC_Sensor(){
+int *THPC_Sensor(){
+    int temp =  (rand() % (30 - 5 + 1)) + 5;
+    int hum = (rand() % (80 - 30 + 1)) + 30;
+    int pres = (rand() % (1200 - 1000 + 1)) + 1000;
+    int co2 = (rand() % (200 - 30 + 1)) + 30;
+
+    int thpc[4] =  [temp,hum,pres,co2];
+
+    return  thpc;
 
 }
 
