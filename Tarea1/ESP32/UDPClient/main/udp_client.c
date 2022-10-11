@@ -1,7 +1,5 @@
 /* BSD Socket API Example
-
    This example code is in the Public Domain (or CC0 licensed, at your option.)
-
    Unless required by applicable law or agreed to in writing, this
    software is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR
    CONDITIONS OF ANY KIND, either express or implied.
@@ -33,13 +31,14 @@
 #define HOST_IP_ADDR "192.168.28.1"
 #endif
 
-#define PORT 5010
+#define PORT 5010 //CONFIG_EXAMPLE_PORT
+
 
 static const char *TAG = "example";
 static const char *payload = "Message from ESP32 ";
 
 
-static void udp_client_task(void *pvParameters) {
+static void udp_client_task(void *pvParameters){
     char rx_buffer[128];
     char host_ip[] = HOST_IP_ADDR;
     int addr_family = 0;
@@ -124,8 +123,7 @@ static void udp_client_task(void *pvParameters) {
 
 void app_main(void)
 {
-    // Main v0.1.5
-
+    // Test v0.1.6
     ESP_ERROR_CHECK(nvs_flash_init());
     ESP_ERROR_CHECK(esp_netif_init());
     ESP_ERROR_CHECK(esp_event_loop_create_default());
@@ -135,6 +133,7 @@ void app_main(void)
      * examples/protocols/README.md for more information about this function.
      */
     ESP_ERROR_CHECK(example_connect());
+
 
     xTaskCreate(udp_client_task, "udp_client", 4096, NULL, 5, NULL);
 }

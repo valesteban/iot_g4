@@ -26,10 +26,9 @@ PORT = 5010
 
 with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
     s.bind((HOST, PORT))
-    s.listen(3)           #cantidad clientes que puede escichar al mismo tiempo
+    s.listen()
     print(f"Listening for UDP packets in {HOST}:{PORT}")
-
-    conn, addr = s.accept()  #acepta nuevas conexiones
+    conn, addr = s.accept()
     with conn:
         print(f"Connected by {addr}")
 
