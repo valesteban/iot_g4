@@ -30,17 +30,16 @@
 #elif defined(CONFIG_EXAMPLE_IPV6)
 #define HOST_IP_ADDR CONFIG_EXAMPLE_IPV6_ADDR
 #else
-#define HOST_IP_ADDR ""
+#define HOST_IP_ADDR "192.168.28.1"
 #endif
 
-#define PORT CONFIG_EXAMPLE_PORT
+#define PORT 5010
 
 static const char *TAG = "example";
 static const char *payload = "Message from ESP32 ";
 
 
-static void udp_client_task(void *pvParameters)
-{
+static void udp_client_task(void *pvParameters) {
     char rx_buffer[128];
     char host_ip[] = HOST_IP_ADDR;
     int addr_family = 0;
@@ -125,6 +124,8 @@ static void udp_client_task(void *pvParameters)
 
 void app_main(void)
 {
+    // Main v0.1.5
+
     ESP_ERROR_CHECK(nvs_flash_init());
     ESP_ERROR_CHECK(esp_netif_init());
     ESP_ERROR_CHECK(esp_event_loop_create_default());
