@@ -1,3 +1,8 @@
+#include <stdio.h>
+#include <stdlib.h>
+
+
+#define PI 3.14159265
 
 /* Un medidor de aceleración para este se generara un vector de 2000
 datos por eje. Estos serán floats generados por la siguiente formula (n es un número cualquiera,
@@ -5,10 +10,20 @@ deben ser distintos entre datos del mismo eje):
 – Accx = 2 · sin(2π · 0.001 · n)
 – Accy = 3 · cos(2π · 0.001 · n)
 – Accz = 10 · sin(2π · 0.001 · n)
-
 */
-int Acceloremeter_Sensor(){
-
+int* Acceloremeter_Sensor(){
+    
+    int vect_x[2000];
+    int vect_y[2000];
+    int vect_z[2000];
+    for (int i=0; i<200; i++){
+        int n = rand();
+        vect_x[i] = 2*sin(2*PI  *0,001 *n);
+        vect_y[i] = 3*cos(2*PI  *0,001 *n);
+        vect_z[i] = 10*sin(2*PI  *0,001 *n);
+    }
+    int *vect_3[3] = [vect_x,vect_y,vect_z];
+    return vect_3;
 }
 
 /*
