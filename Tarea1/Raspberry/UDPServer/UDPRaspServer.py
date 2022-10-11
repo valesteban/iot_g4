@@ -1,14 +1,10 @@
 import socket
 
-'''
-
-import socket
-
-UDP_IP = "192.168.28.1"# "localhost" 
+UDP_IP = "192.168.5.177"# "localhost" 
 UDP_PORT = 5010
 
 sUDP = socket.socket(socket.AF_INET, # Internet
-                    socket.SOCK_DGRAM) # UDP
+                     socket.SOCK_DGRAM) # UDP
 sUDP.bind((UDP_IP, UDP_PORT))
 
 
@@ -26,10 +22,9 @@ PORT = 5010
 
 with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
     s.bind((HOST, PORT))
-    s.listen(3)           #cantidad clientes que puede escichar al mismo tiempo
+    s.listen()
     print(f"Listening for UDP packets in {HOST}:{PORT}")
-
-    conn, addr = s.accept()  #acepta nuevas conexiones
+    conn, addr = s.accept()
     with conn:
         print(f"Connected by {addr}")
 
