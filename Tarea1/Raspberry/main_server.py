@@ -35,7 +35,7 @@ def iniciar_servidor() -> None:
         # Consulta BD (2) 
         # TODO
         data = db.get_protocol()
-        s.sendall(json.dumps(data).enconde())
+        s.sendall(json.dumps(data).encode())
 #-----------------------------------------------------------------------------------------
 
 """
