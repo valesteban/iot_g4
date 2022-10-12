@@ -35,7 +35,13 @@ def iniciar_servidor() -> None:
             # Consulta BD (2) 
             # TODO
             data = db.get_protocol()
-            s.sendall(json.dumps(data).encode())
+            # Enviar datos
+            try:
+                # s.sendall(json.dumps(data).encode())
+                s.sendall("json.dumps(data)".encode())
+            except:
+                print("Error al  enviar paquete del servidor")
+        
 #-----------------------------------------------------------------------------------------
 
 """
