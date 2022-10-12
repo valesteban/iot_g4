@@ -37,11 +37,8 @@ def iniciar_servidor() -> None:
         # TODO
         data = db.get_protocol()
         # Enviar datos
-        try:
-            s.sendall("hola".encode())
-            print(f"Data {data} enviada")
-        except:
-            print("Error al  enviar paquete del servidor")
+        s.sendall("hola".encode())
+        print(f"Data enviada")
     finally:
         # Clean up the connection
         conn.close()
