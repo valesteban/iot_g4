@@ -54,6 +54,13 @@ def client_send_recv():
     print('Received from server: ' + data)  # show in terminal
     client_socket.close()  # close the connection
 
+def client_echo_test():
+    with socket.socket(socket.AF_INET,socket.SOCK_STREAM) as s:
+        s.connect((HOST,PORT))
+        s.sendall(b"holiwis servidor tonto")
+        data = s.recv(1024).decode()
+    print(f"recibi devuelta {data}")
+
 
 if __name__ == '__main__':
-    client_recv_test()
+    client_echo_test()
