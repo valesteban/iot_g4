@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <time.h>
 
 #define MY_PI 3.1415926f
 
@@ -47,6 +48,70 @@ Retorna un numero entero aleatorio en el rango [min, max-1]
 int randInt(int min, int max)
 {
     return (rand() % (max-min)) + min;
+}
+
+int encodeFloat(float* floatPtr, char* arrWrite, int pos)
+{
+    size_t lenF = sizeof(float);
+    char* curr = arrWrite+pos;
+
+    for(int j=0; j < lenF; j++)
+    {
+        unsigned int* ptr = (unsigned int*) floatPtr;
+        unsigned char floatPiece = (unsigned char) (*ptr >> (j*8));
+        *(curr+j) = floatPiece;
+    }
+    return 0;
+}
+
+int encodeInt(int* intPtr, char* arrWrite, int pos)
+{
+    size_t lenI = sizeof(int);
+    char* curr = arrWrite+pos;
+
+    for(int j=0; j < lenI; j++)
+    {
+        unsigned int* ptr = (unsigned int*) intPtr;
+        unsigned char intPiece = (unsigned char) (*ptr >> (j*8));
+        *(curr+j) = intPiece;
+    }
+    return 0;
+}
+
+float decodeFloat(char* arrRead, int pos)
+{
+    size_t lenF = sizeof(float);
+    char* curr = arrRead+pos;
+    
+    unsigned int ftemp = 0;
+    for(int j=0; j < lenF; j++)
+    {
+        unsigned char charPiece = *(curr+j);
+        unsigned int floatPiece = charPiece;
+        floatPiece = floatPiece << (j*8);
+        ftemp |= floatPiece;
+    }
+
+    float* ptr = (float*) &ftemp;
+    return *ptr;
+}
+
+int decodeInt(char* arrRead, int pos)
+{
+    size_t lenI = sizeof(int);
+    char* curr = arrRead+pos;
+    
+    unsigned int itemp = 0;
+    for(int j=0; j < lenI; j++)
+    {
+        unsigned char charPiece = *(curr+j);
+        unsigned int intPiece = charPiece;
+        intPiece = intPiece << (j*8);
+        itemp |= intPiece;
+    }
+
+    int* ptr = (int*) &itemp;
+    return *ptr;
 }
 
 /*
@@ -165,6 +230,14 @@ int accelInit(AccelSensor* pAccelS, int size)
     return 0;  
 }
 
+int accelDestroy(AccelSensor* pAccelS)
+{
+    free(pAccelS->datax);
+    free(pAccelS->datay);
+    free(pAccelS->dataz);
+    return 0;
+}
+
 int printAccelP(AccelSensor* pAccelS)
 {
     printf("[");
@@ -183,8 +256,8 @@ Estructura para almacenar datos de temperatura, humedad, presion y CO2
 */
 typedef struct {
     char temp;
-    char hum;
     float pres;
+    char hum;
     float co2;
 } ThpcSensor;
 
@@ -203,24 +276,131 @@ int printThpcS(ThpcSensor* pThpcS)
     printf("{temp: %d; hum: %d; pres: %.4f; hum: %.4f}", pThpcS->temp, pThpcS->hum, pThpcS->pres, pThpcS->co2);
 }
 
+int encodeThpcS(ThpcSensor* pThpcS, unsigned char* arr, int pos)
+{
+    int writtenBytes = 0;
+   
+    char* curr = arr+pos;
+    
+    *curr = (unsigned char) pThpcS->temp;
+    curr += sizeof(char);
+    writtenBytes += sizeof(char);
+
+    encodeFloat(&(pThpcS->pres), curr, 0);
+    curr += sizeof(float);
+    writtenBytes += sizeof(float);
+
+    *curr = (unsigned char) pThpcS->hum;
+    curr += sizeof(char);
+    writtenBytes += sizeof(char);
+
+    encodeFloat(&(pThpcS->co2), curr, 0);
+    writtenBytes += sizeof(float);
+
+    return writtenBytes;
+}
+
+int decodeThpcS(ThpcSensor* pThpcS, unsigned char* arr, int pos)
+{
+    int readBytes = 0;
+    char* curr = arr+pos;
+
+    pThpcS->temp = (char) *curr;
+    curr += sizeof(char);
+    readBytes += sizeof(char);
+
+    pThpcS->pres = decodeFloat(curr, 0);
+    curr += sizeof(float);
+    readBytes += sizeof(float);
+
+    pThpcS->hum = (char) *curr;
+    curr += sizeof(char);
+    readBytes += sizeof(char);
+
+    pThpcS->co2 = decodeFloat(curr, 0);
+    readBytes += sizeof(float);
+    
+    return readBytes;
+}
+
+
+
 typedef struct {
+    char data1;
     char level;
+    int timestamp;
 } BattSensor;
+
+int setTimestamp(BattSensor* pBattS)
+{
+    pBattS->timestamp = time(0);
+    return 0;
+}
+
 
 int battSInit(BattSensor* pBattS)
 {
     pBattS->level = (char) randInt(MIN_BATT_LEVEL, MAX_BATT_LEVEL+1);
+    pBattS->data1 = 1;
+    setTimestamp(pBattS);
     return 0;
 }
 
+int printBattS(BattSensor* pBattS)
+{
+    printf("{battery_level: %d; time_stamp: %d; data_1: %d}", 
+        pBattS->level, pBattS->timestamp, pBattS->data1);
+    return 0;
+}
+
+int encodeBattS(BattSensor* pBattS, unsigned char* arr, int pos)
+{
+    int writtenBytes = 0;
+   
+    char* curr = arr+pos;
+
+    *curr = (unsigned char) pBattS->data1;
+    curr += sizeof(char);
+    writtenBytes += sizeof(char);
+
+    *curr = (unsigned char) pBattS->level;
+    curr += sizeof(char);
+    writtenBytes += sizeof(char);
+
+    encodeInt(&(pBattS->timestamp), curr, 0);
+    writtenBytes += sizeof(int);
+
+    return writtenBytes;
+
+}
+
+int decodeBattS(BattSensor* pBattS, unsigned char* arr, int pos)
+{
+    int readBytes = 0;
+    char* curr = arr+pos;
+
+    pBattS->data1 = (char) *curr;
+    curr += sizeof(char);
+    readBytes += sizeof(char);
+
+    pBattS->level = (char) *curr;
+    curr += sizeof(char);
+    readBytes += sizeof(char);
+
+    pBattS->timestamp = decodeInt(curr, 0);
+    readBytes += sizeof(int);
+    
+    return readBytes;
+}
+
 typedef struct {
+    float rms;
     float ampx;
     float frecx;
     float ampy;
     float frecy;
     float ampz;
     float frecz;
-    float rms;
 } AccelKpi;
 
 int accelKInit(AccelKpi* pAccelK)
@@ -241,12 +421,78 @@ int accelKInit(AccelKpi* pAccelK)
 
 }
 
+int printAccelK(AccelKpi* pAccelK)
+{
+    printf("{amp_x: %.4f; frec_x: %.4f; amp_y: %.4f; frec_y: %.4f; amp_z: %.4f; frec_z: %.4f; rms: %.4f}", 
+        pAccelK->ampx, pAccelK->frecx, pAccelK->ampy, pAccelK->frecy, pAccelK->ampz, pAccelK->frecz, pAccelK->rms);
+    return 0;
+}
 
+
+
+int encodeAccelK(AccelKpi* pAccelK, unsigned char* arr, int pos)
+{
+    int writtenBytes = 0;
+    size_t lenK = 7;
+    float* members[7] = { &(pAccelK->rms), &(pAccelK->ampx), &(pAccelK->frecx), &(pAccelK->ampy), &(pAccelK->frecy), &(pAccelK->ampz), &(pAccelK->frecz) };
+    
+    size_t lenF = sizeof(float);
+    char* curr = arr+pos;
+    
+    for(int i=0; i < lenK; i++)
+    {
+        encodeFloat(members[i], curr, lenK*i);
+        writtenBytes += lenF;
+    }
+    return writtenBytes;
+
+}
+
+int decodeAccelK(AccelKpi* pAccelK, unsigned char* arr, int pos)
+{
+    int readBytes = 0;
+    size_t lenK = 7;
+    float* members[7] = { &(pAccelK->rms), &(pAccelK->ampx), &(pAccelK->frecx), &(pAccelK->ampy), &(pAccelK->frecy), &(pAccelK->ampz), &(pAccelK->frecz) };
+    
+    size_t lenF = sizeof(float);
+    char* curr = arr+pos;
+    
+    for(int i=0; i < lenK; i++)
+    {
+        *(members[i]) = decodeFloat(curr, i*lenK);
+        readBytes += lenF;
+    }
+    return readBytes;
+}
+
+// descomentar para probar estructuras
+/*
 int main()
 {
+
+    // pruebita
+
     AccelSensor a;
     accelInit(&a, 5);
     printAccelP(&a);
     printAccelPoint(&a, 3);
+
+    printf("\n");
+    ThpcSensor b;
+    thpcSInit(&b);
+    printThpcS(&b);
+
+    printf("\n");
+    BattSensor c;
+    battSInit(&c);
+    printBattS(&c);
+
+    printf("\n");
+    AccelKpi d;
+    accelKInit(&d);
+    printAccelK(&d);
+    printf("\n");
+
     return 0;
 }
+*/
