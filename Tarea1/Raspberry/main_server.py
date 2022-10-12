@@ -23,24 +23,30 @@ def iniciar_servidor() -> None:
     """
     
     print("Hacer conexion TCP")
-    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s: #TCP
+    while True:
+        s = socket.socket(socket.AF_INET, socket.SOCK_STREAM) #TCP
         s.bind((HOST, PORT))
-        s.listen()
+        s.listen(1)
         print(f"Listening on {HOST}:{PORT}")
         # conn is a new socket object usable to send and receive data on the connection.
         # address is the address bound to the socket on the other end of the connection.
         conn, addr = s.accept()
-        with conn:
+        try:
             print(f'Conectado por alguien ({addr[0]}) desde el puerto {addr[1]}')
+
             # Consulta BD (2) 
             # TODO
             data = db.get_protocol()
             # Enviar datos
             try:
-                # s.sendall(json.dumps(data).encode())
-                s.sendall("json.dumps(data)".encode())
+                s.sendall(json.dumps(data).encode())
+                print(f"Data {data} enviada")
+                break
             except:
                 print("Error al  enviar paquete del servidor")
+        finally:
+            # Clean up the connection
+            conn.close()
         
 #-----------------------------------------------------------------------------------------
 

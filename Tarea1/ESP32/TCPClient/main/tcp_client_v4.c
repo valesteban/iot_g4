@@ -77,7 +77,6 @@ void tcp_client(void)
             ESP_LOGI(TAG, "%s", rx_buffer);
         }
         
-
         if (sock != -1) {
             ESP_LOGE(TAG, "Shutting down socket and restarting...");
             shutdown(sock, 0);
