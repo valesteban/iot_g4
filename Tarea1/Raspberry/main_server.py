@@ -38,7 +38,7 @@ def iniciar_servidor() -> None:
         data = db.get_protocol()
         # Enviar datos
         try:
-            s.sendall(json.dumps(data).encode())
+            s.sendall("hola".encode())
             print(f"Data {data} enviada")
         except:
             print("Error al  enviar paquete del servidor")
