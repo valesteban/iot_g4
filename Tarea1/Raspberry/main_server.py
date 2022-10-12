@@ -1,6 +1,7 @@
 import socket
 from xmlrpc.client import TRANSPORT_ERROR
 import db
+import json
 
 # "192.168.5.177"  # Standard loopback interface address (localhost)
 HOST = "192.168.28.1" #"localhost"
@@ -34,7 +35,7 @@ def iniciar_servidor() -> None:
         # Consulta BD (2) 
         # TODO
         data = db.get_protocol()
-        s.sendall(data)
+        s.sendall(json.dumps(data).enconde())
 #-----------------------------------------------------------------------------------------
 
 """
