@@ -28,13 +28,13 @@ def client_recv_test():
     Crea una conexion que solo recibe respuesta del servidor
     """
 
-    client_socket = socket.socket()  # instantiate
+    client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)  # instantiate
     client_socket.connect((HOST, PORT))  # connect to the server
 
 
     data = client_socket.recv(1024).decode()  # receive response
     print('Received from server: ' + data)  # show in terminal
-
+ 
     client_socket.close()  # close the connection
 
 if __name__ == '__main__':
