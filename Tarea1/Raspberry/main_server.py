@@ -23,11 +23,11 @@ def iniciar_servidor() -> None:
     """
     
     print("Hacer conexion TCP")
+    s = socket.socket(socket.AF_INET, socket.SOCK_STREAM) #TCP
+    s.bind((HOST, PORT))
+    s.listen(1)
+    print(f"Listening on {HOST}:{PORT}")
     while True:
-        s = socket.socket(socket.AF_INET, socket.SOCK_STREAM) #TCP
-        s.bind((HOST, PORT))
-        s.listen(1)
-        print(f"Listening on {HOST}:{PORT}")
         # conn is a new socket object usable to send and receive data on the connection.
         # address is the address bound to the socket on the other end of the connection.
         conn, addr = s.accept()
