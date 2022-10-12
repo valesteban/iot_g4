@@ -19,7 +19,7 @@ def iniciar_servidor() -> None:
     Inicializa el servidor con una conexion TCP con el ESP32.
 
     Cuando se logra la conexion, se realiza una consulta a la base de datos
-    preguntando por el protocolo a usar.
+    preguntando por el protocolo a usar y el tipo de conexion.
     """
     
     print("Hacer conexion TCP")
@@ -30,12 +30,12 @@ def iniciar_servidor() -> None:
         # conn is a new socket object usable to send and receive data on the connection.
         # address is the address bound to the socket on the other end of the connection.
         conn, addr = s.accept()
-        print(f'Conectado por alguien ({addr[0]}) desde el puerto {addr[1]}')
-
-        # Consulta BD (2) 
-        # TODO
-        data = db.get_protocol()
-        s.sendall(json.dumps(data).encode())
+        with conn:
+            print(f'Conectado por alguien ({addr[0]}) desde el puerto {addr[1]}')
+            # Consulta BD (2) 
+            # TODO
+            data = db.get_protocol()
+            s.sendall(json.dumps(data).encode())
 #-----------------------------------------------------------------------------------------
 
 """
