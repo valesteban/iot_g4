@@ -32,6 +32,6 @@ def get_protocol() -> tuple:
     # 0: "id_protocol"
     # 1: "transport_layer"
 
-    data = (2, 1)
+    data = (2, 0)
 
     return data

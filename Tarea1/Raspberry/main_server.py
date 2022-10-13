@@ -11,39 +11,43 @@ PORT = 5010  # Port to listen on (non-privileged ports are > 1023)
 #---TCP--CONNECTION ----------------------------------------------------------------------
 
 def iniciar_servidor():
-    with socket.socket(socket.AF_INET,socket.SOCK_STREAM) as s:
-        s.bind((HOST,PORT))
-        s.listen()
-        print("esta listening")
-        conn,addr = s.accept()
-        with conn:
-            print(f"COnectado con {addr}")
-            while True:
-                try:
-                    recibido = conn.recv(1024).decode()
-                    print(f"lo recibido del cliente -> {recibido}")
-                except:
-                    print("fallo algo al recibir paquete por socket")
-                    break
-                
-                data = db.get_protocol()
-                ID_PROTOCOL = data[0]
-                TRANSPORT_LAYER = data[1]
-                
-                
-                data = str(data).encode()
-                if not data:
-                    break
-                try:
-                    conn.sendall(data)
-                    print(f"lo qu eva a enviar servidor a cliente {data}")
-                except:
-                    print("fallo algo al tratar de enviar paquete por socket")
-                    break  
-                if len(data) >0:
-                    break
-        s.shutdown(socket.SHUT_RDWR)
-        conn.close()
+    s = socket.socket(socket.AF_INET,socket.SOCK_STREAM)
+    s.setsockopt(socket.SOL_SOCKET,socket.SO_REUSEADDR,1)
+    s.bind((HOST,PORT))
+    s.listen()
+    print("esta listening")
+    conn,addr = s.accept()
+    
+    print(f"Conectado con {addr}")
+    while True:
+        try:
+            recibido = conn.recv(1024).decode()
+            print(f"lo recibido del cliente -> {recibido}")
+        except:
+            print("fallo algo al recibir paquete por socket")
+            break
+        
+        data = db.get_protocol()
+        ID_PROTOCOL = data[0]
+        TRANSPORT_LAYER = data[1]
+        
+        
+        data = str(data).encode()
+        if not data:
+            break
+        try:
+            conn.sendall(data)
+            print(f"lo qu eva a enviar servidor a cliente {data}")
+        
+        except:
+            print("fallo algo al tratar de enviar paquete por socket")
+            break  
+        if len(data) >0:
+            break
+    s.shutdown(socket.SHUT_RDWR)
+    conn.close()
+    
+    
         
             
                                
@@ -51,21 +55,22 @@ def iniciar_servidor():
     if TRANSPORT_LAYER == 0: #TCP
         
         print("Hacer conexion TCP")
-        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s: #TCP
-            s.bind((HOST, PORT))
-            s.listen()
-            print(f"Listening on {HOST}:{PORT}")
-            # conn is a new socket object usable to send and receive data on the connection.
-            # address is the address bound to the socket on the other end of the connection.
-            conn, addr = s.accept()
-            print(f'Conectado por alguien ({addr[0]}) desde el puerto {addr[1]}')
+        s =socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        s.setsockopt(socket.SOL_SOCKET,socket.SO_REUSEADDR,1)
+        print("????")
+        s.bind((HOST, PORT))
+        s.listen()
+        print(f"Listening on {HOST}:{PORT}")
+        # conn is a new socket object usable to send and receive data on the connection.
+        # address is the address bound to the socket on the other end of the connection.
+        conn, addr = s.accept()
+        print(f'Conectado por alguien ({addr[0]}) desde el puerto {addr[1]}')
 
-            while(True):
-                data = conn.recv(1024).decode()
-                if data == b'':
-                    print(f"Termino no data {data}")
-                print(f"Recibido {data}")
-                conn.sendall("weeena".encode())
+        while(True):
+            data = conn.recv(1024).decode()
+            if data == b'':
+                print(f"Termino no data {data}")
+            print(f"Recibido {data}")
 
         print("CHAO")
             
@@ -85,6 +90,7 @@ def iniciar_servidor():
 
                 #VA A BUSCAR LOS VALORES DE LA BBDD Y ENVIARSELO AL CLIENTE, PORQUE CUANDO CAMBIEN 
                 #AHI EL CLIENTE PARARA LA EJECUCION
+                #podi tal ves enviar solo el valor de transport layer???? es lo unico q se necesita enviar
                 data = db.get_protocol()
                 ID_PROTOCOL = data[0]
                 TRANSPORT_LAYER = data[1]

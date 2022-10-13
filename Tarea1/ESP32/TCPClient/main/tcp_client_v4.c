@@ -153,7 +153,9 @@ void tcp_client(int id_protocol){
         int change_bbdd= 0;
         while (change_bbdd == 0) {
             //LLAMAMOS AL PROTOCOLO QU ECREA EL PAQUETE
-            char *data = "Paquete ficticio";                        //por mientras dejo este chantita
+            //APLIQUE VALE SUS SUPERPODERESSSSSSSSSSSSSSSSSSSSSSS
+            //!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+            char *data = "Paquete ficticio\n";                        //por mientras dejo este chantita
 
             
             //ENVIAMOS DATA
@@ -163,6 +165,11 @@ void tcp_client(int id_protocol){
                 break;
             }
 
+            //DEEPSLEEP 60 SEC
+            ESP_LOGE(TAG, "sleeping for 60 sec");
+            sleep(10);  //le puse 10 sec por mientras q lo 60 era muy largo
+ 
+            /*
             //RECIVIMOS RESPUESTA
             int len = recv(sock, rx_buffer, sizeof(rx_buffer) - 1, 0);
             // Error occurred during receiving
@@ -170,22 +177,14 @@ void tcp_client(int id_protocol){
                 ESP_LOGE(TAG, "recv failed: errno %d", errno);
                 break;
             }
-            // Data received
             else {
                 rx_buffer[len] = 0; // Null-terminate whatever we received and treat like a string
                 ESP_LOGI(TAG, "Received %d bytes from %s:", len, host_ip);
                 ESP_LOGI(TAG, "%s", rx_buffer);
             }
-
-            //CHECKEAMOS QUE LA BBDD NO HAYA CAMBIADO 
-            /*
-            if (... ||  ...){
-                change_bbdd = 1;
-                break;
-            }else{
-
-            }
+            
             */
+            // Data received
             
         }
 
@@ -252,6 +251,7 @@ void udp_client(int id_protocol){
             struct sockaddr_storage source_addr; // Large enough for both IPv4 or IPv6
             socklen_t socklen = sizeof(source_addr);
 
+            
             //DEVUELTA RECIBIMOS LOS VALORES DE LA BBDD
             int len = recvfrom(sock, rx_buffer, sizeof(rx_buffer) - 1, 0, (struct sockaddr *)&source_addr, &socklen);
 
@@ -273,10 +273,10 @@ void udp_client(int id_protocol){
 
             //SI LO RECIBIDO CAMBIO A LO ORIGINAL PARAMOS LOOP
             /*
-            int  ddbb_protocol = ....     parseamos rx_buffer
+            
             int  ddbb_layerProtocol = ....     parseamos rx_buffer
             
-            if(ddbb_protocol == !id_protocol || ddbb_layerProtocol != 1 ){          
+            if( ddbb_layerProtocol != 1 ){          
                 ESP_LOGI(TAG, "cambiaron valores bbdd estonces termina ");
                 break;
             }
