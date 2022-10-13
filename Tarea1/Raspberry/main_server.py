@@ -89,8 +89,7 @@ def iniciar_servidor():
 
                 #VA A BUSCAR LOS VALORES DE LA BBDD Y ENVIARSELO AL CLIENTE, PORQUE CUANDO CAMBIEN 
                 #AHI EL CLIENTE PARARA LA EJECUCION
-                #podi tal ves enviar solo el valor de transport layer???? es lo unico q se necesita enviar
-                data = db.get_protocol()
+                data = db.get_protocol()  #q envie de la misma forma porq asi lo parsie ya 
                 ID_PROTOCOL = data[0]
                 TRANSPORT_LAYER = data[1]
                 data = str(data).encode()

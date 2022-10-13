@@ -118,7 +118,7 @@ char* tcp_initial_connection(void){
 
 
 
-void tcp_client(int id_protocol){
+void tcp_client(char id_protocol){
 
     while (1) {
         
@@ -197,7 +197,7 @@ void tcp_client(int id_protocol){
     }
 }
 
-void udp_client(int id_protocol){
+void udp_client(char id_protocol){
 
     
     while (1) {
@@ -237,6 +237,7 @@ void udp_client(int id_protocol){
 
         ESP_LOGI(TAG, "Socket created, sending to %s:%d", HOST_IP_ADDR, PORT);
 
+        char ddbb_layerProtocol = '1';
         while (1) {
 
             //CREAMOS PAQUETE DEPENDIENDO DEL PROTOCOLO QUE NOS LLEGO
@@ -272,26 +273,29 @@ void udp_client(int id_protocol){
             }
 
             //SI LO RECIBIDO CAMBIO A LO ORIGINAL PARAMOS LOOP
-            /*
+            ddbb_layerProtocol = rx_buffer[4];
+            ESP_LOGI(TAG, "protocolo bbdd -> %c ",ddbb_layerProtocol);
             
-            int  ddbb_layerProtocol = ....     parseamos rx_buffer
-            
-            if( ddbb_layerProtocol != 1 ){          
+            if( ddbb_layerProtocol == '0' ){          
                 ESP_LOGI(TAG, "cambiaron valores bbdd estonces termina ");
                 break;
             }
-            */
+        
 
             //SINO  CONTINUAMOS
 
             vTaskDelay(2000 / portTICK_PERIOD_MS);
         }
-
         if (sock != -1) {
             ESP_LOGE(TAG, "Shutting down socket and restarting...");
             shutdown(sock, 0);
             close(sock);
         }
+        if (ddbb_layerProtocol == '0') {
+            ESP_LOGE(TAG, "shauuu");
+            break;
+        }
+
     }
 }
 
