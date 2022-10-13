@@ -11,27 +11,18 @@ class DB:
         )
         self.cursor = self.db.cursor()
 
-
-    def get_protocol2(self) -> tuple:
+    #def add_data(self, data:dict) -> None:
+         
+    def get_protocol(self) -> tuple:
         """
             Metodo que consulta la base de datos preguntando por el procolo a utilizar
+
+            returns: ((protocolId), transportLayer)) 
         """
         sql = '''
-
+            SELECT protocolId, transportLayer
+            FROM configuracion
         '''
         self.cursor.execute(sql)
         return self.cursor.fetchall()
 
-
-
-def get_protocol() -> tuple:
-    """
-        Funcion que consulta la base de datos preguntando por el procolo a utilizar
-    """
-
-    # 0: "id_protocol"
-    # 1: "transport_layer"
-
-    data = (2, 1)
-
-    return data
