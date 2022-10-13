@@ -27,11 +27,11 @@ def iniciar_servidor():
                     break
                 
                 data = db.get_protocol()
-                ID_PROTOCOL = data["id_protocol"]
-                TRANSPORT_LAYER =data["transport_layer"]
+                ID_PROTOCOL = data[0]
+                TRANSPORT_LAYER = data[1]
                 
                 
-                data = json.dumps(data).encode()
+                data = str(data).encode()
                 if not data:
                     break
                 try:
