@@ -12,6 +12,23 @@
 #include <arpa/inet.h>
 #include "esp_netif.h"
 #include "esp_log.h"
+#include <sys/param.h>
+#include "freertos/FreeRTOS.h"
+#include "freertos/task.h"
+#include "freertos/event_groups.h"
+#include "esp_system.h"
+#include "esp_wifi.h"
+#include "esp_event.h"
+#include "nvs_flash.h"
+#include "esp_netif.h"
+#include "protocol_examples_common.h"
+
+#include "lwip/err.h"
+#include "lwip/sockets.h"
+#include "lwip/sys.h"
+#include <lwip/netdb.h>
+#include "addr_from_stdin.h"
+
 #if defined(CONFIG_EXAMPLE_SOCKET_IP_INPUT_STDIN)
 #include "addr_from_stdin.h"
 #endif
@@ -19,35 +36,105 @@
 #if defined(CONFIG_EXAMPLE_IPV4)
 #define HOST_IP_ADDR CONFIG_EXAMPLE_IPV4_ADDR
 #elif defined(CONFIG_EXAMPLE_SOCKET_IP_INPUT_STDIN)
-#define HOST_IP_ADDR ""
+#define HOST_IP_ADDR "192.168.28.1"
 #endif
 
-#define PORT CONFIG_EXAMPLE_PORT
+#define PORT 5010
 
 static const char *TAG = "example";
 static const char *payload = "Message from ESP32 ";
 
+char rx_buffer[128];
+char host_ip[] = HOST_IP_ADDR;
+int addr_family = 0;
+int ip_protocol = 0;
 
-void tcp_client(void)
-{
-    char rx_buffer[128];
-    char host_ip[] = HOST_IP_ADDR;
-    int addr_family = 0;
-    int ip_protocol = 0;
+char* tcp_initial_connection(void){
+            
+        #if defined(CONFIG_EXAMPLE_IPV4)
+                struct sockaddr_in dest_addr;
+                inet_pton(AF_INET, host_ip, &dest_addr.sin_addr);
+                dest_addr.sin_family = AF_INET;
+                dest_addr.sin_port = htons(PORT);
+                addr_family = AF_INET;
+                ip_protocol = IPPROTO_IP;
+        #elif defined(CONFIG_EXAMPLE_SOCKET_IP_INPUT_STDIN)
+                struct sockaddr_storage dest_addr = { 0 };
+                ESP_ERROR_CHECK(get_addr_from_stdin(PORT, SOCK_STREAM, &ip_protocol, &addr_family, &dest_addr));
+        #endif
+
+        //CREA SOCKET
+        int sock =  socket(addr_family, SOCK_STREAM, ip_protocol);
+        if (sock < 0) {
+            ESP_LOGE(TAG, "Unable to create socket: errno %d", errno);
+            
+        }
+        ESP_LOGI(TAG, "Socket created, connecting to %s:%d", host_ip, PORT);
+
+        //CONECTA SOCKET CON SERVODIR/RASPBERRY
+        int err = connect(sock, (struct sockaddr *)&dest_addr, sizeof(dest_addr));
+        if (err != 0) {
+            ESP_LOGE(TAG, "Socket unable to connect: errno %d", errno);
+           
+        }
+        ESP_LOGI(TAG, "Successfully connected");
+
+        while (1) {
+            //ENVIA UN PAQUETE 
+            int err = send(sock, payload, strlen(payload), 0);
+            if (err < 0) {
+                ESP_LOGE(TAG, "Error occurred during sending: errno %d", errno);
+                break;
+            }
+
+            //RECIVE PAQUETE CON CONTENIDO id_protocol y layer_protocol
+            int len = recv(sock, rx_buffer, sizeof(rx_buffer) - 1, 0);
+            // Error occurred during receiving
+            if (len < 0) {
+                ESP_LOGE(TAG, "recv failed: errno %d", errno);
+                break;
+            }
+            else {
+                rx_buffer[len] = 0; // Null-terminate whatever we received and treat like a string
+                ESP_LOGI(TAG, "Received %d bytes from %s:", len, host_ip);
+                ESP_LOGI(TAG, "%s", rx_buffer);
+                if (strlen(rx_buffer) > 0){
+                    break; //salimos del loop si si llego algo
+                }
+            }
+
+        }
+        
+        if (sock != -1) {
+            ESP_LOGE(TAG, "Shutting down socket and restarting...");
+            shutdown(sock, 0);
+            close(sock);
+        }
+
+    
+    ESP_LOGE(TAG, "retornamosss");   
+    return rx_buffer;
+}
+
+
+
+void tcp_client(int id_protocol){
 
     while (1) {
-#if defined(CONFIG_EXAMPLE_IPV4)
-        struct sockaddr_in dest_addr;
-        inet_pton(AF_INET, host_ip, &dest_addr.sin_addr);
-        dest_addr.sin_family = AF_INET;
-        dest_addr.sin_port = htons(PORT);
-        addr_family = AF_INET;
-        ip_protocol = IPPROTO_IP;
-#elif defined(CONFIG_EXAMPLE_SOCKET_IP_INPUT_STDIN)
-        struct sockaddr_storage dest_addr = { 0 };
-        ESP_ERROR_CHECK(get_addr_from_stdin(PORT, SOCK_STREAM, &ip_protocol, &addr_family, &dest_addr));
-#endif
+        
+        #if defined(CONFIG_EXAMPLE_IPV4)
+                struct sockaddr_in dest_addr;
+                inet_pton(AF_INET, host_ip, &dest_addr.sin_addr);
+                dest_addr.sin_family = AF_INET;
+                dest_addr.sin_port = htons(PORT);
+                addr_family = AF_INET;
+                ip_protocol = IPPROTO_IP;
+        #elif defined(CONFIG_EXAMPLE_SOCKET_IP_INPUT_STDIN)
+                struct sockaddr_storage dest_addr = { 0 };
+                ESP_ERROR_CHECK(get_addr_from_stdin(PORT, SOCK_STREAM, &ip_protocol, &addr_family, &dest_addr));
+        #endif
 
+        //CREAMOS SOCKET
         int sock =  socket(addr_family, SOCK_STREAM, ip_protocol);
         if (sock < 0) {
             ESP_LOGE(TAG, "Unable to create socket: errno %d", errno);
@@ -55,6 +142,7 @@ void tcp_client(void)
         }
         ESP_LOGI(TAG, "Socket created, connecting to %s:%d", host_ip, PORT);
 
+        //CONECTAMOS SOCKET CON SERV
         int err = connect(sock, (struct sockaddr *)&dest_addr, sizeof(dest_addr));
         if (err != 0) {
             ESP_LOGE(TAG, "Socket unable to connect: errno %d", errno);
@@ -62,13 +150,20 @@ void tcp_client(void)
         }
         ESP_LOGI(TAG, "Successfully connected");
 
-        while (1) {
-            int err = send(sock, payload, strlen(payload), 0);
+        int change_bbdd= 0;
+        while (change_bbdd == 0) {
+            //LLAMAMOS AL PROTOCOLO QU ECREA EL PAQUETE
+            char *data = "Paquete ficticio";                        //por mientras dejo este chantita
+
+            
+            //ENVIAMOS DATA
+            int err = send(sock, data, strlen(payload), 0);
             if (err < 0) {
                 ESP_LOGE(TAG, "Error occurred during sending: errno %d", errno);
                 break;
             }
 
+            //RECIVIMOS RESPUESTA
             int len = recv(sock, rx_buffer, sizeof(rx_buffer) - 1, 0);
             // Error occurred during receiving
             if (len < 0) {
@@ -81,6 +176,115 @@ void tcp_client(void)
                 ESP_LOGI(TAG, "Received %d bytes from %s:", len, host_ip);
                 ESP_LOGI(TAG, "%s", rx_buffer);
             }
+
+            //CHECKEAMOS QUE LA BBDD NO HAYA CAMBIADO 
+            /*
+            if (... ||  ...){
+                change_bbdd = 1;
+                break;
+            }else{
+
+            }
+            */
+            
+        }
+
+        //CERRAMOS SOCKET Y CHAO
+        if (sock != -1) {
+            ESP_LOGE(TAG, "Shutting down socket and restarting...");
+            shutdown(sock, 0);
+            close(sock);
+        }
+    }
+}
+
+void udp_client(int id_protocol){
+
+    
+    while (1) {
+
+        #if defined(CONFIG_EXAMPLE_IPV4)
+                struct sockaddr_in dest_addr;
+                dest_addr.sin_addr.s_addr = inet_addr(HOST_IP_ADDR);
+                dest_addr.sin_family = AF_INET;
+                dest_addr.sin_port = htons(PORT);
+                addr_family = AF_INET;
+                ip_protocol = IPPROTO_IP;
+        #elif defined(CONFIG_EXAMPLE_IPV6)
+                struct sockaddr_in6 dest_addr = { 0 };
+                inet6_aton(HOST_IP_ADDR, &dest_addr.sin6_addr);
+                dest_addr.sin6_family = AF_INET6;
+                dest_addr.sin6_port = htons(PORT);
+                dest_addr.sin6_scope_id = esp_netif_get_netif_impl_index(EXAMPLE_INTERFACE);
+                addr_family = AF_INET6;
+                ip_protocol = IPPROTO_IPV6;
+        #elif defined(CONFIG_EXAMPLE_SOCKET_IP_INPUT_STDIN)
+                struct sockaddr_storage dest_addr = { 0 };
+                ESP_ERROR_CHECK(get_addr_from_stdin(PORT, SOCK_DGRAM, &ip_protocol, &addr_family, &dest_addr));
+        #endif
+
+        //CREAMOS EL SOCKET
+        int sock = socket(addr_family, SOCK_DGRAM, ip_protocol);
+        if (sock < 0) {
+            ESP_LOGE(TAG, "Unable to create socket: errno %d", errno);
+            break;
+        }
+
+        // Set timeout
+        struct timeval timeout;
+        timeout.tv_sec = 10;
+        timeout.tv_usec = 0;
+        setsockopt (sock, SOL_SOCKET, SO_RCVTIMEO, &timeout, sizeof timeout);
+
+        ESP_LOGI(TAG, "Socket created, sending to %s:%d", HOST_IP_ADDR, PORT);
+
+        while (1) {
+
+            //CREAMOS PAQUETE DEPENDIENDO DEL PROTOCOLO QUE NOS LLEGO
+            char * data = "paquete hardcodeao";
+            int err = sendto(sock, data, strlen(payload), 0, (struct sockaddr *)&dest_addr, sizeof(dest_addr));
+            if (err < 0) {
+                ESP_LOGE(TAG, "Error occurred during sending: errno %d", errno);
+                break;
+            }
+            ESP_LOGI(TAG, "Message sent");
+
+            struct sockaddr_storage source_addr; // Large enough for both IPv4 or IPv6
+            socklen_t socklen = sizeof(source_addr);
+
+            //DEVUELTA RECIBIMOS LOS VALORES DE LA BBDD
+            int len = recvfrom(sock, rx_buffer, sizeof(rx_buffer) - 1, 0, (struct sockaddr *)&source_addr, &socklen);
+
+            // Error occurred during receiving
+            if (len < 0) {
+                ESP_LOGE(TAG, "recvfrom failed: errno %d", errno);
+                break;
+            }
+            // Data received
+            else {
+                rx_buffer[len] = 0; // Null-terminate whatever we received and treat like a string
+                ESP_LOGI(TAG, "Received %d bytes from %s:", len, host_ip);
+                ESP_LOGI(TAG, "%s", rx_buffer);
+                if (strncmp(rx_buffer, "OK: ", 4) == 0) {
+                    ESP_LOGI(TAG, "Received expected message, reconnecting");
+                    break;
+                }
+            }
+
+            //SI LO RECIBIDO CAMBIO A LO ORIGINAL PARAMOS LOOP
+            /*
+            int  ddbb_protocol = ....     parseamos rx_buffer
+            int  ddbb_layerProtocol = ....     parseamos rx_buffer
+            
+            if(ddbb_protocol == !id_protocol || ddbb_layerProtocol != 1 ){          
+                ESP_LOGI(TAG, "cambiaron valores bbdd estonces termina ");
+                break;
+            }
+            */
+
+            //SINO  CONTINUAMOS
+
+            vTaskDelay(2000 / portTICK_PERIOD_MS);
         }
 
         if (sock != -1) {
@@ -90,3 +294,5 @@ void tcp_client(void)
         }
     }
 }
+
+

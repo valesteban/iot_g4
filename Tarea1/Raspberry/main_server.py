@@ -21,9 +21,9 @@ def iniciar_servidor():
             while True:
                 try:
                     recibido = conn.recv(1024).decode()
-                    #print(f"lo recibido del cliente -> {recibido}")
+                    print(f"lo recibido del cliente -> {recibido}")
                 except:
-                    #print("fallo algo al recibir paquete por socket")
+                    print("fallo algo al recibir paquete por socket")
                     break
                 
                 data = db.get_protocol()
@@ -36,13 +36,17 @@ def iniciar_servidor():
                     break
                 try:
                     conn.sendall(data)
-                    #print(f"lo qu eva a enviar servidor a cliente {data}")
+                    print(f"lo qu eva a enviar servidor a cliente {data}")
                 except:
-                    #print("fallo algo al tratar de enviar paquete por socket")
-                    break    
-    #print("Tenemos que crear la nueva conexion TCP o UDP segun corresponda")
-
-    #AQUI IRA UNA FUNCION QUE REVISA QUE TIPO DE PROTOCOLO OCUPAR Y SI OCUPAR UDP O TCP
+                    print("fallo algo al tratar de enviar paquete por socket")
+                    break  
+                if len(data) >0:
+                    break
+        s.shutdown(socket.SHUT_RDWR)
+        conn.close()
+        
+            
+                               
 
     if TRANSPORT_LAYER == 0: #TCP
         
@@ -73,11 +77,22 @@ def iniciar_servidor():
             print(f"Listening for UDP packets in {HOST}:{PORT}")
 
             while(True):
-                data = s.recv(1024)
+                data,addr = s.recvfrom(1024)
                 if data == b'':
-                    print(f"No llego na-> {data}")
+                    print(f"No llego na-> {data } y {addr}")
                     break
                 print(f"Recibido -> {data}")
+
+                #VA A BUSCAR LOS VALORES DE LA BBDD Y ENVIARSELO AL CLIENTE, PORQUE CUANDO CAMBIEN 
+                #AHI EL CLIENTE PARARA LA EJECUCION
+                data = db.get_protocol()
+                ID_PROTOCOL = data[0]
+                TRANSPORT_LAYER = data[1]
+                data = str(data).encode()
+                
+                s.sendto(data,addr)
+
+
 
             s.close()
             print("Desconectado")  

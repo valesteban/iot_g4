@@ -15,9 +15,11 @@
 
 
 extern char* tcp_initial_connection(void);
+extern void tcp_client();
+extern void udp_client();
 
 
-static const char *TAG = "test";
+static const char *TAG = "";
 
 char *getSubstring(char* dst,const char *src,size_t start,size_t ens){
     return strncpy(dst,src+start,ens);
@@ -37,22 +39,27 @@ void app_main(void)
      */
     ESP_ERROR_CHECK(example_connect());
 
-    char* res = tcp_initial_connection();
+    char *res = tcp_initial_connection();
 
-    ESP_LOGE(TAG, "Aqui ahora tengoq ue crear la nueva connexion con\n protocolo %s",res);
+    //char o = *res;
+    
+
+    //ESP_LOGE(TAG, "Aqui ahora tengoq ue crear la nueva connexion con\n protocolo %c",o);
     
     //esto por mientras nomas me da lata parsear aun la *res donde esta n los valores q realmente recibe
     //imaginemos que obtuvo los valores y son 
 
-    //int id_protocol = 0;
-    int transport_layer = 0; //TCP
-    
-
+    int id_protocol = 0;
+    int transport_layer = 1; //UDP
+    //ESP_LOGE(TAG, "***************************************************%s",res[1]);
+    ESP_LOGE(TAG, "****************************************************************************+");
     if ( transport_layer == 0){
-         ESP_LOGE(TAG, "Conexion TCP");
+        ESP_LOGE(TAG, "Conexion TCP");
+        tcp_client(id_protocol);
     }
     else{
-         ESP_LOGE(TAG, "Conexion UDP");
+        ESP_LOGE(TAG, "Conexion UDP");
+        udp_client(id_protocol);
 
     }
 
