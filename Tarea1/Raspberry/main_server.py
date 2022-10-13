@@ -7,92 +7,86 @@ import json
 HOST = "192.168.28.1" #"localhost"
 PORT = 5010  # Port to listen on (non-privileged ports are > 1023)
 
-#cosas por mientras reemplazando bbdd
-# 0 = TCP | 1 = UDP
-ID_PROTOCOL =   0         #  0,1,2,3,4 
-TRANSPORT_LAYER =  0       # 0 = TCP | 1 = UDP
 
 #---TCP--CONNECTION ----------------------------------------------------------------------
 
-def iniciar_servidor() -> None:
-    """
-    Inicializa el servidor con una conexion TCP con el ESP32.
-
-    Cuando se logra la conexion, se realiza una consulta a la base de datos
-    preguntando por el protocolo a usar y el tipo de conexion.
-    """
-    
-    print("Hacer conexion TCP")
-    s = socket.socket(socket.AF_INET, socket.SOCK_STREAM) #TCP
-    s.bind((HOST, PORT))
-    s.listen()
-    print(f"Listening on {HOST}:{PORT}")
-    # conn is a new socket object usable to send and receive data on the connection.
-    # address is the address bound to the socket on the other end of the connection.
-    conn, addr = s.accept()
-    try:
-        print(f'Conectado por alguien ({addr[0]}) desde el puerto {addr[1]}')
-
-        # Consulta BD (2) 
-        # TODO
-        data = db.get_protocol()
-        # Enviar datos
-        s.sendall("hola".encode())
-        print(f"Data enviada")
-    finally:
-        # Clean up the connection
-        conn.close()
-        
-#-----------------------------------------------------------------------------------------
-
-"""
-
-#AQUI IRA UNA FUNCION QUE REVISA QUE TIPO DE PROTOCOLO OCUPAR Y SI OCUPAR UDP O TCP
-if TRANSPORT_LAYER == 0: #TCP
-
-    Crea una conexion TCP 
-
-    
-    print("Hacer conexion TCP")
-    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s: #TCP
-        s.bind((HOST, PORT))
+def iniciar_servidor():
+    with socket.socket(socket.AF_INET,socket.SOCK_STREAM) as s:
+        s.bind((HOST,PORT))
         s.listen()
-        print(f"Listening on {HOST}:{PORT}")
-        # conn is a new socket object usable to send and receive data on the connection.
-        # address is the address bound to the socket on the other end of the connection.
-        conn, addr = s.accept()
-        print(f'Conectado por alguien ({addr[0]}) desde el puerto {addr[1]}')
+        print("esta listening")
+        conn,addr = s.accept()
+        with conn:
+            print(f"COnectado con {addr}")
+            while True:
+                try:
+                    recibido = conn.recv(1024).decode()
+                    #print(f"lo recibido del cliente -> {recibido}")
+                except:
+                    #print("fallo algo al recibir paquete por socket")
+                    break
+                
+                data = db.get_protocol()
+                ID_PROTOCOL = data["id_protocol"]
+                TRANSPORT_LAYER =data["transport_layer"]
+                
+                
+                data = json.dumps(data).encode()
+                if not data:
+                    break
+                try:
+                    conn.sendall(data)
+                    #print(f"lo qu eva a enviar servidor a cliente {data}")
+                except:
+                    #print("fallo algo al tratar de enviar paquete por socket")
+                    break    
+    #print("Tenemos que crear la nueva conexion TCP o UDP segun corresponda")
 
+    #AQUI IRA UNA FUNCION QUE REVISA QUE TIPO DE PROTOCOLO OCUPAR Y SI OCUPAR UDP O TCP
+
+    if TRANSPORT_LAYER == 0: #TCP
         
-        data = conn.recv(1024)
-        if data == b'':
-            print(f"Termino no data {data}")
-        print(f"Recibido {data}")
-        
-else:           #UDP
-    print("Hacer conexion UDP")
+        print("Hacer conexion TCP")
+        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s: #TCP
+            s.bind((HOST, PORT))
+            s.listen()
+            print(f"Listening on {HOST}:{PORT}")
+            # conn is a new socket object usable to send and receive data on the connection.
+            # address is the address bound to the socket on the other end of the connection.
+            conn, addr = s.accept()
+            print(f'Conectado por alguien ({addr[0]}) desde el puerto {addr[1]}')
 
-    with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as s:
-        s.bind((HOST, PORT))
-        print(f"Listening for UDP packets in {HOST}:{PORT}")
-        
-        data = s.recv(1024)
-        if data == b'':
-            print(f"No llego na-> {data}")
-        print(f"Recibido -> {data}")
-        s.close()
-        print("Desconectado")  
+            while(True):
+                data = conn.recv(1024).decode()
+                if data == b'':
+                    print(f"Termino no data {data}")
+                print(f"Recibido {data}")
+                conn.sendall("weeena".encode())
 
-"""
+        print("CHAO")
+            
+    else:           
+        print("Hacer conexion UDP")
+
+        with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as s:
+            s.bind((HOST, PORT))
+            print(f"Listening for UDP packets in {HOST}:{PORT}")
+
+            while(True):
+                data = s.recv(1024)
+                if data == b'':
+                    print(f"No llego na-> {data}")
+                    break
+                print(f"Recibido -> {data}")
+
+            s.close()
+            print("Desconectado")  
+        print("CHAO")    
 
 
 
-#INICIAR CONEXION TCP O UDP
 
-
-#IR GUARDANDO PAQUETES EN BBDD
-
-
+  
 if __name__ == "__main__":
     """
     Inicializar el servidor

@@ -7,9 +7,22 @@
 #include "esp_netif.h"
 #include "protocol_examples_common.h"
 #include "esp_event.h"
+#include "esp_log.h"
+#include <stdlib.h>
+#include <string.h>
+#include <stdio.h>
 
 
-extern void tcp_client(void);
+
+extern char* tcp_initial_connection(void);
+
+
+static const char *TAG = "test";
+
+char *getSubstring(char* dst,const char *src,size_t start,size_t ens){
+    return strncpy(dst,src+start,ens);
+}
+
 
 void app_main(void)
 {
@@ -24,5 +37,23 @@ void app_main(void)
      */
     ESP_ERROR_CHECK(example_connect());
 
-    tcp_client();
+    char* res = tcp_initial_connection();
+
+    ESP_LOGE(TAG, "Aqui ahora tengoq ue crear la nueva connexion con\n protocolo %s",res);
+    
+    //esto por mientras nomas me da lata parsear aun la *res donde esta n los valores q realmente recibe
+    //imaginemos que obtuvo los valores y son 
+
+    //int id_protocol = 0;
+    int transport_layer = 0; //TCP
+    
+
+    if ( transport_layer == 0){
+         ESP_LOGE(TAG, "Conexion TCP");
+    }
+    else{
+         ESP_LOGE(TAG, "Conexion UDP");
+
+    }
+
 }
