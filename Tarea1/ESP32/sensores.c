@@ -54,26 +54,47 @@ int encodeFloat(float* floatPtr, char* arrWrite, int pos)
 {
     size_t lenF = sizeof(float);
     char* curr = arrWrite+pos;
+    unsigned int* ptr = (unsigned int*) floatPtr;
 
     for(int j=0; j < lenF; j++)
     {
-        unsigned int* ptr = (unsigned int*) floatPtr;
         unsigned char floatPiece = (unsigned char) (*ptr >> (j*8));
         *(curr+j) = floatPiece;
     }
     return 0;
 }
 
-int encodeInt(int* intPtr, char* arrWrite, int pos)
+int encodeUInt(unsigned int* uintPtr, char* arrWrite, int pos)
 {
     size_t lenI = sizeof(int);
     char* curr = arrWrite+pos;
 
     for(int j=0; j < lenI; j++)
     {
-        unsigned int* ptr = (unsigned int*) intPtr;
-        unsigned char intPiece = (unsigned char) (*ptr >> (j*8));
+        unsigned char intPiece = (unsigned char) (*uintPtr >> (j*8));
         *(curr+j) = intPiece;
+    }
+    return 0;
+}
+
+int encodeInt(int* intPtr, char* arrWrite, int pos)
+{
+    unsigned int* ptr = (unsigned int*) intPtr;
+    
+    return encodeUInt(ptr, arrWrite, pos);
+}
+
+unsigned long encodeULong(unsigned long* uLPtr, char* arrWrite, int pos)
+{
+    size_t lenUL = sizeof(unsigned long);
+    size_t lenI = sizeof(int);
+    char* curr = arrWrite+pos;
+    unsigned long uLong = *uLPtr;
+
+    for(int j=0; j < lenUL/lenI; j++)
+    {
+        unsigned int longPiece = uLong >> (j*lenI*8);
+        encodeUInt(&longPiece, arrWrite, j*lenI);
     }
     return 0;
 }
@@ -96,7 +117,9 @@ float decodeFloat(char* arrRead, int pos)
     return *ptr;
 }
 
-int decodeInt(char* arrRead, int pos)
+
+
+unsigned int decodeUInt(char* arrRead, int pos)
 {
     size_t lenI = sizeof(int);
     char* curr = arrRead+pos;
@@ -109,9 +132,30 @@ int decodeInt(char* arrRead, int pos)
         intPiece = intPiece << (j*8);
         itemp |= intPiece;
     }
+    return itemp;
+}
 
+int decodeInt(char* arrRead, int pos)
+{
+    unsigned int itemp = decodeUInt(arrRead, pos);
     int* ptr = (int*) &itemp;
     return *ptr;
+}
+
+unsigned long decodeULong(char* arrRead, int pos)
+{
+    size_t lenUL = sizeof(unsigned long);
+    size_t lenI = sizeof(unsigned int);
+    char* curr = arrRead+pos;
+
+    unsigned long uLong = 0;
+
+    for(int j=0; j < lenUL/lenI; j++)
+    {
+        unsigned long uLongPiece = decodeUInt(arrRead, j*lenI);
+        uLong |= (uLongPiece << (j*lenI*8));
+    }
+    return uLong;
 }
 
 /*
@@ -249,6 +293,67 @@ int printAccelP(AccelSensor* pAccelS)
     }
     printAccelPoint(pAccelS, pAccelS->size-1);
     printf("]\n");
+}
+
+int encodeAccelS(AccelSensor* pAccelS, unsigned char* arr, int pos)
+{
+    int writtenBytes = 0;
+    float* members[3] = { pAccelS->datax, pAccelS->datay, pAccelS->dataz, };
+    
+    size_t lenF = sizeof(float);
+    char* curr = arr+pos;
+    
+    for(int j=0; j < 3; j++)
+    {
+        for(int i=0; i < pAccelS->size; i++)
+    {
+        encodeFloat(members[j]+i, curr, 0);
+        writtenBytes += lenF;
+        curr += lenF;
+    }
+    }
+    
+    return writtenBytes;
+}
+
+int decodeAccelS(AccelSensor* pAccelS, int len, unsigned char* arr, int pos)
+{
+    int readBytes = 0;
+    float** members[3] = { &(pAccelS->datax), &(pAccelS->datay), &(pAccelS->dataz) };
+
+    for(int j=0; j<3; j++)
+    {
+        // free pointer if it was previously assigned
+        // nah, do it yourself, it is much safer as we cannot assume an unitialized variable will be NULL
+        /*
+        if(*members[j] != NULL)
+        {
+            free(*(members[j]));
+        }
+        */
+        // create new dynamic pointer
+        if( NULL == (*(members[j]) = malloc(len * sizeof(float))))
+        {
+            return -1;
+        }
+    }
+    pAccelS-> size = len;
+    
+    size_t lenF = sizeof(float);
+    char* curr = arr+pos;
+    
+    for(int j=0; j < 3; j++)
+    {
+        for(int i=0; i < pAccelS->size; i++)
+        {
+            float decoded = decodeFloat(curr, 0);
+            *(*(members[j])+i) = decoded;
+            readBytes += lenF;
+            curr += lenF;
+        }
+    }
+    
+    return readBytes;
 }
 
 /*
