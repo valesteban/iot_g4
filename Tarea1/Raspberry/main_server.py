@@ -37,7 +37,7 @@ def iniciar_servidor():
             break
         try:
             conn.sendall(data)
-            print(f"lo qu eva a enviar servidor a cliente {data}")
+            print(f"¡¡lo qu eva a enviar servidor a cliente {data}")
         
         except:
             print("fallo algo al tratar de enviar paquete por socket")
@@ -57,7 +57,6 @@ def iniciar_servidor():
         print("Hacer conexion TCP")
         s =socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         s.setsockopt(socket.SOL_SOCKET,socket.SO_REUSEADDR,1)
-        print("????")
         s.bind((HOST, PORT))
         s.listen()
         print(f"Listening on {HOST}:{PORT}")
@@ -70,7 +69,7 @@ def iniciar_servidor():
             data = conn.recv(1024).decode()
             if data == b'':
                 print(f"Termino no data {data}")
-            print(f"Recibido {data}")
+            print(f"Recibido -> {data} \n")
 
         print("CHAO")
             
