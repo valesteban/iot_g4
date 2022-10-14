@@ -163,36 +163,37 @@ void tcp_client(char id_protocol){
             //char *data = "Paquete ficticio\n";                        //por mientras dejo este chantita
             unsigned char *data = NULL;
             uint8_t mac;
-            esp_base_mac_addr_get(&mac);
+            mac = 404u;
+            //esp_base_mac_addr_get(&mac);
+            Protocol0 pro0;
+            Protocol1 pro1;
+            Protocol23 pro2;
+            Protocol23 pro3;
+            Protocol4 pro4;
             
             switch(id_protocol) {
                 case '0' :
-                    Protocol0 pro0;
                     protocol0Init(&pro0, DEVICE_ID, mac, TCP_LAYER_ID);
                     data = malloc((HEADER_LEN + pro0.header.lenmsg)*sizeof(char));
                     encodeProtocol0(&pro0, data, 0);
                     break;
                 break;
                 case '1' :
-                    Protocol1 pro1;
                     protocol1Init(&pro1, DEVICE_ID, mac, TCP_LAYER_ID);
                     data = malloc((HEADER_LEN + pro1.header.lenmsg)*sizeof(char));
                     encodeProtocol1(&pro1, data, 0);
                     break;
                 case '2' :
-                    Protocol23 pro2;
                     protocol2Init(&pro2, DEVICE_ID, mac, TCP_LAYER_ID);
                     data = malloc((HEADER_LEN + pro2.header.lenmsg)*sizeof(char));
                     encodeProtocol2(&pro2, data, 0);
                     break;
                 case '3' :
-                    Protocol23 pro3;
                     protocol3Init(&pro3, DEVICE_ID, mac, TCP_LAYER_ID);
                     data = malloc((HEADER_LEN + pro3.header.lenmsg)*sizeof(char));
                     encodeProtocol3(&pro3, data, 0);
                     break;
                 case '4' :
-                    Protocol4 pro4;
                     protocol4Init(&pro4, DEVICE_ID, mac, TCP_LAYER_ID);
                     data = malloc((HEADER_LEN + pro4.header.lenmsg)*sizeof(char));
                     encodeProtocol4(&pro4, data, 0);
