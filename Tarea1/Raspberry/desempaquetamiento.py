@@ -19,7 +19,7 @@ class Header:
         idmac = int.from_bytes(idmac_bytes, "little")
         self.id = idmac >> 48
         mask = int("0x0000ffffffffffff",16)
-        self.mac = first2bytes & mask
+        self.mac = idmac & mask
 
     # tpl_bytes idealmente debe ser de largo 4 bytes
     def decode_tpl(self, tpl_bytes: bytes) -> None:
@@ -251,10 +251,27 @@ def decode_pkg(encoded_pkg: bytes) -> Protocol:
 
     return pro
 
+
 if __name__ == "__main__":
     hex = "94 01 00 00 00 00 08 00 06 00 00 01 01 54 34 95 47 63"
-    print(hex)
     b = bytes.fromhex(hex)
+
+    hex1 = "94 01 00 00 00 00 08 00 10 00 01 01 01 57 c9 99 48 63 10 8b ca 93 44 40 be 55 7e 42"
+    b1 = bytes.fromhex(hex1)
+
+    hex3 = "94 01 00 00 00 00 08 00 2c 00 03 01 01 1b 47 b8 48 63 0f a6 d0 7a 44 3d dd 94 8e 42 68 01 c6 3d a8 9a b0 3c 45 6a ee 41 29 cf b6 3d d0 09 6d 42 90 cb f7 3c 6c 6f b2 42"
+    b3 = bytes.fromhex(hex3)
+
+    hex2 = "94 01 00 00 00 00 08 00 14 00 02 01 01 57 72 a6 48 63 15 68 d9 8a 44 4b a4 50 de 42 8b c5 f5 3d"
+    b2 = bytes.fromhex(hex2)
+
+    hex4 = '94 01 00 00 00 00 08 00 24 00 04 01 01 44 e0 c1 48 63 16 52 fa 91 44 2f 16 26 06 43 40 21 67 3e 37 e9 73 3e 5b 57 80 3e cf b8 86 3e e6 18 8d 3e 90 77 93 3e bc d4 99 3e 5c 30 a0 3e 5b 8a a6 3e ad e2 ac 3e 3f 39 b3 3e 02 8e b9 3e e3 e0 bf 3e d6 31 c6 3e c6 80 cc 3e a6 cd d2 3e 65 18 d9 3e f1 60 df 3e 3d a7 e5 3e 35 eb eb 3e fc c5 3e 40 2a a2 3e 40 6c 7c 3e 40 c0 54 3e 40 29 2b 3e 40 a5 ff 3d 40 36 d2 3d 40 dc a2 3d 40 96 71 3d 40 67 3e 3d 40 4f 09 3d 40 4d d2 3c 40 62 99 3c 40 8f 5e 3c 40 d6 21 3c 40 35 e3 3b 40 ae a2 3b 40 42 60 3b 40 f2 1b 3b 40 bd d5 3a 40 c8 74 90 3f c2 71 98 3f 32 6d a0 3f 03 67 a8 3f 20 5f b0 3f 74 55 b8 3f eb 49 c0 3f 73 3c c8 3f f2 2c d0 3f 58 1b d8 3f 8f 07 e0 3f 82 f1 e7 3f 1c d9 ef 3f 4c be f7 3f f8 a0 ff 3f 88 c0 03 40 3f af 07 40 97 9c 0b 40 86 88 0f 40 01 73 13 40'
+    b4 = bytes.fromhex(hex4)
+
+
+    """
+    print(hex)
+    
     print(b[0:4])
     first2bytes = int.from_bytes(b[0:8], "little")
     print(first2bytes >> 48)
@@ -288,8 +305,6 @@ if __name__ == "__main__":
     p0.decode_msg(b[12:18], 0)
     print("Protocol0: ", p0)
 
-    hex1 = "94 01 00 00 00 00 08 00 10 00 01 01 01 57 c9 99 48 63 10 8b ca 93 44 40 be 55 7e 42"
-    b1 = bytes.fromhex(hex1)
     print(b1)
     print(b1[18])
     print(struct.unpack('<f', b1[19:23]))
@@ -298,17 +313,14 @@ if __name__ == "__main__":
     p1.decode_msg(b1[12:],0)
     print("Protocol1: ", p1)
 
-    hex2 = "94 01 00 00 00 00 08 00 14 00 02 01 01 57 72 a6 48 63 15 68 d9 8a 44 4b a4 50 de 42 8b c5 f5 3d"
-    b2 = bytes.fromhex(hex2)
-
+    
     p2 = Protocol2()
     p2.decode_msg(b2[12:],0)
     print("Protocol2: ", p2)
 
     #       0  1  2  3  4  5  6        9                             19                            29       32          36     
     hex3 = "94 01 00 00 00 00 08 00 2c 00 03 01 01 1b 4a a8 48 63 0f a6 d0 7a 44 3d dd 94 8e 42 68 01 c6 3d 00 00 30 a8 9a b0 3c 00 00 20 45 6a ee 41 00 00 00 29 cf b6 3d 00 00 00"
-    hex3 = "94 01 00 00 00 00 08 00 2c 00 03 01 01 1b 47 b8 48 63 0f a6 d0 7a 44 3d dd 94 8e 42 68 01 c6 3d a8 9a b0 3c 45 6a ee 41 29 cf b6 3d d0 09 6d 42 90 cb f7 3c 6c 6f b2 42"
-    b3 = bytes.fromhex(hex3)
+        """
 
     """
 PROTOCOL 3
@@ -317,7 +329,7 @@ PROTOCOL 3
         {temp: 15; hum: 61; pres: 1003.2601; hum: 71.2907},
         {amp_x: 0.0216; frec_x: 29.8019; amp_y: 0.0893; frec_y: 59.2596; amp_z: 0.0302; frec_z: 89.2176; rms: 0.0967}]    Printing 56 bytes as hex
     """
-
+    """
     p3 = Protocol3()
     a = AccelKPI()
     #print("co2", struct.unpack('<f', b3[32:36]))
@@ -326,15 +338,13 @@ PROTOCOL 3
     p3.decode_msg(b3[12:],0)
     print(p3)
 
-    hex4 = '94 01 00 00 00 00 08 00 24 00 04 01 01 44 e0 c1 48 63 16 52 fa 91 44 2f 16 26 06 43 40 21 67 3e 37 e9 73 3e 5b 57 80 3e cf b8 86 3e e6 18 8d 3e 90 77 93 3e bc d4 99 3e 5c 30 a0 3e 5b 8a a6 3e ad e2 ac 3e 3f 39 b3 3e 02 8e b9 3e e3 e0 bf 3e d6 31 c6 3e c6 80 cc 3e a6 cd d2 3e 65 18 d9 3e f1 60 df 3e 3d a7 e5 3e 35 eb eb 3e fc c5 3e 40 2a a2 3e 40 6c 7c 3e 40 c0 54 3e 40 29 2b 3e 40 a5 ff 3d 40 36 d2 3d 40 dc a2 3d 40 96 71 3d 40 67 3e 3d 40 4f 09 3d 40 4d d2 3c 40 62 99 3c 40 8f 5e 3c 40 d6 21 3c 40 35 e3 3b 40 ae a2 3b 40 42 60 3b 40 f2 1b 3b 40 bd d5 3a 40 c8 74 90 3f c2 71 98 3f 32 6d a0 3f 03 67 a8 3f 20 5f b0 3f 74 55 b8 3f eb 49 c0 3f 73 3c c8 3f f2 2c d0 3f 58 1b d8 3f 8f 07 e0 3f 82 f1 e7 3f 1c d9 ef 3f 4c be f7 3f f8 a0 ff 3f 88 c0 03 40 3f af 07 40 97 9c 0b 40 86 88 0f 40 01 73 13 40'
-    b4 = bytes.fromhex(hex4)
     header4 = Header()
     header4.decode(b4, 0)
 
     p4 = Protocol4()
     p4.decode_msg(b4[12:], header4.len_msg - Protocol4.len_msg_without_acc)
     print(p4)
-
+    """
     print(decode_pkg(b))
     print(decode_pkg(b1))
     print(decode_pkg(b2))
