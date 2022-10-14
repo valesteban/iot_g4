@@ -4,6 +4,7 @@
 
 #include "sensores.c"
 
+#define HEADER_LEN 12
 #define PROTOCOL0_MSG_LEN 6
 #define PROTOCOL1_MSG_LEN 16
 #define PROTOCOL2_MSG_LEN 20
@@ -85,10 +86,7 @@ int printHeader(Header* pHeader)
     printf("{id: %u; mac: %lu; t_layer: %u; protocol: %u; len_msg: %u}", pHeader->id, pHeader->mac, pHeader->tlayer, pHeader->protocol, pHeader-> lenmsg);
 }
 
-typedef struct {
-    Header header;
-    BattSensor battery;
-} Protocol0;
+
 
 int encodeHeader(Header* pHeader, unsigned char* arr, int pos)
 {
@@ -124,7 +122,10 @@ int decodeHeader(Header* pHeader, unsigned char* arr, int pos)
     return readBytes;
 }
 
-
+typedef struct {
+    Header header;
+    BattSensor battery;
+} Protocol0;
 
 int protocol0Init(Protocol0* pro, 
                  unsigned int id,
@@ -487,7 +488,7 @@ int decodeProtocol4(Protocol4* pro, unsigned char* arr, int pos)
     return totalBytes;
 }
 
-/*
+
 int main()
 {
     time_t t0 = time(0);
@@ -521,7 +522,16 @@ int main()
     printProtocol0(&p0);
 
     Protocol0 p0a;
-    encodeProtocol0(&p0, test, 0);
+    int n = encodeProtocol0(&p0, test, 0);
+    /*
+    printf("Printing %d bytes as hex\n", n);
+    for(int i=0; i<n; i++)
+    {
+        printf("%x ", test[i]);
+    }
+    printf("\n");
+    */
+
     decodeProtocol0(&p0a, test, 0);
     printProtocol0(&p0a);
 
@@ -530,7 +540,15 @@ int main()
     printProtocol1(&p1);
 
     Protocol1 p1a;
-    encodeProtocol1(&p1, test, 0);
+    n = encodeProtocol1(&p1, test, 0);
+
+    printf("Printing %d bytes as hex\n", n);
+    for(int i=0; i<n; i++)
+    {
+        printf("%x ", test[i]);
+    }
+    printf("\n");
+
     decodeProtocol1(&p1a, test, 0);
     printProtocol1(&p1a);
 
@@ -540,7 +558,15 @@ int main()
 
     Protocol23 p2a;
     encodeProtocol2(&p2, test, 0);
-    decodeProtocol2(&p2a, test, 0);
+    n = decodeProtocol2(&p2a, test, 0);
+
+    printf("Printing %d bytes as hex\n", n);
+    for(int i=0; i<n; i++)
+    {
+        printf("%x ", test[i]);
+    }
+    printf("\n");
+
     printProtocol23(&p2a);
 
     Protocol23 p3;
@@ -548,7 +574,15 @@ int main()
     printProtocol23(&p3);
 
     Protocol23 p3a;
-    encodeProtocol3(&p3, test, 0);
+    n = encodeProtocol3(&p3, test, 0);
+
+    printf("Printing %d bytes as hex\n", n);
+    for(int i=0; i<n; i++)
+    {
+        printf("%x ", test[i]);
+    }
+    printf("\n");
+
     decodeProtocol3(&p3a, test, 0);
     printProtocol23(&p3a);
 
@@ -582,7 +616,15 @@ int main()
     printProtocol4(&p4);
 
     Protocol4 p4a;
-    encodeProtocol4(&p4, test, 0);
+    n=encodeProtocol4(&p4, test, 0);
+
+    printf("Printing %d bytes as hex\n", n);
+    for(int i=0; i<n; i++)
+    {
+        printf("%x ", test[i]);
+    }
+    printf("\n");
+
     decodeProtocol4(&p4a, test, 0);
     printProtocol4(&p4a);
 
@@ -606,4 +648,3 @@ int main()
 
     return 0;
 }
-*/

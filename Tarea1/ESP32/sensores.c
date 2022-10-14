@@ -546,7 +546,7 @@ int encodeAccelK(AccelKpi* pAccelK, unsigned char* arr, int pos)
     
     for(int i=0; i < lenK; i++)
     {
-        encodeFloat(members[i], curr, lenK*i);
+        encodeFloat(members[i], curr, lenF*i);
         writtenBytes += lenF;
     }
     return writtenBytes;
@@ -564,7 +564,7 @@ int decodeAccelK(AccelKpi* pAccelK, unsigned char* arr, int pos)
     
     for(int i=0; i < lenK; i++)
     {
-        *(members[i]) = decodeFloat(curr, i*lenK);
+        *(members[i]) = decodeFloat(curr, i*lenF);
         readBytes += lenF;
     }
     return readBytes;
