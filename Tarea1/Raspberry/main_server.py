@@ -4,6 +4,8 @@ import socket
 from xmlrpc.client import TRANSPORT_ERROR
 from db import DB
 import json
+from desempaquetamiento import decode_pkg
+
 
 # "192.168.5.177"  # Standard loopback interface address (localhost)
 HOST = "192.168.28.1" #"localhost"
@@ -73,7 +75,13 @@ def iniciar_servidor():
         print(f'Conectado por alguien ({addr[0]}) desde el puerto {addr[1]}')
 
         while(True):
-            data = conn.recv(1024).decode()
+            raw_data = conn.recv(1024)
+            try:
+                data = raw_data.decode()
+            except:
+                # ojito, quizás se recibió un paquete :eyes:
+                data = decode_pkg(raw_data)
+
             if data == b'':
                 print(f"Termino no data {data}")
             print(f"Paquete recibido: {data} \n")
