@@ -4,11 +4,12 @@
 
 #include "sensores.c"
 
+#define HEADER_LEN 12
 #define PROTOCOL0_MSG_LEN 6
 #define PROTOCOL1_MSG_LEN 16
 #define PROTOCOL2_MSG_LEN 20
 #define PROTOCOL3_MSG_LEN 44
-#define PROTOCOL4_MSG_LEN 24016
+#define PROTOCOL4_LEN_WITHOUT_ACC 16
 
 #define ACC_ARRAY_LEN 20
 
@@ -85,6 +86,42 @@ int printHeader(Header* pHeader)
     printf("{id: %u; mac: %lu; t_layer: %u; protocol: %u; len_msg: %u}", pHeader->id, pHeader->mac, pHeader->tlayer, pHeader->protocol, pHeader-> lenmsg);
 }
 
+
+
+int encodeHeader(Header* pHeader, unsigned char* arr, int pos)
+{
+    int writtenBytes = 0;
+    char* curr = arr+pos;
+
+    unsigned long idmac = encodeIdMac(pHeader);
+    encodeULong(&idmac, curr, 0);
+    writtenBytes += sizeof(unsigned long);
+    curr += sizeof(unsigned long);
+
+    unsigned int tpl = encodeTPL(pHeader);
+    encodeUInt(&tpl, curr, 0);
+    writtenBytes += sizeof(unsigned int);
+
+    return writtenBytes;
+}
+
+int decodeHeader(Header* pHeader, unsigned char* arr, int pos)
+{
+    int readBytes = 0;
+    char* curr = arr+pos;
+
+    unsigned long idmac = decodeULong(curr, 0);
+    decodeIdMac(idmac, pHeader);
+    readBytes += sizeof(unsigned long);
+    curr += sizeof(unsigned long);
+
+    unsigned int tpl = decodeUInt(curr, 0);
+    decodeTPL(tpl, pHeader);
+    readBytes += sizeof(unsigned int);
+
+    return readBytes;
+}
+
 typedef struct {
     Header header;
     BattSensor battery;
@@ -109,6 +146,35 @@ int printProtocol0(Protocol0* pro)
     printBattS(&(pro->battery));
     printf("]\n");
     return 0;
+}
+
+int encodeProtocol0(Protocol0* pro, unsigned char* arr, int pos)
+{
+    int writtenBytes = 0;
+    int totalBytes = 0;
+    char* curr = arr + pos;
+
+    writtenBytes = encodeHeader(&(pro->header), curr, 0);
+    totalBytes += writtenBytes;
+    curr += writtenBytes;
+
+    totalBytes += encodeBattS(&(pro->battery), curr, 0);
+    
+    return totalBytes;
+}
+
+int decodeProtocol0(Protocol0* pro, unsigned char* arr, int pos)
+{
+    int readBytes = 0;
+    int totalBytes = 0;
+    char* curr = arr + pos;
+
+    readBytes = decodeHeader(&(pro->header), curr, 0);
+    totalBytes += readBytes;
+    curr += readBytes;
+
+    totalBytes += decodeBattS(&(pro->battery), curr, 0);
+    return totalBytes;
 }
 
 typedef struct {
@@ -138,6 +204,43 @@ int printProtocol1(Protocol1* pro)
     printThpcS(&(pro->thpc));
     printf("]\n");
     return 0;
+}
+
+
+int encodeProtocol1(Protocol1* pro, unsigned char* arr, int pos)
+{
+    int writtenBytes = 0;
+    int totalBytes = 0;
+    char* curr = arr + pos;
+
+    writtenBytes = encodeHeader(&(pro->header), curr, 0);
+    totalBytes += writtenBytes;
+    curr += writtenBytes;
+
+    writtenBytes = encodeBattS(&(pro->battery), curr, 0);
+    totalBytes += writtenBytes;
+    curr += writtenBytes;
+
+    totalBytes += encodeThpcS(&(pro->thpc), curr, 0);
+    return totalBytes;
+}
+
+int decodeProtocol1(Protocol1* pro, unsigned char* arr, int pos)
+{
+    int readBytes = 0;
+    int totalBytes = 0;
+    char* curr = arr + pos;
+
+    readBytes = decodeHeader(&(pro->header), curr, 0);
+    totalBytes += readBytes;
+    curr += readBytes;
+
+    readBytes = decodeBattS(&(pro->battery), curr, 0);
+    totalBytes += readBytes;
+    curr += readBytes;
+
+    totalBytes += decodeThpcS(&(pro->thpc), curr, 0);
+    return totalBytes;
 }
 
 typedef struct {
@@ -210,6 +313,98 @@ int printProtocol23(Protocol23* pro)
     return 0;
 }
 
+int encodeProtocol2(Protocol23* pro, unsigned char* arr, int pos)
+{
+    int writtenBytes = 0;
+    int totalBytes = 0;
+    char* curr = arr + pos;
+
+    writtenBytes = encodeHeader(&(pro->header), curr, 0);
+    totalBytes += writtenBytes;
+    curr += writtenBytes;
+
+    writtenBytes = encodeBattS(&(pro->battery), curr, 0);
+    totalBytes += writtenBytes;
+    curr += writtenBytes;
+
+    writtenBytes = encodeThpcS(&(pro->thpc), curr, 0);
+    totalBytes += writtenBytes;
+    curr += writtenBytes;
+
+    // just write RMS
+    encodeFloat(&(pro->kpi.rms), curr, 0);
+
+    return totalBytes + sizeof(float);
+}
+
+int decodeProtocol2(Protocol23* pro, unsigned char* arr, int pos)
+{
+    int readBytes = 0;
+    int totalBytes = 0;
+    char* curr = arr + pos;
+
+    readBytes = decodeHeader(&(pro->header), curr, 0);
+    totalBytes += readBytes;
+    curr += readBytes;
+
+    readBytes = decodeBattS(&(pro->battery), curr, 0);
+    totalBytes += readBytes;
+    curr += readBytes;
+
+    readBytes = decodeThpcS(&(pro->thpc), curr, 0);
+    totalBytes += readBytes;
+    curr += readBytes;
+
+    // just write RMS
+    pro->kpi.rms = decodeFloat(curr, 0);
+
+    return totalBytes + sizeof(float);
+}
+
+int encodeProtocol3(Protocol23* pro, unsigned char* arr, int pos)
+{
+    int writtenBytes = 0;
+    int totalBytes = 0;
+    char* curr = arr + pos;
+
+    writtenBytes = encodeHeader(&(pro->header), curr, 0);
+    totalBytes += writtenBytes;
+    curr += writtenBytes;
+
+    writtenBytes = encodeBattS(&(pro->battery), curr, 0);
+    totalBytes += writtenBytes;
+    curr += writtenBytes;
+
+    writtenBytes = encodeThpcS(&(pro->thpc), curr, 0);
+    totalBytes += writtenBytes;
+    curr += writtenBytes;
+
+    totalBytes += encodeAccelK(&(pro->kpi), curr, 0);
+    return totalBytes;
+}
+
+int decodeProtocol3(Protocol23* pro, unsigned char* arr, int pos)
+{
+    int readBytes = 0;
+    int totalBytes = 0;
+    char* curr = arr + pos;
+
+    readBytes = decodeHeader(&(pro->header), curr, 0);
+    totalBytes += readBytes;
+    curr += readBytes;
+
+    readBytes = decodeBattS(&(pro->battery), curr, 0);
+    totalBytes += readBytes;
+    curr += readBytes;
+
+    readBytes = decodeThpcS(&(pro->thpc), curr, 0);
+    totalBytes += readBytes;
+    curr += readBytes;
+
+    totalBytes += decodeAccelK(&(pro->kpi), curr, 0);
+    return totalBytes;
+}
+
 typedef struct {
     Header header;
     BattSensor battery;
@@ -222,7 +417,7 @@ int protocol4Init(Protocol4* pro,
                  unsigned long mac,
                  unsigned char tlayer)
 {
-    Header h = {.id = id, .mac = mac, .tlayer = tlayer, .protocol=4, .lenmsg=PROTOCOL4_MSG_LEN };
+    Header h = {.id = id, .mac = mac, .tlayer = tlayer, .protocol=4, .lenmsg=PROTOCOL4_LEN_WITHOUT_ACC + ACC_ARRAY_LEN };
     pro->header = h;
     battSInit(&(pro->battery));
     thpcSInit(&(pro->thpc));
@@ -249,9 +444,56 @@ int printProtocol4(Protocol4* pro)
     return 0;
 }
 
+int encodeProtocol4(Protocol4* pro, unsigned char* arr, int pos)
+{
+    int writtenBytes = 0;
+    int totalBytes = 0;
+    char* curr = arr + pos;
+
+    writtenBytes = encodeHeader(&(pro->header), curr, 0);
+    totalBytes += writtenBytes;
+    curr += writtenBytes;
+
+    writtenBytes = encodeBattS(&(pro->battery), curr, 0);
+    totalBytes += writtenBytes;
+    curr += writtenBytes;
+
+    writtenBytes = encodeThpcS(&(pro->thpc), curr, 0);
+    totalBytes += writtenBytes;
+    curr += writtenBytes;
+
+    totalBytes += encodeAccelS(&(pro->acc), curr, 0);
+    return totalBytes;
+}
+    
+int decodeProtocol4(Protocol4* pro, unsigned char* arr, int pos)
+{
+    int readBytes = 0;
+    int totalBytes = 0;
+    char* curr = arr + pos;
+
+    readBytes = decodeHeader(&(pro->header), curr, 0);
+    totalBytes += readBytes;
+    curr += readBytes;
+
+    readBytes = decodeBattS(&(pro->battery), curr, 0);
+    totalBytes += readBytes;
+    curr += readBytes;
+
+    readBytes = decodeThpcS(&(pro->thpc), curr, 0);
+    totalBytes += readBytes;
+    curr += readBytes;
+
+    totalBytes += decodeAccelS(&(pro->acc), pro->header.lenmsg -PROTOCOL4_LEN_WITHOUT_ACC,curr, 0);
+    return totalBytes;
+}
+
+
 int main()
 {
     time_t t0 = time(0);
+    unsigned char test[ACC_ARRAY_LEN*4*sizeof(float)];
+
     Header h = { .id = 8, .mac = 404, .tlayer = 1, .protocol = 4, .lenmsg = 14 };
     Header h2 = {};
     printHeader(&h);
@@ -279,19 +521,72 @@ int main()
     protocol0Init(&p0, 8, 404, 1);
     printProtocol0(&p0);
 
+    Protocol0 p0a;
+    int n = encodeProtocol0(&p0, test, 0);
+    /*
+    printf("Printing %d bytes as hex\n", n);
+    for(int i=0; i<n; i++)
+    {
+        printf("%x ", test[i]);
+    }
+    printf("\n");
+    */
+
+    decodeProtocol0(&p0a, test, 0);
+    printProtocol0(&p0a);
+
     Protocol1 p1;
     protocol1Init(&p1, 8, 404, 1);
     printProtocol1(&p1);
+
+    Protocol1 p1a;
+    n = encodeProtocol1(&p1, test, 0);
+
+    printf("Printing %d bytes as hex\n", n);
+    for(int i=0; i<n; i++)
+    {
+        printf("%x ", test[i]);
+    }
+    printf("\n");
+
+    decodeProtocol1(&p1a, test, 0);
+    printProtocol1(&p1a);
 
     Protocol23 p2;
     protocol2Init(&p2, 8, 404, 1);
     printProtocol23(&p2);
 
+    Protocol23 p2a;
+    encodeProtocol2(&p2, test, 0);
+    n = decodeProtocol2(&p2a, test, 0);
+
+    printf("Printing %d bytes as hex\n", n);
+    for(int i=0; i<n; i++)
+    {
+        printf("%x ", test[i]);
+    }
+    printf("\n");
+
+    printProtocol23(&p2a);
+
     Protocol23 p3;
     protocol3Init(&p3, 8, 404, 1);
     printProtocol23(&p3);
 
-    unsigned char test[100];
+    Protocol23 p3a;
+    n = encodeProtocol3(&p3, test, 0);
+
+    printf("Printing %d bytes as hex\n", n);
+    for(int i=0; i<n; i++)
+    {
+        printf("%x ", test[i]);
+    }
+    printf("\n");
+
+    decodeProtocol3(&p3a, test, 0);
+    printProtocol23(&p3a);
+
+    
     encodeAccelK(&(p3.kpi), test, 0);
     printf("Encoded accelK: %s\nTEST DECODE: ", test);
 
@@ -320,7 +615,36 @@ int main()
     protocol4Init(&p4, 8, 404, 1);
     printProtocol4(&p4);
 
+    Protocol4 p4a;
+    n=encodeProtocol4(&p4, test, 0);
+
+    printf("Printing %d bytes as hex\n", n);
+    for(int i=0; i<n; i++)
+    {
+        printf("%x ", test[i]);
+    }
+    printf("\n");
+
+    decodeProtocol4(&p4a, test, 0);
+    printProtocol4(&p4a);
+
+    printf("seg\n");
+
+    encodeAccelS(&(p4.acc), test, 0);
+    printf("\nEncoded thpc: %s\nTEST DECODE: ", test);
+
+    AccelSensor atest;
+    int readA = decodeAccelS(&atest, ACC_ARRAY_LEN,test, 0);
+    printf("read Bytes: %d\n", readA);
+    printAccelP(&atest);
+
     protocol4Destroy(&p4);
     
+    Header h3;
+    encodeHeader(&h, test, 0);
+    printf("\nTest header\n");
+    decodeHeader(&h3, test, 0);
+    printHeader(&h3);
+
     return 0;
 }
