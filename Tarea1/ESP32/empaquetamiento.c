@@ -23,17 +23,17 @@ typedef struct {
 
 unsigned long encodeIdMac(Header* pHeader)
 {
-    unsigned long idMask = pHeader->id;
+    unsigned long long idMask = pHeader->id;
     unsigned long encoded = pHeader->mac;
-    unsigned long mask = ~(0xffffuL << 48); // para borrar los últimos 2 bytes
+    unsigned long long mask = ~(0xffffULL << 48); // para borrar los últimos 2 bytes
     encoded = (encoded & mask) | (idMask << 48);
     return encoded;
 }
 
-int decodeIdMac(unsigned long idmac, Header* pEditedHeader)
+int decodeIdMac(unsigned long long idmac, Header* pEditedHeader)
 {
-    unsigned int id = idmac >> 48;
-    unsigned long mask = ~(0xffffuL << 48); // para borrar los últimos 2 bytes
+    unsigned int id = (int) (idmac >> 48);
+    unsigned long long mask = ~(0xffffULL << 48); // para borrar los últimos 2 bytes
     unsigned long mac = idmac & mask;
 
     pEditedHeader->id = id;
@@ -523,7 +523,7 @@ int main()
     printHeader(&h2);
 
     //time_t t1 = time(0);
-    printf("\n Time 0: %d, not truncated: %ld \n", (int) t0, t0);
+    printf("\n Time 0: %d, not truncated: %lld \n", (int) t0, t0);
 
 
     Protocol0 p0;

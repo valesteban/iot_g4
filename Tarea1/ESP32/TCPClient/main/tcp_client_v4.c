@@ -28,7 +28,7 @@
 #include "lwip/sys.h"
 #include <lwip/netdb.h>
 #include "addr_from_stdin.h"
-#include "empaquetamiento.c"
+#include "../../empaquetamiento.c"
 
 #if defined(CONFIG_EXAMPLE_SOCKET_IP_INPUT_STDIN)
 #include "addr_from_stdin.h"
@@ -42,7 +42,7 @@
 
 #define PORT 5010
 
-#define DEVICE_ID = 1113
+#define DEVICE_ID 1113
 #define TCP_LAYER_ID 0
 #define UDP_LAYER_ID 1
 
@@ -167,39 +167,40 @@ void tcp_client(char id_protocol){
             
             switch(id_protocol) {
                 case '0' :
-                    Protocol0 pro;
-                    protocol0init(&pro, DEVICE_ID, mac, TCP_LAYER_ID);
-                    data = malloc((HEADER_LEN + pro.header.lenmsg)*sizeof(char));
-                    encodeProtocol0(&pro, data, 0);
+                    Protocol0 pro0;
+                    protocol0Init(&pro0, DEVICE_ID, mac, TCP_LAYER_ID);
+                    data = malloc((HEADER_LEN + pro0.header.lenmsg)*sizeof(char));
+                    encodeProtocol0(&pro0, data, 0);
                     break;
                 break;
                 case '1' :
-                    Protocol1 pro;
-                    protocol1init(&pro, DEVICE_ID, mac, TCP_LAYER_ID);
-                    data = malloc((HEADER_LEN + pro.header.lenmsg)*sizeof(char));
-                    encodeProtocol1(&pro, data, 0);
+                    Protocol1 pro1;
+                    protocol1Init(&pro1, DEVICE_ID, mac, TCP_LAYER_ID);
+                    data = malloc((HEADER_LEN + pro1.header.lenmsg)*sizeof(char));
+                    encodeProtocol1(&pro1, data, 0);
                     break;
                 case '2' :
-                    Protocol23 pro;
-                    protocol2init(&pro, DEVICE_ID, mac, TCP_LAYER_ID);
-                    data = malloc((HEADER_LEN + pro.header.lenmsg)*sizeof(char));
-                    encodeProtocol2(&pro, data, 0);
+                    Protocol23 pro2;
+                    protocol2Init(&pro2, DEVICE_ID, mac, TCP_LAYER_ID);
+                    data = malloc((HEADER_LEN + pro2.header.lenmsg)*sizeof(char));
+                    encodeProtocol2(&pro2, data, 0);
                     break;
                 case '3' :
-                    Protocol23 pro;
-                    protocol3init(&pro, DEVICE_ID, mac, TCP_LAYER_ID);
-                    data = malloc((HEADER_LEN + pro.header.lenmsg)*sizeof(char));
-                    encodeProtocol3(&pro, data, 0);
+                    Protocol23 pro3;
+                    protocol3Init(&pro3, DEVICE_ID, mac, TCP_LAYER_ID);
+                    data = malloc((HEADER_LEN + pro3.header.lenmsg)*sizeof(char));
+                    encodeProtocol3(&pro3, data, 0);
                     break;
                 case '4' :
-                    Protocol4 pro;
-                    protocol4init(&pro, DEVICE_ID, mac, TCP_LAYER_ID);
-                    data = malloc((HEADER_LEN + pro.header.lenmsg)*sizeof(char));
-                    encodeProtocol4(&pro, data, 0);
-                    protocol4Destroy(&pro);
+                    Protocol4 pro4;
+                    protocol4Init(&pro4, DEVICE_ID, mac, TCP_LAYER_ID);
+                    data = malloc((HEADER_LEN + pro4.header.lenmsg)*sizeof(char));
+                    encodeProtocol4(&pro4, data, 0);
+                    protocol4Destroy(&pro4);
                     break;
                 default:
                     ESP_LOGE(TAG, "ermanito, eso no es un protocolo....\n");  
+            }
 
             
             //ENVIAMOS DATA
