@@ -84,6 +84,8 @@ int headerInit(Header* pHeader,
 int printHeader(Header* pHeader)
 {
     printf("{id: %u; mac: %lu; t_layer: %u; protocol: %u; len_msg: %u}", pHeader->id, pHeader->mac, pHeader->tlayer, pHeader->protocol, pHeader-> lenmsg);
+
+    return 0;
 }
 
 
@@ -91,7 +93,7 @@ int printHeader(Header* pHeader)
 int encodeHeader(Header* pHeader, unsigned char* arr, int pos)
 {
     int writtenBytes = 0;
-    char* curr = arr+pos;
+    unsigned char* curr = arr+pos;
 
     unsigned long idmac = encodeIdMac(pHeader);
     encodeULong(&idmac, curr, 0);
@@ -108,7 +110,7 @@ int encodeHeader(Header* pHeader, unsigned char* arr, int pos)
 int decodeHeader(Header* pHeader, unsigned char* arr, int pos)
 {
     int readBytes = 0;
-    char* curr = arr+pos;
+    unsigned char* curr = arr+pos;
 
     unsigned long idmac = decodeULong(curr, 0);
     decodeIdMac(idmac, pHeader);
@@ -136,6 +138,7 @@ int protocol0Init(Protocol0* pro,
     pro->header = h;
     battSInit(&(pro->battery));
 
+    return 0;
 }
 
 int printProtocol0(Protocol0* pro)
@@ -152,7 +155,7 @@ int encodeProtocol0(Protocol0* pro, unsigned char* arr, int pos)
 {
     int writtenBytes = 0;
     int totalBytes = 0;
-    char* curr = arr + pos;
+    unsigned char* curr = arr + pos;
 
     writtenBytes = encodeHeader(&(pro->header), curr, 0);
     totalBytes += writtenBytes;
@@ -167,7 +170,7 @@ int decodeProtocol0(Protocol0* pro, unsigned char* arr, int pos)
 {
     int readBytes = 0;
     int totalBytes = 0;
-    char* curr = arr + pos;
+    unsigned char* curr = arr + pos;
 
     readBytes = decodeHeader(&(pro->header), curr, 0);
     totalBytes += readBytes;
@@ -192,6 +195,8 @@ int protocol1Init(Protocol1* pro,
     pro->header = h;
     battSInit(&(pro->battery));
     thpcSInit(&(pro->thpc));
+
+    return 0;
 }
 
 int printProtocol1(Protocol1* pro)
@@ -211,7 +216,7 @@ int encodeProtocol1(Protocol1* pro, unsigned char* arr, int pos)
 {
     int writtenBytes = 0;
     int totalBytes = 0;
-    char* curr = arr + pos;
+    unsigned char* curr = arr + pos;
 
     writtenBytes = encodeHeader(&(pro->header), curr, 0);
     totalBytes += writtenBytes;
@@ -229,7 +234,7 @@ int decodeProtocol1(Protocol1* pro, unsigned char* arr, int pos)
 {
     int readBytes = 0;
     int totalBytes = 0;
-    char* curr = arr + pos;
+    unsigned char* curr = arr + pos;
 
     readBytes = decodeHeader(&(pro->header), curr, 0);
     totalBytes += readBytes;
@@ -262,6 +267,8 @@ int protocol23Init(Protocol23* pro,
     battSInit(&(pro->battery));
     thpcSInit(&(pro->thpc));
     accelKInit(&(pro->kpi));
+
+    return 0;
 }
 
 int protocol2Init(Protocol23* pro, 
@@ -269,7 +276,7 @@ int protocol2Init(Protocol23* pro,
                  unsigned long mac,
                  unsigned char tlayer)
 {
-    protocol23Init(pro,
+    return protocol23Init(pro,
                    id,
                    mac,
                    tlayer,
@@ -282,7 +289,7 @@ int protocol3Init(Protocol23* pro,
                  unsigned long mac,
                  unsigned char tlayer)
 {
-    protocol23Init(pro,
+    return protocol23Init(pro,
                    id,
                    mac,
                    tlayer,
@@ -317,7 +324,7 @@ int encodeProtocol2(Protocol23* pro, unsigned char* arr, int pos)
 {
     int writtenBytes = 0;
     int totalBytes = 0;
-    char* curr = arr + pos;
+    unsigned char* curr = arr + pos;
 
     writtenBytes = encodeHeader(&(pro->header), curr, 0);
     totalBytes += writtenBytes;
@@ -341,7 +348,7 @@ int decodeProtocol2(Protocol23* pro, unsigned char* arr, int pos)
 {
     int readBytes = 0;
     int totalBytes = 0;
-    char* curr = arr + pos;
+    unsigned char* curr = arr + pos;
 
     readBytes = decodeHeader(&(pro->header), curr, 0);
     totalBytes += readBytes;
@@ -365,7 +372,7 @@ int encodeProtocol3(Protocol23* pro, unsigned char* arr, int pos)
 {
     int writtenBytes = 0;
     int totalBytes = 0;
-    char* curr = arr + pos;
+    unsigned char* curr = arr + pos;
 
     writtenBytes = encodeHeader(&(pro->header), curr, 0);
     totalBytes += writtenBytes;
@@ -387,7 +394,7 @@ int decodeProtocol3(Protocol23* pro, unsigned char* arr, int pos)
 {
     int readBytes = 0;
     int totalBytes = 0;
-    char* curr = arr + pos;
+    unsigned char* curr = arr + pos;
 
     readBytes = decodeHeader(&(pro->header), curr, 0);
     totalBytes += readBytes;
@@ -422,6 +429,8 @@ int protocol4Init(Protocol4* pro,
     battSInit(&(pro->battery));
     thpcSInit(&(pro->thpc));
     accelInit(&(pro->acc), ACC_ARRAY_LEN);
+
+    return 0;
 }
 
 int protocol4Destroy(Protocol4* pro)
@@ -448,7 +457,7 @@ int encodeProtocol4(Protocol4* pro, unsigned char* arr, int pos)
 {
     int writtenBytes = 0;
     int totalBytes = 0;
-    char* curr = arr + pos;
+    unsigned char* curr = arr + pos;
 
     writtenBytes = encodeHeader(&(pro->header), curr, 0);
     totalBytes += writtenBytes;
@@ -470,7 +479,7 @@ int decodeProtocol4(Protocol4* pro, unsigned char* arr, int pos)
 {
     int readBytes = 0;
     int totalBytes = 0;
-    char* curr = arr + pos;
+    unsigned char* curr = arr + pos;
 
     readBytes = decodeHeader(&(pro->header), curr, 0);
     totalBytes += readBytes;
@@ -495,7 +504,7 @@ int main()
     unsigned char test[ACC_ARRAY_LEN*4*sizeof(float)];
 
     Header h = { .id = 8, .mac = 404, .tlayer = 1, .protocol = 4, .lenmsg = 14 };
-    Header h2 = {};
+    Header h2;
     printHeader(&h);
     printf("\n");
     printHeader(&h2);
@@ -513,8 +522,8 @@ int main()
     decodeTPL(tpl, &h2);
     printHeader(&h2);
 
-    time_t t1 = time(0);
-    printf("\n Time 0: %d, not truncated: %ld \n", t0, t0);
+    //time_t t1 = time(0);
+    printf("\n Time 0: %d, not truncated: %ld \n", (int) t0, t0);
 
 
     Protocol0 p0;

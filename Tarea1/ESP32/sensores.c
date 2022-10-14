@@ -50,13 +50,13 @@ int randInt(int min, int max)
     return (rand() % (max-min)) + min;
 }
 
-int encodeFloat(float* floatPtr, char* arrWrite, int pos)
+int encodeFloat(float* floatPtr, unsigned char* arrWrite, int pos)
 {
     size_t lenF = sizeof(float);
-    char* curr = arrWrite+pos;
+    unsigned char* curr = arrWrite+pos;
     unsigned int* ptr = (unsigned int*) floatPtr;
 
-    for(int j=0; j < lenF; j++)
+    for(unsigned int j=0; j < lenF; j++)
     {
         unsigned char floatPiece = (unsigned char) (*ptr >> (j*8));
         *(curr+j) = floatPiece;
@@ -64,12 +64,12 @@ int encodeFloat(float* floatPtr, char* arrWrite, int pos)
     return 0;
 }
 
-int encodeUInt(unsigned int* uintPtr, char* arrWrite, int pos)
+int encodeUInt(unsigned int* uintPtr, unsigned char* arrWrite, int pos)
 {
     size_t lenI = sizeof(int);
-    char* curr = arrWrite+pos;
+    unsigned char* curr = arrWrite+pos;
 
-    for(int j=0; j < lenI; j++)
+    for(unsigned int j=0; j < lenI; j++)
     {
         unsigned char intPiece = (unsigned char) (*uintPtr >> (j*8));
         *(curr+j) = intPiece;
@@ -77,35 +77,35 @@ int encodeUInt(unsigned int* uintPtr, char* arrWrite, int pos)
     return 0;
 }
 
-int encodeInt(int* intPtr, char* arrWrite, int pos)
+int encodeInt(int* intPtr, unsigned char* arrWrite, int pos)
 {
     unsigned int* ptr = (unsigned int*) intPtr;
     
     return encodeUInt(ptr, arrWrite, pos);
 }
 
-unsigned long encodeULong(unsigned long* uLPtr, char* arrWrite, int pos)
+unsigned long encodeULong(unsigned long* uLPtr, unsigned char* arrWrite, int pos)
 {
     size_t lenUL = sizeof(unsigned long);
     size_t lenI = sizeof(int);
-    char* curr = arrWrite+pos;
+    unsigned char* curr = arrWrite+pos;
     unsigned long uLong = *uLPtr;
 
-    for(int j=0; j < lenUL/lenI; j++)
+    for(unsigned int j=0; j < lenUL/lenI; j++)
     {
         unsigned int longPiece = uLong >> (j*lenI*8);
-        encodeUInt(&longPiece, arrWrite, j*lenI);
+        encodeUInt(&longPiece, curr, j*lenI);
     }
     return 0;
 }
 
-float decodeFloat(char* arrRead, int pos)
+float decodeFloat(unsigned char* arrRead, int pos)
 {
     size_t lenF = sizeof(float);
-    char* curr = arrRead+pos;
+    unsigned char* curr = arrRead+pos;
     
     unsigned int ftemp = 0;
-    for(int j=0; j < lenF; j++)
+    for(unsigned int j=0; j < lenF; j++)
     {
         unsigned char charPiece = *(curr+j);
         unsigned int floatPiece = charPiece;
@@ -119,13 +119,13 @@ float decodeFloat(char* arrRead, int pos)
 
 
 
-unsigned int decodeUInt(char* arrRead, int pos)
+unsigned int decodeUInt(unsigned char* arrRead, int pos)
 {
     size_t lenI = sizeof(int);
-    char* curr = arrRead+pos;
+    unsigned char* curr = arrRead+pos;
     
     unsigned int itemp = 0;
-    for(int j=0; j < lenI; j++)
+    for(unsigned int j=0; j < lenI; j++)
     {
         unsigned char charPiece = *(curr+j);
         unsigned int intPiece = charPiece;
@@ -135,24 +135,24 @@ unsigned int decodeUInt(char* arrRead, int pos)
     return itemp;
 }
 
-int decodeInt(char* arrRead, int pos)
+int decodeInt(unsigned char* arrRead, int pos)
 {
     unsigned int itemp = decodeUInt(arrRead, pos);
     int* ptr = (int*) &itemp;
     return *ptr;
 }
 
-unsigned long decodeULong(char* arrRead, int pos)
+unsigned long decodeULong(unsigned char* arrRead, int pos)
 {
     size_t lenUL = sizeof(unsigned long);
     size_t lenI = sizeof(unsigned int);
-    char* curr = arrRead+pos;
+    unsigned char* curr = arrRead+pos;
 
     unsigned long uLong = 0;
 
-    for(int j=0; j < lenUL/lenI; j++)
+    for(unsigned int j=0; j < lenUL/lenI; j++)
     {
-        unsigned long uLongPiece = decodeUInt(arrRead, j*lenI);
+        unsigned long uLongPiece = decodeUInt(curr, j*lenI);
         uLong |= (uLongPiece << (j*lenI*8));
     }
     return uLong;
@@ -293,6 +293,8 @@ int printAccelP(AccelSensor* pAccelS)
     }
     printAccelPoint(pAccelS, pAccelS->size-1);
     printf("]\n");
+
+    return 0;
 }
 
 int encodeAccelS(AccelSensor* pAccelS, unsigned char* arr, int pos)
@@ -301,7 +303,7 @@ int encodeAccelS(AccelSensor* pAccelS, unsigned char* arr, int pos)
     float* members[3] = { pAccelS->datax, pAccelS->datay, pAccelS->dataz, };
     
     size_t lenF = sizeof(float);
-    char* curr = arr+pos;
+    unsigned char* curr = arr+pos;
     
     for(int j=0; j < 3; j++)
     {
@@ -340,7 +342,7 @@ int decodeAccelS(AccelSensor* pAccelS, int len, unsigned char* arr, int pos)
     pAccelS-> size = len;
     
     size_t lenF = sizeof(float);
-    char* curr = arr+pos;
+    unsigned char* curr = arr+pos;
     
     for(int j=0; j < 3; j++)
     {
@@ -379,13 +381,15 @@ int thpcSInit(ThpcSensor* pThpcS)
 int printThpcS(ThpcSensor* pThpcS)
 {
     printf("{temp: %d; hum: %d; pres: %.4f; hum: %.4f}", pThpcS->temp, pThpcS->hum, pThpcS->pres, pThpcS->co2);
+
+    return 0;
 }
 
 int encodeThpcS(ThpcSensor* pThpcS, unsigned char* arr, int pos)
 {
     int writtenBytes = 0;
    
-    char* curr = arr+pos;
+    unsigned char* curr = arr+pos;
     
     *curr = (unsigned char) pThpcS->temp;
     curr += sizeof(char);
@@ -408,7 +412,7 @@ int encodeThpcS(ThpcSensor* pThpcS, unsigned char* arr, int pos)
 int decodeThpcS(ThpcSensor* pThpcS, unsigned char* arr, int pos)
 {
     int readBytes = 0;
-    char* curr = arr+pos;
+    unsigned char* curr = arr+pos;
 
     pThpcS->temp = (char) *curr;
     curr += sizeof(char);
@@ -462,7 +466,7 @@ int encodeBattS(BattSensor* pBattS, unsigned char* arr, int pos)
 {
     int writtenBytes = 0;
    
-    char* curr = arr+pos;
+    unsigned char* curr = arr+pos;
 
     *curr = (unsigned char) pBattS->data1;
     curr += sizeof(char);
@@ -482,7 +486,7 @@ int encodeBattS(BattSensor* pBattS, unsigned char* arr, int pos)
 int decodeBattS(BattSensor* pBattS, unsigned char* arr, int pos)
 {
     int readBytes = 0;
-    char* curr = arr+pos;
+    unsigned char* curr = arr+pos;
 
     pBattS->data1 = (char) *curr;
     curr += sizeof(char);
@@ -542,9 +546,9 @@ int encodeAccelK(AccelKpi* pAccelK, unsigned char* arr, int pos)
     float* members[7] = { &(pAccelK->rms), &(pAccelK->ampx), &(pAccelK->frecx), &(pAccelK->ampy), &(pAccelK->frecy), &(pAccelK->ampz), &(pAccelK->frecz) };
     
     size_t lenF = sizeof(float);
-    char* curr = arr+pos;
+    unsigned char* curr = arr+pos;
     
-    for(int i=0; i < lenK; i++)
+    for(unsigned int i=0; i < lenK; i++)
     {
         encodeFloat(members[i], curr, lenF*i);
         writtenBytes += lenF;
@@ -560,9 +564,9 @@ int decodeAccelK(AccelKpi* pAccelK, unsigned char* arr, int pos)
     float* members[7] = { &(pAccelK->rms), &(pAccelK->ampx), &(pAccelK->frecx), &(pAccelK->ampy), &(pAccelK->frecy), &(pAccelK->ampz), &(pAccelK->frecz) };
     
     size_t lenF = sizeof(float);
-    char* curr = arr+pos;
+    unsigned char* curr = arr+pos;
     
-    for(int i=0; i < lenK; i++)
+    for(unsigned int i=0; i < lenK; i++)
     {
         *(members[i]) = decodeFloat(curr, i*lenF);
         readBytes += lenF;
