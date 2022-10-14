@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <time.h>
+#include "esp_log.h"
 
 #include "sensores.c"
 
@@ -12,6 +13,8 @@
 #define PROTOCOL4_LEN_WITHOUT_ACC 16
 
 #define ACC_ARRAY_LEN 20
+
+static const char *PKGTAG = "Paquete";
 
 typedef struct {
     unsigned int id;
@@ -83,7 +86,7 @@ int headerInit(Header* pHeader,
 
 int printHeader(Header* pHeader)
 {
-    printf("{id: %u; mac: %lu; t_layer: %u; protocol: %u; len_msg: %u}", pHeader->id, pHeader->mac, pHeader->tlayer, pHeader->protocol, pHeader-> lenmsg);
+    ESP_LOGI(PKGTAG, "{id: %u; mac: %lu; t_layer: %u; protocol: %u; len_msg: %u}", pHeader->id, pHeader->mac, pHeader->tlayer, pHeader->protocol, pHeader-> lenmsg);
 
     return 0;
 }
@@ -143,11 +146,11 @@ int protocol0Init(Protocol0* pro,
 
 int printProtocol0(Protocol0* pro)
 {
-    printf("PROTOCOL 0\n    HEADER=");
+    ESP_LOGI(PKGTAG, "PROTOCOL 0\n    HEADER=");
     printHeader(&(pro->header));
-    printf("\n    MSG=[");
+    ESP_LOGI(PKGTAG, "\n    MSG=[");
     printBattS(&(pro->battery));
-    printf("]\n");
+    ESP_LOGI(PKGTAG, "]\n");
     return 0;
 }
 
@@ -201,13 +204,13 @@ int protocol1Init(Protocol1* pro,
 
 int printProtocol1(Protocol1* pro)
 {
-    printf("PROTOCOL 1\n    HEADER=");
+    ESP_LOGI(PKGTAG, "PROTOCOL 1\n    HEADER=");
     printHeader(&(pro->header));
-    printf("\n    MSG=[");
+    ESP_LOGI(PKGTAG, "\n    MSG=[");
     printBattS(&(pro->battery));
-    printf(",\n\t");
+    ESP_LOGI(PKGTAG, ",\n\t");
     printThpcS(&(pro->thpc));
-    printf("]\n");
+    ESP_LOGI(PKGTAG, "]\n");
     return 0;
 }
 
@@ -299,24 +302,24 @@ int protocol3Init(Protocol23* pro,
 
 int printProtocol23(Protocol23* pro)
 {
-    printf("PROTOCOL %d\n    HEADER=", (pro->header).protocol);
+    ESP_LOGI(PKGTAG, "PROTOCOL %d\n    HEADER=", (pro->header).protocol);
     printHeader(&(pro->header));
-    printf("\n    MSG=[");
+    ESP_LOGI(PKGTAG, "\n    MSG=[");
     printBattS(&(pro->battery));
-    printf(",\n\t");
+    ESP_LOGI(PKGTAG, ",\n\t");
     printThpcS(&(pro->thpc));
-    printf(",\n\t");
+    ESP_LOGI(PKGTAG, ",\n\t");
 
     if((pro->header).protocol == 2)
     {
-        printf("{rms: %.4f}", (pro->kpi).rms);
+        ESP_LOGI(PKGTAG, "{rms: %.4f}", (pro->kpi).rms);
     }
     else
     {
         printAccelK(&(pro->kpi));
     }
 
-    printf("]\n");
+    ESP_LOGI(PKGTAG, "]\n");
     return 0;
 }
 
@@ -441,15 +444,15 @@ int protocol4Destroy(Protocol4* pro)
 
 int printProtocol4(Protocol4* pro)
 {
-    printf("PROTOCOL 4\n    HEADER=");
+    ESP_LOGI(PKGTAG, "PROTOCOL 4\n    HEADER=");
     printHeader(&(pro->header));
-    printf("\n    MSG=[");
+    ESP_LOGI(PKGTAG, "\n    MSG=[");
     printBattS(&(pro->battery));
-    printf(",\n\t");
+    ESP_LOGI(PKGTAG, ",\n\t");
     printThpcS(&(pro->thpc));
-    printf(",\n\t");
+    ESP_LOGI(PKGTAG, ",\n\t");
     printAccelP(&(pro->acc));
-    printf("]\n");
+    ESP_LOGI(PKGTAG, "]\n");
     return 0;
 }
 
@@ -498,6 +501,7 @@ int decodeProtocol4(Protocol4* pro, unsigned char* arr, int pos)
 }
 
 
+/*
 int main()
 {
     time_t t0 = time(0);
@@ -532,14 +536,14 @@ int main()
 
     Protocol0 p0a;
     int n = encodeProtocol0(&p0, test, 0);
-    /*
+    
     printf("Printing %d bytes as hex\n", n);
     for(int i=0; i<n; i++)
     {
         printf("%x ", test[i]);
     }
     printf("\n");
-    */
+    
 
     decodeProtocol0(&p0a, test, 0);
     printProtocol0(&p0a);
@@ -657,3 +661,4 @@ int main()
 
     return 0;
 }
+*/

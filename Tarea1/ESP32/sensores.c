@@ -1,8 +1,11 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <time.h>
+#include "esp_log.h"
 
 #define MY_PI 3.1415926f
+
+static const char *STAG = "Sensor";
 
 #include <math.h>
 
@@ -235,7 +238,7 @@ int printAccelPoint(AccelSensor* pAccelS, int index)
         float* startx = pAccelS->datax;
         float* starty = pAccelS->datay;
         float* startz = pAccelS->dataz;
-        printf("{Acc_x: %.4f; Acc_y: %.4f; Acc_z: %.4f}", *(startx+index), *(starty+index), *(startz+index));
+        ESP_LOGI(STAG, "{Acc_x: %.4f; Acc_y: %.4f; Acc_z: %.4f}", *(startx+index), *(starty+index), *(startz+index));
         return 0;
     }
 }
@@ -284,15 +287,15 @@ int accelDestroy(AccelSensor* pAccelS)
 
 int printAccelP(AccelSensor* pAccelS)
 {
-    printf("[");
+    ESP_LOGI(STAG, "[");
     for(int i=0; i < (pAccelS->size-1); i++)
     {
 
         printAccelPoint(pAccelS, i);
-        printf(",\n");
+        ESP_LOGI(STAG, ",\n");
     }
     printAccelPoint(pAccelS, pAccelS->size-1);
-    printf("]\n");
+    ESP_LOGI(STAG, "]\n");
 
     return 0;
 }
@@ -380,7 +383,7 @@ int thpcSInit(ThpcSensor* pThpcS)
 
 int printThpcS(ThpcSensor* pThpcS)
 {
-    printf("{temp: %d; hum: %d; pres: %.4f; hum: %.4f}", pThpcS->temp, pThpcS->hum, pThpcS->pres, pThpcS->co2);
+    ESP_LOGI(STAG, "{temp: %d; hum: %d; pres: %.4f; hum: %.4f}", pThpcS->temp, pThpcS->hum, pThpcS->pres, pThpcS->co2);
 
     return 0;
 }
@@ -457,7 +460,7 @@ int battSInit(BattSensor* pBattS)
 
 int printBattS(BattSensor* pBattS)
 {
-    printf("{battery_level: %d; time_stamp: %d; data_1: %d}", 
+    ESP_LOGI(STAG, "{battery_level: %d; time_stamp: %d; data_1: %d}", 
         pBattS->level, pBattS->timestamp, pBattS->data1);
     return 0;
 }
@@ -532,7 +535,7 @@ int accelKInit(AccelKpi* pAccelK)
 
 int printAccelK(AccelKpi* pAccelK)
 {
-    printf("{amp_x: %.4f; frec_x: %.4f; amp_y: %.4f; frec_y: %.4f; amp_z: %.4f; frec_z: %.4f; rms: %.4f}", 
+    ESP_LOGI(STAG, "{amp_x: %.4f; frec_x: %.4f; amp_y: %.4f; frec_y: %.4f; amp_z: %.4f; frec_z: %.4f; rms: %.4f}", 
         pAccelK->ampx, pAccelK->frecx, pAccelK->ampy, pAccelK->frecy, pAccelK->ampz, pAccelK->frecz, pAccelK->rms);
     return 0;
 }
