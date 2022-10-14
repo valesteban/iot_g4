@@ -40,20 +40,23 @@ void app_main(void)
     ESP_ERROR_CHECK(example_connect());
 
     char *res = tcp_initial_connection();
+    
+    char id_protocol = res[1];
+    char transport_layer = res[4];
 
-    //char o = *res;
     
 
-    //ESP_LOGE(TAG, "Aqui ahora tengoq ue crear la nueva connexion con\n protocolo %c",o);
+    ESP_LOGE(TAG, "loe ee eotocolo %c, %c",id_protocol,transport_layer);
     
     //esto por mientras nomas me da lata parsear aun la *res donde esta n los valores q realmente recibe
     //imaginemos que obtuvo los valores y son 
 
-    int id_protocol = 0;
-    int transport_layer = 1; //UDP
-    //ESP_LOGE(TAG, "***************************************************%s",res[1]);
-    ESP_LOGE(TAG, "****************************************************************************+");
-    if ( transport_layer == 0){
+    //int id_protocol = 0;
+    //int transport_layer = 0; //TCP
+
+
+    ESP_LOGE(TAG, "****************************************************************************");
+    if ( transport_layer == '0'){
         ESP_LOGE(TAG, "Conexion TCP");
         tcp_client(id_protocol);
     }
