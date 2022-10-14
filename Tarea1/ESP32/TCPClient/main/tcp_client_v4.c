@@ -28,6 +28,7 @@
 #include "lwip/sys.h"
 #include <lwip/netdb.h>
 #include "addr_from_stdin.h"
+#include "empaquetamiento.c"
 
 #if defined(CONFIG_EXAMPLE_SOCKET_IP_INPUT_STDIN)
 #include "addr_from_stdin.h"
@@ -40,6 +41,10 @@
 #endif
 
 #define PORT 5010
+
+#define DEVICE_ID = 1113
+#define TCP_LAYER_ID 0
+#define UDP_LAYER_ID 1
 
 static const char *TAG = "example";
 static const char *payload = "Message from ESP32 ";
@@ -155,11 +160,51 @@ void tcp_client(char id_protocol){
             //LLAMAMOS AL PROTOCOLO QU ECREA EL PAQUETE
             //APLIQUE VALE SUS SUPERPODERESSSSSSSSSSSSSSSSSSSSSSS
             //!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-            char *data = "Paquete ficticio\n";                        //por mientras dejo este chantita
+            //char *data = "Paquete ficticio\n";                        //por mientras dejo este chantita
+            unsigned char *data = NULL;
+            uint8_t mac;
+            esp_base_mac_addr_get(&mac);
+            
+            switch(id_protocol) {
+                case '0' :
+                    Protocol0 pro;
+                    protocol0init(&pro, DEVICE_ID, mac, TCP_LAYER_ID);
+                    data = malloc((HEADER_LEN + pro.header.lenmsg)*sizeof(char));
+                    encodeProtocol0(&pro, data, 0);
+                    break;
+                break;
+                case '1' :
+                    Protocol1 pro;
+                    protocol1init(&pro, DEVICE_ID, mac, TCP_LAYER_ID);
+                    data = malloc((HEADER_LEN + pro.header.lenmsg)*sizeof(char));
+                    encodeProtocol1(&pro, data, 0);
+                    break;
+                case '2' :
+                    Protocol23 pro;
+                    protocol2init(&pro, DEVICE_ID, mac, TCP_LAYER_ID);
+                    data = malloc((HEADER_LEN + pro.header.lenmsg)*sizeof(char));
+                    encodeProtocol2(&pro, data, 0);
+                    break;
+                case '3' :
+                    Protocol23 pro;
+                    protocol3init(&pro, DEVICE_ID, mac, TCP_LAYER_ID);
+                    data = malloc((HEADER_LEN + pro.header.lenmsg)*sizeof(char));
+                    encodeProtocol3(&pro, data, 0);
+                    break;
+                case '4' :
+                    Protocol4 pro;
+                    protocol4init(&pro, DEVICE_ID, mac, TCP_LAYER_ID);
+                    data = malloc((HEADER_LEN + pro.header.lenmsg)*sizeof(char));
+                    encodeProtocol4(&pro, data, 0);
+                    protocol4Destroy(&pro);
+                    break;
+                default:
+                    ESP_LOGE(TAG, "ermanito, eso no es un protocolo....\n");  
 
             
             //ENVIAMOS DATA
             int err = send(sock, data, strlen(payload), 0);
+            free(data);
             if (err < 0) {
                 ESP_LOGE(TAG, "Error occurred during sending: errno %d", errno);
                 break;
