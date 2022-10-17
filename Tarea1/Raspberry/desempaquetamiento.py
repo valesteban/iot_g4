@@ -255,6 +255,7 @@ def decode_pkg(encoded_pkg: bytes) -> Protocol:
 if __name__ == "__main__":
     hex = "94 01 00 00 00 00 08 00 06 00 00 01 01 54 34 95 47 63"
     b = bytes.fromhex(hex)
+    he = b.hex()
 
     hex1 = "94 01 00 00 00 00 08 00 10 00 01 01 01 57 c9 99 48 63 10 8b ca 93 44 40 be 55 7e 42"
     b1 = bytes.fromhex(hex1)
@@ -268,6 +269,7 @@ if __name__ == "__main__":
     hex4 = '94 01 00 00 00 00 08 00 24 00 04 01 01 44 e0 c1 48 63 16 52 fa 91 44 2f 16 26 06 43 40 21 67 3e 37 e9 73 3e 5b 57 80 3e cf b8 86 3e e6 18 8d 3e 90 77 93 3e bc d4 99 3e 5c 30 a0 3e 5b 8a a6 3e ad e2 ac 3e 3f 39 b3 3e 02 8e b9 3e e3 e0 bf 3e d6 31 c6 3e c6 80 cc 3e a6 cd d2 3e 65 18 d9 3e f1 60 df 3e 3d a7 e5 3e 35 eb eb 3e fc c5 3e 40 2a a2 3e 40 6c 7c 3e 40 c0 54 3e 40 29 2b 3e 40 a5 ff 3d 40 36 d2 3d 40 dc a2 3d 40 96 71 3d 40 67 3e 3d 40 4f 09 3d 40 4d d2 3c 40 62 99 3c 40 8f 5e 3c 40 d6 21 3c 40 35 e3 3b 40 ae a2 3b 40 42 60 3b 40 f2 1b 3b 40 bd d5 3a 40 c8 74 90 3f c2 71 98 3f 32 6d a0 3f 03 67 a8 3f 20 5f b0 3f 74 55 b8 3f eb 49 c0 3f 73 3c c8 3f f2 2c d0 3f 58 1b d8 3f 8f 07 e0 3f 82 f1 e7 3f 1c d9 ef 3f 4c be f7 3f f8 a0 ff 3f 88 c0 03 40 3f af 07 40 97 9c 0b 40 86 88 0f 40 01 73 13 40'
     b4 = bytes.fromhex(hex4)
 
+    
 
     """
     print(hex)

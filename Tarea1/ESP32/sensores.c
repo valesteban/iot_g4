@@ -1,8 +1,12 @@
 #include <stdio.h>
 #include <stdlib.h>
-#include <time.h>
+//#include <time.h>
+#include "esp_log.h"
+#include "esp_sntp.h"
 
 #define MY_PI 3.1415926f
+
+static const char *STAG = "Sensor";
 
 #include <math.h>
 
@@ -84,12 +88,12 @@ int encodeInt(int* intPtr, unsigned char* arrWrite, int pos)
     return encodeUInt(ptr, arrWrite, pos);
 }
 
-unsigned long encodeULong(unsigned long* uLPtr, unsigned char* arrWrite, int pos)
+unsigned long long encodeULong(unsigned long long* uLPtr, unsigned char* arrWrite, int pos)
 {
-    size_t lenUL = sizeof(unsigned long);
+    size_t lenUL = sizeof(unsigned long long);
     size_t lenI = sizeof(int);
     unsigned char* curr = arrWrite+pos;
-    unsigned long uLong = *uLPtr;
+    unsigned long long uLong = *uLPtr;
 
     for(unsigned int j=0; j < lenUL/lenI; j++)
     {
@@ -142,17 +146,17 @@ int decodeInt(unsigned char* arrRead, int pos)
     return *ptr;
 }
 
-unsigned long decodeULong(unsigned char* arrRead, int pos)
+unsigned long long decodeULong(unsigned char* arrRead, int pos)
 {
-    size_t lenUL = sizeof(unsigned long);
+    size_t lenUL = sizeof(unsigned long long);
     size_t lenI = sizeof(unsigned int);
     unsigned char* curr = arrRead+pos;
 
-    unsigned long uLong = 0;
+    unsigned long long uLong = 0;
 
     for(unsigned int j=0; j < lenUL/lenI; j++)
     {
-        unsigned long uLongPiece = decodeUInt(curr, j*lenI);
+        unsigned long long uLongPiece = decodeUInt(curr, j*lenI);
         uLong |= (uLongPiece << (j*lenI*8));
     }
     return uLong;
@@ -235,7 +239,7 @@ int printAccelPoint(AccelSensor* pAccelS, int index)
         float* startx = pAccelS->datax;
         float* starty = pAccelS->datay;
         float* startz = pAccelS->dataz;
-        printf("{Acc_x: %.4f; Acc_y: %.4f; Acc_z: %.4f}", *(startx+index), *(starty+index), *(startz+index));
+        ESP_LOGI(STAG, "%d: {Acc_x: %.4f; Acc_y: %.4f; Acc_z: %.4f}", index, *(startx+index), *(starty+index), *(startz+index));
         return 0;
     }
 }
@@ -284,15 +288,15 @@ int accelDestroy(AccelSensor* pAccelS)
 
 int printAccelP(AccelSensor* pAccelS)
 {
-    printf("[");
+    ESP_LOGI(STAG, "[");
     for(int i=0; i < (pAccelS->size-1); i++)
     {
 
         printAccelPoint(pAccelS, i);
-        printf(",\n");
+        ESP_LOGI(STAG, ",\n");
     }
     printAccelPoint(pAccelS, pAccelS->size-1);
-    printf("]\n");
+    ESP_LOGI(STAG, "]\n");
 
     return 0;
 }
@@ -380,7 +384,7 @@ int thpcSInit(ThpcSensor* pThpcS)
 
 int printThpcS(ThpcSensor* pThpcS)
 {
-    printf("{temp: %d; hum: %d; pres: %.4f; hum: %.4f}", pThpcS->temp, pThpcS->hum, pThpcS->pres, pThpcS->co2);
+    ESP_LOGI(STAG, "{temp: %d; hum: %d; pres: %.4f; CO_2: %.4f}", pThpcS->temp, pThpcS->hum, pThpcS->pres, pThpcS->co2);
 
     return 0;
 }
@@ -442,7 +446,10 @@ typedef struct {
 
 int setTimestamp(BattSensor* pBattS)
 {
-    pBattS->timestamp = time(0);
+    struct timeval tv_now;
+    gettimeofday(&tv_now, NULL);
+    int64_t time_us = (int64_t)tv_now.tv_sec * 1000000L + (int64_t)tv_now.tv_usec;
+    pBattS->timestamp = (int) time_us;
     return 0;
 }
 
@@ -457,8 +464,8 @@ int battSInit(BattSensor* pBattS)
 
 int printBattS(BattSensor* pBattS)
 {
-    printf("{battery_level: %d; time_stamp: %d; data_1: %d}", 
-        pBattS->level, pBattS->timestamp, pBattS->data1);
+    ESP_LOGI(STAG, "{data_1: %d; battery_level: %d; time_stamp: %d}", 
+        pBattS->data1, pBattS->level, pBattS->timestamp);
     return 0;
 }
 
@@ -532,8 +539,8 @@ int accelKInit(AccelKpi* pAccelK)
 
 int printAccelK(AccelKpi* pAccelK)
 {
-    printf("{amp_x: %.4f; frec_x: %.4f; amp_y: %.4f; frec_y: %.4f; amp_z: %.4f; frec_z: %.4f; rms: %.4f}", 
-        pAccelK->ampx, pAccelK->frecx, pAccelK->ampy, pAccelK->frecy, pAccelK->ampz, pAccelK->frecz, pAccelK->rms);
+    ESP_LOGI(STAG, "{rms: %.4f; amp_x: %.4f; frec_x: %.4f; amp_y: %.4f; frec_y: %.4f; amp_z: %.4f; frec_z: %.4f}", 
+        pAccelK->rms, pAccelK->ampx, pAccelK->frecx, pAccelK->ampy, pAccelK->frecy, pAccelK->ampz, pAccelK->frecz);
     return 0;
 }
 

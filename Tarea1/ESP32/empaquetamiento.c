@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <time.h>
+//#include "esp_log.h"
 
 #include "sensores.c"
 
@@ -11,20 +12,22 @@
 #define PROTOCOL3_MSG_LEN 44
 #define PROTOCOL4_LEN_WITHOUT_ACC 16
 
-#define ACC_ARRAY_LEN 20
+#define ACC_ARRAY_LEN 2000 // numero de datos en array, no de bytes en total
+
+static const char *PKGTAG = "Paquete";
 
 typedef struct {
     unsigned int id;
-    unsigned long mac;
+    unsigned long long mac;
     unsigned char tlayer;
     unsigned char protocol;
     unsigned int lenmsg;
 } Header;
 
-unsigned long encodeIdMac(Header* pHeader)
+unsigned long long encodeIdMac(Header* pHeader)
 {
     unsigned long long idMask = pHeader->id;
-    unsigned long encoded = pHeader->mac;
+    unsigned long long encoded = pHeader->mac;
     unsigned long long mask = ~(0xffffULL << 48); // para borrar los últimos 2 bytes
     encoded = (encoded & mask) | (idMask << 48);
     return encoded;
@@ -34,7 +37,7 @@ int decodeIdMac(unsigned long long idmac, Header* pEditedHeader)
 {
     unsigned int id = (int) (idmac >> 48);
     unsigned long long mask = ~(0xffffULL << 48); // para borrar los últimos 2 bytes
-    unsigned long mac = idmac & mask;
+    unsigned long long mac = idmac & mask;
 
     pEditedHeader->id = id;
     pEditedHeader->mac = mac;
@@ -67,7 +70,7 @@ unsigned int decodeTPL(unsigned int tpl, Header* pEditedHeader)
 
 int headerInit(Header* pHeader, 
                unsigned int id,
-               unsigned long mac,
+               unsigned long long mac,
                unsigned char tlayer,
                unsigned char protocol,
                unsigned int lenmsg)
@@ -83,7 +86,7 @@ int headerInit(Header* pHeader,
 
 int printHeader(Header* pHeader)
 {
-    printf("{id: %u; mac: %lu; t_layer: %u; protocol: %u; len_msg: %u}", pHeader->id, pHeader->mac, pHeader->tlayer, pHeader->protocol, pHeader-> lenmsg);
+    ESP_LOGI(PKGTAG, "{id: %u; mac: %llu; protocol: %u; t_layer: %u; len_msg: %u}", pHeader->id, pHeader->mac, pHeader->protocol, pHeader->tlayer, pHeader-> lenmsg);
 
     return 0;
 }
@@ -95,10 +98,10 @@ int encodeHeader(Header* pHeader, unsigned char* arr, int pos)
     int writtenBytes = 0;
     unsigned char* curr = arr+pos;
 
-    unsigned long idmac = encodeIdMac(pHeader);
+    unsigned long long idmac = encodeIdMac(pHeader);
     encodeULong(&idmac, curr, 0);
-    writtenBytes += sizeof(unsigned long);
-    curr += sizeof(unsigned long);
+    writtenBytes += sizeof(unsigned long long);
+    curr += sizeof(unsigned long long);
 
     unsigned int tpl = encodeTPL(pHeader);
     encodeUInt(&tpl, curr, 0);
@@ -112,10 +115,10 @@ int decodeHeader(Header* pHeader, unsigned char* arr, int pos)
     int readBytes = 0;
     unsigned char* curr = arr+pos;
 
-    unsigned long idmac = decodeULong(curr, 0);
+    unsigned long long idmac = decodeULong(curr, 0);
     decodeIdMac(idmac, pHeader);
-    readBytes += sizeof(unsigned long);
-    curr += sizeof(unsigned long);
+    readBytes += sizeof(unsigned long long);
+    curr += sizeof(unsigned long long);
 
     unsigned int tpl = decodeUInt(curr, 0);
     decodeTPL(tpl, pHeader);
@@ -131,7 +134,7 @@ typedef struct {
 
 int protocol0Init(Protocol0* pro, 
                  unsigned int id,
-                 unsigned long mac,
+                 unsigned long long mac,
                  unsigned char tlayer)
 {
     Header h = {.id = id, .mac = mac, .tlayer = tlayer, .protocol=0, .lenmsg=PROTOCOL0_MSG_LEN };
@@ -143,11 +146,11 @@ int protocol0Init(Protocol0* pro,
 
 int printProtocol0(Protocol0* pro)
 {
-    printf("PROTOCOL 0\n    HEADER=");
+    ESP_LOGI(PKGTAG, "PROTOCOL 0\n    HEADER=");
     printHeader(&(pro->header));
-    printf("\n    MSG=[");
+    ESP_LOGI(PKGTAG, "\n    MSG=[");
     printBattS(&(pro->battery));
-    printf("]\n");
+    ESP_LOGI(PKGTAG, "]\n");
     return 0;
 }
 
@@ -188,7 +191,7 @@ typedef struct {
 
 int protocol1Init(Protocol1* pro, 
                  unsigned int id,
-                 unsigned long mac,
+                 unsigned long long mac,
                  unsigned char tlayer)
 {
     Header h = {.id = id, .mac = mac, .tlayer = tlayer, .protocol=1, .lenmsg=PROTOCOL1_MSG_LEN };
@@ -201,13 +204,13 @@ int protocol1Init(Protocol1* pro,
 
 int printProtocol1(Protocol1* pro)
 {
-    printf("PROTOCOL 1\n    HEADER=");
+    ESP_LOGI(PKGTAG, "PROTOCOL 1\n    HEADER=");
     printHeader(&(pro->header));
-    printf("\n    MSG=[");
+    ESP_LOGI(PKGTAG, "\n    MSG=[");
     printBattS(&(pro->battery));
-    printf(",\n\t");
+    ESP_LOGI(PKGTAG, ",\n\t");
     printThpcS(&(pro->thpc));
-    printf("]\n");
+    ESP_LOGI(PKGTAG, "]\n");
     return 0;
 }
 
@@ -257,7 +260,7 @@ typedef struct {
 
 int protocol23Init(Protocol23* pro, 
                  unsigned int id,
-                 unsigned long mac,
+                 unsigned long long mac,
                  unsigned char tlayer,
                  unsigned char protocol,
                  unsigned int lenmsg)
@@ -273,7 +276,7 @@ int protocol23Init(Protocol23* pro,
 
 int protocol2Init(Protocol23* pro, 
                  unsigned int id,
-                 unsigned long mac,
+                 unsigned long long mac,
                  unsigned char tlayer)
 {
     return protocol23Init(pro,
@@ -286,7 +289,7 @@ int protocol2Init(Protocol23* pro,
 
 int protocol3Init(Protocol23* pro, 
                  unsigned int id,
-                 unsigned long mac,
+                 unsigned long long mac,
                  unsigned char tlayer)
 {
     return protocol23Init(pro,
@@ -299,24 +302,24 @@ int protocol3Init(Protocol23* pro,
 
 int printProtocol23(Protocol23* pro)
 {
-    printf("PROTOCOL %d\n    HEADER=", (pro->header).protocol);
+    ESP_LOGI(PKGTAG, "PROTOCOL %d\n    HEADER=", (pro->header).protocol);
     printHeader(&(pro->header));
-    printf("\n    MSG=[");
+    ESP_LOGI(PKGTAG, "\n    MSG=[");
     printBattS(&(pro->battery));
-    printf(",\n\t");
+    ESP_LOGI(PKGTAG, ",\n\t");
     printThpcS(&(pro->thpc));
-    printf(",\n\t");
+    ESP_LOGI(PKGTAG, ",\n\t");
 
     if((pro->header).protocol == 2)
     {
-        printf("{rms: %.4f}", (pro->kpi).rms);
+        ESP_LOGI(PKGTAG, "{rms: %.4f}", (pro->kpi).rms);
     }
     else
     {
         printAccelK(&(pro->kpi));
     }
 
-    printf("]\n");
+    ESP_LOGI(PKGTAG, "]\n");
     return 0;
 }
 
@@ -421,10 +424,10 @@ typedef struct {
 
 int protocol4Init(Protocol4* pro, 
                  unsigned int id,
-                 unsigned long mac,
+                 unsigned long long mac,
                  unsigned char tlayer)
 {
-    Header h = {.id = id, .mac = mac, .tlayer = tlayer, .protocol=4, .lenmsg=PROTOCOL4_LEN_WITHOUT_ACC + ACC_ARRAY_LEN };
+    Header h = {.id = id, .mac = mac, .tlayer = tlayer, .protocol=4, .lenmsg=PROTOCOL4_LEN_WITHOUT_ACC + ACC_ARRAY_LEN  * sizeof(float) * 3 };
     pro->header = h;
     battSInit(&(pro->battery));
     thpcSInit(&(pro->thpc));
@@ -441,15 +444,15 @@ int protocol4Destroy(Protocol4* pro)
 
 int printProtocol4(Protocol4* pro)
 {
-    printf("PROTOCOL 4\n    HEADER=");
+    ESP_LOGI(PKGTAG, "PROTOCOL 4\n    HEADER=");
     printHeader(&(pro->header));
-    printf("\n    MSG=[");
+    ESP_LOGI(PKGTAG, "\n    MSG=[");
     printBattS(&(pro->battery));
-    printf(",\n\t");
+    ESP_LOGI(PKGTAG, ",\n\t");
     printThpcS(&(pro->thpc));
-    printf(",\n\t");
+    ESP_LOGI(PKGTAG, ",\n\t");
     printAccelP(&(pro->acc));
-    printf("]\n");
+    ESP_LOGI(PKGTAG, "]\n");
     return 0;
 }
 
@@ -498,8 +501,10 @@ int decodeProtocol4(Protocol4* pro, unsigned char* arr, int pos)
 }
 
 
+/*
 int main()
 {
+
     time_t t0 = time(0);
     unsigned char test[ACC_ARRAY_LEN*4*sizeof(float)];
 
@@ -532,14 +537,14 @@ int main()
 
     Protocol0 p0a;
     int n = encodeProtocol0(&p0, test, 0);
-    /*
+    
     printf("Printing %d bytes as hex\n", n);
     for(int i=0; i<n; i++)
     {
         printf("%x ", test[i]);
     }
     printf("\n");
-    */
+    
 
     decodeProtocol0(&p0a, test, 0);
     printProtocol0(&p0a);
@@ -657,3 +662,4 @@ int main()
 
     return 0;
 }
+*/
