@@ -86,7 +86,7 @@ int headerInit(Header* pHeader,
 
 int printHeader(Header* pHeader)
 {
-    ESP_LOGI(PKGTAG, "{id: %u; mac: %lu; t_layer: %u; protocol: %u; len_msg: %u}", pHeader->id, pHeader->mac, pHeader->tlayer, pHeader->protocol, pHeader-> lenmsg);
+    ESP_LOGI(PKGTAG, "{id: %u; mac: %llu; t_layer: %u; protocol: %u; len_msg: %u}", pHeader->id, pHeader->mac, pHeader->tlayer, pHeader->protocol, pHeader-> lenmsg);
 
     return 0;
 }

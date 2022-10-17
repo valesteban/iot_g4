@@ -8,8 +8,6 @@
 
 static const char *STAG = "Sensor";
 
-static const char *STAG = "Sensor";
-
 #include <math.h>
 
 // valores para THPC dados en el enunciado
