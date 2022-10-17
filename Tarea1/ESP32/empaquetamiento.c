@@ -1,7 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <time.h>
-//#include "esp_log.h"
+#include "esp_log.h"
 
 #include "sensores.c"
 
@@ -12,7 +12,7 @@
 #define PROTOCOL3_MSG_LEN 44
 #define PROTOCOL4_LEN_WITHOUT_ACC 16
 
-#define ACC_ARRAY_LEN 2000 // numero de datos en array, no de bytes en total
+#define ACC_ARRAY_LEN 20
 
 static const char *PKGTAG = "Paquete";
 
@@ -86,7 +86,7 @@ int headerInit(Header* pHeader,
 
 int printHeader(Header* pHeader)
 {
-    ESP_LOGI(PKGTAG, "{id: %u; mac: %llu; protocol: %u; t_layer: %u; len_msg: %u}", pHeader->id, pHeader->mac, pHeader->protocol, pHeader->tlayer, pHeader-> lenmsg);
+    ESP_LOGI(PKGTAG, "{id: %u; mac: %lu; t_layer: %u; protocol: %u; len_msg: %u}", pHeader->id, pHeader->mac, pHeader->tlayer, pHeader->protocol, pHeader-> lenmsg);
 
     return 0;
 }

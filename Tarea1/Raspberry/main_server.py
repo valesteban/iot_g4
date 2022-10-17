@@ -76,7 +76,7 @@ def iniciar_servidor():
 
         while(True):
             raw_data = conn.recv(1024)
-            print(raw_data.hex())
+            print("Data recibida como bytes: ", raw_data.hex())
             try:
                 data = raw_data.decode()
             except:
