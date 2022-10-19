@@ -30,6 +30,7 @@
 #include <lwip/netdb.h>
 #include "addr_from_stdin.h"
 #include "../../empaquetamiento.c"
+#include "../../fragmentation.c"
 
 #if defined(CONFIG_EXAMPLE_SOCKET_IP_INPUT_STDIN)
 #include "addr_from_stdin.h"
@@ -222,17 +223,27 @@ void tcp_client(char id_protocol){
                     ESP_LOGE(anotherTag, "ermanito, eso no es un protocolo....\n");  
             }
 
-            
             //ENVIAMOS DATA
-            ESP_LOGI(TAG, "Paquete encodeado: \n");
-            ESP_LOG_BUFFER_HEX("Hexadecimal: ", data, data_size);
-            // int err = send(sock, data, strlen(payload), 0);
-            int err = send(sock, data, data_size, 0);
-            free(data);
-            if (err < 0) {
-                ESP_LOGE(TAG, "Error occurred during sending: errno %d", errno);
-                break;
+            
+            if(id_protocol == '4'){
+                //FRAGMENTACIÓN
+                fragmentation(data, data_size, sock);
+            }else{
+                ESP_LOGI(TAG, "Paquete encodeado: \n");
+                ESP_LOG_BUFFER_HEX("Hexadecimal: ", data, data_size);
+                // int err = send(sock, data, strlen(payload), 0);
+                int err = send(sock, data, data_size, 0);
+                free(data);
+                if (err < 0) {
+                    ESP_LOGE(TAG, "Error occurred during sending: errno %d", errno);
+                    break;
+                }
+
             }
+
+            
+            
+            
 
             //DEEPSLEEP 60 SEC
             ESP_LOGE(TAG, "sleeping for 60 sec");
