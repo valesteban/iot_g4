@@ -12,10 +12,11 @@
 #define PROTOCOL3_MSG_LEN 44
 #define PROTOCOL4_LEN_WITHOUT_ACC 16
 
-#define ACC_ARRAY_LEN 20
+#define ACC_ARRAY_LEN 2000
 
 static const char *PKGTAG = "Paquete";
 
+/*
 typedef struct {
     unsigned int id;
     unsigned long long mac;
@@ -23,16 +24,40 @@ typedef struct {
     unsigned char protocol;
     unsigned int lenmsg;
 } Header;
+*/
 
+typedef struct {
+    unsigned int id;
+    unsigned char mac[6];
+    unsigned char tlayer;
+    unsigned char protocol;
+    unsigned int lenmsg;
+} Header;
+
+/*
 unsigned long long encodeIdMac(Header* pHeader)
 {
     unsigned long long idMask = pHeader->id;
     unsigned long long encoded = pHeader->mac;
     unsigned long long mask = ~(0xffffULL << 48); // para borrar los últimos 2 bytes
     encoded = (encoded & mask) | (idMask << 48);
-    return encoded;
+    return encoded;unsigned long long
+}
+*/
+
+int encodeIdMac(Header* pHeader, unsigned char* arr, int pos)
+{
+    unsigned char* curr = arr+pos;
+    for(int i=0; i < 6; i++)
+    {
+        *(curr+i) = pHeader->mac[i];
+    }
+    *(curr+6) = pHeader->id;
+    *(curr+7) = (pHeader->id) << 8;
+    return 8;
 }
 
+/*
 int decodeIdMac(unsigned long long idmac, Header* pEditedHeader)
 {
     unsigned int id = (int) (idmac >> 48);
@@ -43,6 +68,22 @@ int decodeIdMac(unsigned long long idmac, Header* pEditedHeader)
     pEditedHeader->mac = mac;
 
     return 0;
+}
+*/
+
+int decodeIdMac(unsigned char idmac[8], Header* pEditedHeader)
+{
+    for(int i=0; i < 6; i++)
+    {
+        pEditedHeader->mac[i] = idmac[i];
+    }
+
+    unsigned int id = (unsigned int) idmac[6];
+    id |= ((unsigned int) idmac[7]) << 8;
+
+    pEditedHeader->id = id;
+
+    return 8;
 }
 
 unsigned int encodeTPL(Header* pHeader)
@@ -70,13 +111,17 @@ unsigned int decodeTPL(unsigned int tpl, Header* pEditedHeader)
 
 int headerInit(Header* pHeader, 
                unsigned int id,
-               unsigned long long mac,
+               unsigned char* mac,
                unsigned char tlayer,
                unsigned char protocol,
                unsigned int lenmsg)
 {
     pHeader->id = id;
-    pHeader->mac = mac;
+    for(int i=0; i < 6; i++)
+    {
+        pHeader->mac[i] = mac[i];
+    }
+    
     pHeader->tlayer = tlayer;
     pHeader->protocol = protocol;
     pHeader->lenmsg = lenmsg;
@@ -86,7 +131,14 @@ int headerInit(Header* pHeader,
 
 int printHeader(Header* pHeader)
 {
-    ESP_LOGI(PKGTAG, "{id: %u; mac: %llu; t_layer: %u; protocol: %u; len_msg: %u}", pHeader->id, pHeader->mac, pHeader->tlayer, pHeader->protocol, pHeader-> lenmsg);
+    char mac_str[18];
+    for(int i=0; i<5; i++)
+    {
+        snprintf(&(mac_str[i*3]), 4, "%02x:", pHeader->mac[i]);
+    }
+    snprintf(&(mac_str[15]), 3,"%02x", pHeader->mac[5]);
+
+    ESP_LOGI(PKGTAG, "{id: %u; mac: %s; t_layer: %u; protocol: %u; len_msg: %u}", pHeader->id, mac_str, pHeader->tlayer, pHeader->protocol, pHeader-> lenmsg);
 
     return 0;
 }
@@ -98,10 +150,8 @@ int encodeHeader(Header* pHeader, unsigned char* arr, int pos)
     int writtenBytes = 0;
     unsigned char* curr = arr+pos;
 
-    unsigned long long idmac = encodeIdMac(pHeader);
-    encodeULong(&idmac, curr, 0);
-    writtenBytes += sizeof(unsigned long long);
-    curr += sizeof(unsigned long long);
+    writtenBytes += encodeIdMac(pHeader, curr, 0);
+    curr += writtenBytes;
 
     unsigned int tpl = encodeTPL(pHeader);
     encodeUInt(&tpl, curr, 0);
@@ -115,10 +165,8 @@ int decodeHeader(Header* pHeader, unsigned char* arr, int pos)
     int readBytes = 0;
     unsigned char* curr = arr+pos;
 
-    unsigned long long idmac = decodeULong(curr, 0);
-    decodeIdMac(idmac, pHeader);
-    readBytes += sizeof(unsigned long long);
-    curr += sizeof(unsigned long long);
+    readBytes += decodeIdMac(curr, pHeader);
+    curr += readBytes;
 
     unsigned int tpl = decodeUInt(curr, 0);
     decodeTPL(tpl, pHeader);
@@ -134,10 +182,11 @@ typedef struct {
 
 int protocol0Init(Protocol0* pro, 
                  unsigned int id,
-                 unsigned long long mac,
+                 unsigned char* mac,
                  unsigned char tlayer)
 {
-    Header h = {.id = id, .mac = mac, .tlayer = tlayer, .protocol=0, .lenmsg=PROTOCOL0_MSG_LEN };
+    Header h;
+    headerInit(&h, id, mac, tlayer, 0, PROTOCOL0_MSG_LEN);
     pro->header = h;
     battSInit(&(pro->battery));
 
@@ -191,10 +240,11 @@ typedef struct {
 
 int protocol1Init(Protocol1* pro, 
                  unsigned int id,
-                 unsigned long long mac,
+                 unsigned char* mac,
                  unsigned char tlayer)
 {
-    Header h = {.id = id, .mac = mac, .tlayer = tlayer, .protocol=1, .lenmsg=PROTOCOL1_MSG_LEN };
+    Header h;
+    headerInit(&h, id, mac, tlayer, 1, PROTOCOL1_MSG_LEN);
     pro->header = h;
     battSInit(&(pro->battery));
     thpcSInit(&(pro->thpc));
@@ -260,12 +310,13 @@ typedef struct {
 
 int protocol23Init(Protocol23* pro, 
                  unsigned int id,
-                 unsigned long long mac,
+                 unsigned char* mac,
                  unsigned char tlayer,
                  unsigned char protocol,
                  unsigned int lenmsg)
 {
-    Header h = {.id = id, .mac = mac, .tlayer = tlayer, .protocol=protocol, .lenmsg=lenmsg };
+    Header h;
+    headerInit(&h, id, mac, tlayer, protocol, lenmsg);
     pro->header = h;
     battSInit(&(pro->battery));
     thpcSInit(&(pro->thpc));
@@ -276,7 +327,7 @@ int protocol23Init(Protocol23* pro,
 
 int protocol2Init(Protocol23* pro, 
                  unsigned int id,
-                 unsigned long long mac,
+                 unsigned char* mac,
                  unsigned char tlayer)
 {
     return protocol23Init(pro,
@@ -289,7 +340,7 @@ int protocol2Init(Protocol23* pro,
 
 int protocol3Init(Protocol23* pro, 
                  unsigned int id,
-                 unsigned long long mac,
+                 unsigned char* mac,
                  unsigned char tlayer)
 {
     return protocol23Init(pro,
@@ -424,10 +475,11 @@ typedef struct {
 
 int protocol4Init(Protocol4* pro, 
                  unsigned int id,
-                 unsigned long long mac,
+                 unsigned char* mac,
                  unsigned char tlayer)
 {
-    Header h = {.id = id, .mac = mac, .tlayer = tlayer, .protocol=4, .lenmsg=PROTOCOL4_LEN_WITHOUT_ACC + ACC_ARRAY_LEN  * sizeof(float) * 3 };
+    Header h;
+    headerInit(&h, id, mac, tlayer, 4, PROTOCOL4_LEN_WITHOUT_ACC + ACC_ARRAY_LEN  * sizeof(float) * 3 );
     pro->header = h;
     battSInit(&(pro->battery));
     thpcSInit(&(pro->thpc));

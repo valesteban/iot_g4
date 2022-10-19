@@ -164,9 +164,9 @@ void tcp_client(char id_protocol){
             //char *data = "Paquete ficticio\n";                        //por mientras dejo este chantita
             unsigned char *data = NULL;
             int data_size = 0;
-            uint8_t mac;
+            uint8_t mac[6];
             //mac = 404u;
-            esp_base_mac_addr_get(&mac);
+            esp_base_mac_addr_get(mac);
             Protocol0 pro0;
             Protocol1 pro1;
             Protocol23 pro2;
@@ -226,7 +226,8 @@ void tcp_client(char id_protocol){
             //ENVIAMOS DATA
             ESP_LOGI(TAG, "Paquete encodeado: \n");
             ESP_LOG_BUFFER_HEX("Hexadecimal: ", data, data_size);
-            int err = send(sock, data, strlen(payload), 0);
+            // int err = send(sock, data, strlen(payload), 0);
+            int err = send(sock, data, data_size, 0);
             free(data);
             if (err < 0) {
                 ESP_LOGE(TAG, "Error occurred during sending: errno %d", errno);

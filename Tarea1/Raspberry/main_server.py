@@ -4,7 +4,7 @@ import socket
 from xmlrpc.client import TRANSPORT_ERROR
 from db import DB
 import json
-from desempaquetamiento import decode_pkg
+from desempaquetamiento import decode_pkg, print_hex
 
 
 # "192.168.5.177"  # Standard loopback interface address (localhost)
@@ -76,7 +76,8 @@ def iniciar_servidor():
 
         while(True):
             raw_data = conn.recv(1024)
-            print("Data recibida como bytes: ", raw_data.hex())
+            print("Data recibida como bytes: ")
+            print_hex(raw_data.hex())
             try:
                 data = raw_data.decode()
             except:

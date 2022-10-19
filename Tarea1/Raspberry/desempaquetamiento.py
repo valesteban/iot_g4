@@ -6,7 +6,7 @@ class Header:
 
     def __init__(self, id=0, mac=0, t_layer=0, protocol=0, len_msg=0) -> None:
         self.id: int = id
-        self.mac: int = mac
+        self.mac: str = mac
         self.t_layer: int = t_layer
         self.protocol: int = protocol
         self.len_msg: int = len_msg
@@ -19,7 +19,12 @@ class Header:
         idmac = int.from_bytes(idmac_bytes, "little")
         self.id = idmac >> 48
         mask = int("0x0000ffffffffffff",16)
-        self.mac = idmac & mask
+        
+        mac_int = idmac & mask
+        # store mac as hex string
+        mac_raw_hex_str = mac_int.to_bytes(6,"little").hex()
+        self.mac = ":".join([mac_raw_hex_str[i:i+2] for i in range(0,12,2)])
+        
 
     # tpl_bytes idealmente debe ser de largo 4 bytes
     def decode_tpl(self, tpl_bytes: bytes) -> None:
@@ -64,7 +69,7 @@ class THPCSensor:
         self.co_2: float = co_2
 
     def __str__(self) -> str:
-        return f"(temp: {self.temp}; hum: {self.hum}; pres: {self.pres:.4f}; hum: {self.co_2:.4f})"
+        return f"(temp: {self.temp}; hum: {self.hum}; pres: {self.pres:.4f}; CO_2: {self.co_2:.4f})"
 
     def decode(self, arrBytes: bytes, pos: int) -> int:
         read_bytes = 10
@@ -127,7 +132,13 @@ class Protocol:
         self.battery: BattSensor = BattSensor()
 
     def __str__(self) -> str:
-        return f"{self.__class__.__name__}\nHEADER =" + "\n\t".join(f"{getattr(self, member)}" for member in vars(self))
+        res = f"{self.__class__.__name__}\n"
+        attrs = vars(self)
+        for member in attrs:
+            member_obj = getattr(self, member)
+            member_obj_name = member_obj.__class__.__name__.upper()
+            res += f"\n\t{member_obj_name} ={member_obj}"
+        return  res
 
     def decode_msg(self, arrBytes: bytes, pos: int = 0) -> int:
         return self.battery.decode(arrBytes, pos)
@@ -169,6 +180,19 @@ class Protocol2(Protocol):
         super().__init__()
         self.thpc: THPCSensor = THPCSensor()
         self.kpi: AccelKPI = AccelKPI()
+    
+    def __str__(self) -> str:
+        res = f"{self.__class__.__name__}\n"
+        attrs = vars(self)
+        for member in attrs:
+            member_obj = getattr(self, member)
+            member_obj_name = member_obj.__class__.__name__.upper()
+            if member == "kpi":
+                res += f"\n\t{member_obj_name} =(rms: {self.kpi.rms:.4f})"
+            else:
+                res += f"\n\t{member_obj_name} ={member_obj}"
+        return  res
+
 
     def decode_msg(self, arrBytes: bytes, pos: int) -> int:
         read_bytes = super().decode_msg(arrBytes, pos)
@@ -214,9 +238,23 @@ class Protocol4(Protocol):
         self.acc: AccelSensor = AccelSensor()
         self.len_data = 0
 
+    def __str__(self) -> str:
+        res = f"{self.__class__.__name__}\n"
+        attrs = vars(self)
+        for member in attrs:
+            member_obj = getattr(self, member)
+            member_obj_name = member_obj.__class__.__name__.upper()
+            if (member != "len_data"):
+                res += f"\n\t{member_obj_name} ={member_obj}"
+        return  res
+
     def decode_msg(self, arrBytes: bytes, size: int=0, pos: int=0) -> int:
         if size <= 0:
             size = self.header.len_msg - Protocol4.len_msg_without_acc
+        sizeof_float = struct.calcsize("<f")
+        num_coords = 3
+        arr_len = int((size/sizeof_float)/num_coords)
+
         read_bytes = super().decode_msg(arrBytes, pos)
         total_bytes = read_bytes
         pos += read_bytes
@@ -225,7 +263,7 @@ class Protocol4(Protocol):
         total_bytes += read_bytes
         pos += read_bytes
 
-        total_bytes += self.acc.decode(arrBytes, size, pos)
+        total_bytes += self.acc.decode(arrBytes, arr_len, pos)
         self.len_data = size
 
         return total_bytes
@@ -251,13 +289,29 @@ def decode_pkg(encoded_pkg: bytes) -> Protocol:
 
     return pro
 
+def print_hex(hex_str):
+    n = len(hex_str)
+    hex_stride = 2
+    hex_line_stride = 16
+
+    for i in range(0,n,hex_line_stride*hex_stride):
+        piece_len = min(hex_line_stride*hex_stride, n-i)
+        hex_piece = hex_str[i:i+piece_len]
+
+        bytes_in_line = (i//2).to_bytes(4, "big").hex()
+        print(" ", bytes_in_line, "|  ", end=" ")
+        for j in range(i,i+piece_len,hex_stride):
+            print(hex_str[j:j+hex_stride], end=" ")
+        print()
+
+
 
 if __name__ == "__main__":
     hex = "94 01 00 00 00 00 08 00 06 00 00 01 01 54 34 95 47 63"
     b = bytes.fromhex(hex)
     he = b.hex()
 
-    hex1 = "94 01 00 00 00 00 08 00 10 00 01 01 01 57 c9 99 48 63 10 8b ca 93 44 40 be 55 7e 42"
+    hex1 = "24 00 00 00 00 00 59 04 10 00 01 00 01 0c bb 44 c7 01 06 ad fc 84 44 36 54 b2 44 43"
     b1 = bytes.fromhex(hex1)
 
     hex3 = "94 01 00 00 00 00 08 00 2c 00 03 01 01 1b 47 b8 48 63 0f a6 d0 7a 44 3d dd 94 8e 42 68 01 c6 3d a8 9a b0 3c 45 6a ee 41 29 cf b6 3d d0 09 6d 42 90 cb f7 3c 6c 6f b2 42"
@@ -266,8 +320,9 @@ if __name__ == "__main__":
     hex2 = "94 01 00 00 00 00 08 00 14 00 02 01 01 57 72 a6 48 63 15 68 d9 8a 44 4b a4 50 de 42 8b c5 f5 3d"
     b2 = bytes.fromhex(hex2)
 
-    hex4 = '94 01 00 00 00 00 08 00 24 00 04 01 01 44 e0 c1 48 63 16 52 fa 91 44 2f 16 26 06 43 40 21 67 3e 37 e9 73 3e 5b 57 80 3e cf b8 86 3e e6 18 8d 3e 90 77 93 3e bc d4 99 3e 5c 30 a0 3e 5b 8a a6 3e ad e2 ac 3e 3f 39 b3 3e 02 8e b9 3e e3 e0 bf 3e d6 31 c6 3e c6 80 cc 3e a6 cd d2 3e 65 18 d9 3e f1 60 df 3e 3d a7 e5 3e 35 eb eb 3e fc c5 3e 40 2a a2 3e 40 6c 7c 3e 40 c0 54 3e 40 29 2b 3e 40 a5 ff 3d 40 36 d2 3d 40 dc a2 3d 40 96 71 3d 40 67 3e 3d 40 4f 09 3d 40 4d d2 3c 40 62 99 3c 40 8f 5e 3c 40 d6 21 3c 40 35 e3 3b 40 ae a2 3b 40 42 60 3b 40 f2 1b 3b 40 bd d5 3a 40 c8 74 90 3f c2 71 98 3f 32 6d a0 3f 03 67 a8 3f 20 5f b0 3f 74 55 b8 3f eb 49 c0 3f 73 3c c8 3f f2 2c d0 3f 58 1b d8 3f 8f 07 e0 3f 82 f1 e7 3f 1c d9 ef 3f 4c be f7 3f f8 a0 ff 3f 88 c0 03 40 3f af 07 40 97 9c 0b 40 86 88 0f 40 01 73 13 40'
+    hex4 = '94 01 00 00 00 00 08 00 00 01 04 01 01 44 e0 c1 48 63 16 52 fa 91 44 2f 16 26 06 43 40 21 67 3e 37 e9 73 3e 5b 57 80 3e cf b8 86 3e e6 18 8d 3e 90 77 93 3e bc d4 99 3e 5c 30 a0 3e 5b 8a a6 3e ad e2 ac 3e 3f 39 b3 3e 02 8e b9 3e e3 e0 bf 3e d6 31 c6 3e c6 80 cc 3e a6 cd d2 3e 65 18 d9 3e f1 60 df 3e 3d a7 e5 3e 35 eb eb 3e fc c5 3e 40 2a a2 3e 40 6c 7c 3e 40 c0 54 3e 40 29 2b 3e 40 a5 ff 3d 40 36 d2 3d 40 dc a2 3d 40 96 71 3d 40 67 3e 3d 40 4f 09 3d 40 4d d2 3c 40 62 99 3c 40 8f 5e 3c 40 d6 21 3c 40 35 e3 3b 40 ae a2 3b 40 42 60 3b 40 f2 1b 3b 40 bd d5 3a 40 c8 74 90 3f c2 71 98 3f 32 6d a0 3f 03 67 a8 3f 20 5f b0 3f 74 55 b8 3f eb 49 c0 3f 73 3c c8 3f f2 2c d0 3f 58 1b d8 3f 8f 07 e0 3f 82 f1 e7 3f 1c d9 ef 3f 4c be f7 3f f8 a0 ff 3f 88 c0 03 40 3f af 07 40 97 9c 0b 40 86 88 0f 40 01 73 13 40'
     b4 = bytes.fromhex(hex4)
+    print_hex(b4.hex())
 
     
 
@@ -347,11 +402,11 @@ PROTOCOL 3
     p4.decode_msg(b4[12:], header4.len_msg - Protocol4.len_msg_without_acc)
     print(p4)
     """
-    print(decode_pkg(b))
-    print(decode_pkg(b1))
-    print(decode_pkg(b2))
-    print(decode_pkg(b3))
-    print(decode_pkg(b4))
+    print("\n", decode_pkg(b))
+    print("\n", decode_pkg(b1))
+    print("\n", decode_pkg(b2))
+    print("\n", decode_pkg(b3))
+    print("\n", decode_pkg(b4))
 
 """
 [{Acc_x: 0.2257; Acc_y: 2.9808; Acc_z: 1.1286},
