@@ -30,7 +30,7 @@
 #include <lwip/netdb.h>
 #include "addr_from_stdin.h"
 #include "../../empaquetamiento.c"
-#include "../../fragmentation.c"
+#include "../../fragmentacion.c"
 
 #if defined(CONFIG_EXAMPLE_SOCKET_IP_INPUT_STDIN)
 #include "addr_from_stdin.h"
