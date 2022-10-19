@@ -56,6 +56,70 @@ char host_ip[] = HOST_IP_ADDR;
 int addr_family = 0;
 int ip_protocol = 0;
 
+
+
+void encodePkg(unsigned char* data, int* dataSize, char protocol)
+{
+    uint8_t mac[6];
+    //mac = 404u;
+    esp_base_mac_addr_get(mac);
+    Protocol0 pro0;
+    Protocol1 pro1;
+    Protocol23 pro2;
+    Protocol23 pro3;
+    Protocol4 pro4;
+
+    const char *anotherTag = "empaquetamiento";
+    
+    switch(protocol) {
+        case '0' :
+            ESP_LOGI(anotherTag, "Enviando paquete de Protocolo 0"); 
+            protocol0Init(&pro0, DEVICE_ID, mac, TCP_LAYER_ID);
+            *dataSize = (HEADER_LEN + pro0.header.lenmsg)*sizeof(char);
+            data = malloc(*dataSize);
+            printProtocol0(&pro0);
+            encodeProtocol0(&pro0, data, 0);
+            break;
+        break;
+        case '1' :
+            ESP_LOGI(anotherTag, "Enviando paquete de Protocolo 1"); 
+            protocol1Init(&pro1, DEVICE_ID, mac, TCP_LAYER_ID);
+            *dataSize = (HEADER_LEN + pro1.header.lenmsg)*sizeof(char);
+            data = malloc(*dataSize);
+            printProtocol1(&pro1);
+            encodeProtocol1(&pro1, data, 0);
+            break;
+        case '2' :
+            ESP_LOGI(anotherTag, "Enviando paquete de Protocolo 2"); 
+            protocol2Init(&pro2, DEVICE_ID, mac, TCP_LAYER_ID);
+            *dataSize = (HEADER_LEN + pro2.header.lenmsg)*sizeof(char);
+            data = malloc(*dataSize);
+            printProtocol23(&pro2);
+            encodeProtocol2(&pro2, data, 0);
+            break;
+        case '3' :
+            ESP_LOGI(anotherTag, "Enviando paquete de Protocolo 3"); 
+            protocol3Init(&pro3, DEVICE_ID, mac, TCP_LAYER_ID);
+            *dataSize = (HEADER_LEN + pro3.header.lenmsg)*sizeof(char);
+            data = malloc(*dataSize);
+            printProtocol23(&pro3);
+            encodeProtocol3(&pro3, data, 0);
+            break;
+        case '4' :
+            ESP_LOGE(anotherTag, "Enviando paquete de Protocolo 4"); 
+            protocol4Init(&pro4, DEVICE_ID, mac, TCP_LAYER_ID);
+            *dataSize = (HEADER_LEN + pro4.header.lenmsg)*sizeof(char);
+            data = malloc(*dataSize);
+            printProtocol4(&pro4);
+            encodeProtocol4(&pro4, data, 0);
+            protocol4Destroy(&pro4);
+            break;
+        default:
+            ESP_LOGE(anotherTag, "ermanito, eso no es un protocolo....\n");  
+    }
+}
+
+
 char* tcp_initial_connection(void){
             
         #if defined(CONFIG_EXAMPLE_IPV4)
@@ -166,7 +230,7 @@ void tcp_client(char id_protocol){
             unsigned char *data = NULL;
             int data_size = 0;
             
-            encodePkg(data, &dataSize, char id_protocol);
+            encodePkg(data, &data_size, id_protocol);
 
             //ENVIAMOS DATA
             
@@ -270,7 +334,7 @@ void udp_client(char id_protocol){
             unsigned char *data = NULL;
             int data_size = 0;
 
-            encodePkg(data, &dataSize, char id_protocol);
+            encodePkg(data, &data_size, id_protocol);
 
             if(id_protocol == '4'){
                 //FRAGMENTACIÓN
@@ -335,65 +399,5 @@ void udp_client(char id_protocol){
 }
 
 
-void encodePkg(char* data, int* dataSize, char protocol)
-{
-    uint8_t mac[6];
-    //mac = 404u;
-    esp_base_mac_addr_get(mac);
-    Protocol0 pro0;
-    Protocol1 pro1;
-    Protocol23 pro2;
-    Protocol23 pro3;
-    Protocol4 pro4;
-
-    const char *anotherTag = "empaquetamiento";
-    
-    switch(id_protocol) {
-        case '0' :
-            ESP_LOGI(TAG, "Enviando paquete de Protocolo 0"); 
-            protocol0Init(&pro0, DEVICE_ID, mac, TCP_LAYER_ID);
-            data_size = (HEADER_LEN + pro0.header.lenmsg)*sizeof(char);
-            data = malloc(data_size);
-            printProtocol0(&pro0);
-            encodeProtocol0(&pro0, data, 0);
-            break;
-        break;
-        case '1' :
-            ESP_LOGI(anotherTag, "Enviando paquete de Protocolo 1"); 
-            protocol1Init(&pro1, DEVICE_ID, mac, TCP_LAYER_ID);
-            data_size = (HEADER_LEN + pro1.header.lenmsg)*sizeof(char);
-            data = malloc(data_size);
-            printProtocol1(&pro1);
-            encodeProtocol1(&pro1, data, 0);
-            break;
-        case '2' :
-            ESP_LOGI(anotherTag, "Enviando paquete de Protocolo 2"); 
-            protocol2Init(&pro2, DEVICE_ID, mac, TCP_LAYER_ID);
-            data_size = (HEADER_LEN + pro2.header.lenmsg)*sizeof(char);
-            data = malloc(data_size);
-            printProtocol23(&pro2);
-            encodeProtocol2(&pro2, data, 0);
-            break;
-        case '3' :
-            ESP_LOGI(anotherTag, "Enviando paquete de Protocolo 3"); 
-            protocol3Init(&pro3, DEVICE_ID, mac, TCP_LAYER_ID);
-            data_size = (HEADER_LEN + pro3.header.lenmsg)*sizeof(char);
-            data = malloc(data_size);
-            printProtocol23(&pro3);
-            encodeProtocol3(&pro3, data, 0);
-            break;
-        case '4' :
-            ESP_LOGE(anotherTag, "Enviando paquete de Protocolo 4"); 
-            protocol4Init(&pro4, DEVICE_ID, mac, TCP_LAYER_ID);
-            data_size = (HEADER_LEN + pro4.header.lenmsg)*sizeof(char);
-            data = malloc(data_size);
-            printProtocol4(&pro4);
-            encodeProtocol4(&pro4, data, 0);
-            protocol4Destroy(&pro4);
-            break;
-        default:
-            ESP_LOGE(anotherTag, "ermanito, eso no es un protocolo....\n");  
-    }
-}
 
 
