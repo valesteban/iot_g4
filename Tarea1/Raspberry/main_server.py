@@ -103,6 +103,7 @@ def iniciar_servidor():
         while(True):
             if (ID_PROTOCOL == 4):
                 raw_data = b""
+                
                 while(True):  #paquetes fragmentados
                     try: 
                         raw_fragment = conn.recv(1024)
@@ -110,8 +111,6 @@ def iniciar_servidor():
                             break
                         else:
                             raw_data += raw_fragment
-                            print("Data recibida como bytes: ")
-                            print_hex(raw_fragment.hex())
                     except TimeoutError:
                         raise
                     except Exception:
@@ -122,8 +121,6 @@ def iniciar_servidor():
             else:
                 #otros protocolos
                 raw_data = conn.recv(1024)     
-                print("Data recibida como bytes: ")
-                print_hex(raw_data.hex())
                 data = decode_pkg(raw_data)
                     
             if data == b'':
@@ -167,8 +164,6 @@ def iniciar_servidor():
                             break
                         else:
                             raw_data += raw_fragment
-                            print("Data recibida como bytes: ")
-                            print_hex(raw_fragment.hex())
                             # enviar confirmación de que llegó el paquete
                             s.sendto(b'\1', addr)
                     except TimeoutError:
