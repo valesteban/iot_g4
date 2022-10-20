@@ -151,11 +151,30 @@ def iniciar_servidor():
             print(f"Listening for UDP packets in {HOST}:{PORT}")
 
             while(True):
-                data,addr = s.recvfrom(1024)
-                if data == b'':
-                    print(f"No llego na-> {data } y {addr}")
-                    break
-                print(f"Paquete recibido: {data}")
+                # data,addr = s.recvfrom(1024)
+                # if data == b'':
+                #     print(f"No llego na-> {data } y {addr}")
+                #     break
+                # print(f"Paquete recibido: {data}")
+
+                raw_data = b""
+                while(True):  #paquetes fragmentados
+                    try: 
+                        raw_fragment,addr = s.recvfrom(1024)
+                        if raw_fragment == b'\0':
+                            break
+                        else:
+                            raw_data += raw_fragment
+                            print("Data recibida como bytes: ")
+                            print_hex(raw_fragment.hex())
+                            # enviar confirmación de que llegó el paquete
+                            s.sendto(b'\1', addr)
+                    except TimeoutError:
+                        raise
+                    except Exception:
+                        raise
+                    # ojito, quizás se recibió un paquete :eyes: 
+                data = decode_pkg(raw_data)
 
                 #VA A BUSCAR LOS VALORES DE LA BBDD Y ENVIARSELO AL CLIENTE, PORQUE CUANDO CAMBIEN 
                 #AHI EL CLIENTE PARARA LA EJECUCION
