@@ -123,12 +123,8 @@ def iniciar_servidor():
                 raw_data = conn.recv(1024)     
                 print("Data recibida como bytes: ")
                 print_hex(raw_data.hex())
-                try:
-                    data = raw_data.decode()
-                except:
-                    # ojito, quizás se recibió un paquete :eyes:
-                    data = decode_pkg(raw_data)
-
+                data = decode_pkg(raw_data)
+                    
             if data == b'':
                 print(f"Termino no data {data}")
 
