@@ -286,16 +286,27 @@ int accelDestroy(AccelSensor* pAccelS)
     return 0;
 }
 
-int printAccelP(AccelSensor* pAccelS)
+int printAccelP(AccelSensor* pAccelS, size_t maxPrints)
 {
+    // maxPrints can be less than 1, in which case, everything is printed
+    if(maxPrints < 1)
+    {
+        maxPrints = pAccelS->size;
+    }
+    maxPrints = (pAccelS->size < maxPrints)? pAccelS->size : maxPrints;
     ESP_LOGI(STAG, "[");
-    for(int i=0; i < (pAccelS->size-1); i++)
+    // print only first maxPrints
+    for(int i=0; i < (maxPrints-1); i++)
     {
 
         printAccelPoint(pAccelS, i);
         ESP_LOGI(STAG, ",\n");
     }
-    printAccelPoint(pAccelS, pAccelS->size-1);
+    printAccelPoint(pAccelS, maxPrints-1);
+    if(maxPrints < pAccelS->size)
+    {
+        ESP_LOGI(STAG, "Skipping next %d values...", pAccelS->size - maxPrints);
+    }
     ESP_LOGI(STAG, "]\n");
 
     return 0;
@@ -590,7 +601,7 @@ int main()
 
     AccelSensor a;
     accelInit(&a, 5);
-    printAccelP(&a);
+    printAccelP(&a,0);
     printAccelPoint(&a, 3);
 
     printf("\n");
