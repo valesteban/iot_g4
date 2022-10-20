@@ -100,14 +100,34 @@ def iniciar_servidor():
         print(f'Conectado por alguien ({addr[0]}) desde el puerto {addr[1]}')
 
         while(True):
-            raw_data = conn.recv(1024)
-            print("Data recibida como bytes: ")
-            print_hex(raw_data.hex())
-            try:
-                data = raw_data.decode()
-            except:
-                # ojito, quizás se recibió un paquete :eyes:
+            if (ID_PROTOCOL == 4):
+                raw_data = b""
+                while(True):  #paquetes fragmentados
+                    try: 
+                        raw_fragment = conn.recv(1024)
+                        if raw_fragment == b'\0':
+                            break
+                        else:
+                            raw_data += raw_fragment
+                            print("Data recibida como bytes: ")
+                            print_hex(raw_fragment.hex())
+                    except TimeoutError:
+                        raise
+                    except Exception:
+                        raise
+                    # ojito, quizás se recibió un paquete :eyes: 
                 data = decode_pkg(raw_data)
+                        
+            else:
+                #otros protocolos
+                raw_data = conn.recv(1024)     
+                print("Data recibida como bytes: ")
+                print_hex(raw_data.hex())
+                try:
+                    data = raw_data.decode()
+                except:
+                    # ojito, quizás se recibió un paquete :eyes:
+                    data = decode_pkg(raw_data)
 
             if data == b'':
                 print(f"Termino no data {data}")
