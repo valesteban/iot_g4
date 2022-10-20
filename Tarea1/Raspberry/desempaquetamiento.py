@@ -1,4 +1,5 @@
 import struct
+import json
 
 
 class Header:
@@ -44,6 +45,32 @@ class Header:
 
         return read_bytes
 
+    # GETTERS
+    def get_device_id(self) -> int:
+        """
+            Entrega la id del dispositivo
+        """
+        return self.id
+
+    def get_mac(self) -> str:
+        """
+            Entrega la mac del header
+        """
+        return self.mac
+
+    def get_transport_layer(self) -> int:
+        """
+            Entrega el transport layer 
+        """
+        return self.t_layer
+
+    def get_protocol_id(self) -> int:
+        """
+            Entrega la id del protocolo
+        """
+        return self.protocol
+
+
 class BattSensor:
     bytes_size:int = 6
     def __init__(self, level=0, timestamp=0) -> None:
@@ -58,6 +85,21 @@ class BattSensor:
         read_bytes = 6
         self.data_1, self.level, self.timestamp = struct.unpack('<bbi', arrBytes[pos:pos+read_bytes])
         return read_bytes
+
+    # GETTERS
+    def get_level(self) -> int:
+        """
+            Entrega el batt_level
+        """
+        return self.level
+
+
+    def get_timestamp(self) -> int:
+        """
+            Entrega el timestamp del battery
+        """
+        return self.timestamp
+
 
 class THPCSensor:
     bytes_size:int = 10
@@ -77,6 +119,31 @@ class THPCSensor:
 
         self.temp, self.pres, self.hum, self.co_2 = unpacked
         return read_bytes
+
+    # GETTERS
+    def get_temp(self) -> int:
+        """
+            Entrega la temperatura del sensor
+        """ 
+        return self.temp
+
+    def get_pres(self) -> float:
+        """
+            Entrega presion del sensor
+        """ 
+        return self.pres
+
+    def get_hum(self) -> int:
+        """
+            Entrega la humedad del sensor
+        """ 
+        return self.hum
+
+    def get_co2(self) -> float:
+        """
+            Entrega el co2 del sensor
+        """ 
+        return self.co_2
 
 
 class AccelKPI:
@@ -101,6 +168,49 @@ class AccelKPI:
         self.rms, self.amp_x, self.frec_x, self.amp_y, self.frec_y, self.amp_z, self.frec_z = unpacked
         
         return read_bytes
+    
+    # GETTERS
+    def get_rms(self) -> float:
+        """
+            Entrega el rms del accel. kpi
+        """
+        return self.rms
+
+    def get_amp_x(self) -> float:
+        """
+            Entrega el amp_x del accel. kpi
+        """
+        return self.amp_x
+
+    def get_frec_x(self) -> float:
+        """
+            Entrega el frec_x del accel. kpi
+        """
+        return self.frec_x
+
+    def get_amp_y(self) -> float:
+        """
+            Entrega el amp_y del accel. kpi
+        """
+        return self.amp_y
+
+    def get_frec_y(self) -> float:
+        """
+            Entrega el frec_y del accel. kpi
+        """
+        return self.frec_y
+
+    def get_amp_z(self) -> float:
+        """
+            Entrega el amp_z del accel. kpi
+        """
+        return self.amp_z
+
+    def get_frec_z(self) -> float:
+        """
+            Entrega el frec_z del accel. kpi
+        """
+        return self.frec_z
 
 class AccelSensor:
 
@@ -124,12 +234,34 @@ class AccelSensor:
         self.size = size
 
         return read_bytes
+    
+    # GETTERS
+    def get_acc_x(self) -> list[float]:
+        """
+            Entrega la data del eje x del medidor de aceleracion
+        """
+        return self.data_x
+
+    def get_acc_y(self) -> list[float]:
+        """
+            Entrega la data del eje y del medidor de aceleracion
+        """
+        return self.data_y
+
+    def get_acc_z(self) -> list[float]:
+        """
+            Entrega la data del eje z del medidor de aceleracion
+        """
+        return self.data_z
+
+    
 
 class Protocol:
 
     def __init__(self) -> None:
         self.header: Header = Header()
         self.battery: BattSensor = BattSensor()
+        # Timestamp es atributto de Battsensor
 
     def __str__(self) -> str:
         res = f"{self.__class__.__name__}\n"
@@ -143,12 +275,42 @@ class Protocol:
     def decode_msg(self, arrBytes: bytes, pos: int = 0) -> int:
         return self.battery.decode(arrBytes, pos)
 
+    def get_protocol_data(self) -> dict:
+        """
+            Entrega la data asociada a cada protocolo.
+            Por defecto entrega el batt_level y timestamp
+        """
+
+        batt_level = self.battery.get_level()
+        timestamp = self.battery.get_timestamp()
+
+        data = {
+            "batt_level": batt_level,
+            "timestamp" : timestamp
+        }
+
+        return data
+
     @classmethod
     def from_header(cls, header: Header) -> "Protocol":
         newPro = cls()
         newPro.header = header
         return newPro
 
+    # GETTERS
+    def get_header(self) -> Header:
+        """
+            Entrega el header del mensaje
+        """
+        return self.header
+
+    def get_battery(self) -> BattSensor:
+        """
+            Entrega el attributo battery del protocolo
+        """
+        return self.battery
+
+    
 class Protocol0(Protocol):
     len_msg:int = 6
 
@@ -171,6 +333,29 @@ class Protocol1(Protocol):
         total_bytes += self.thpc.decode(arrBytes, pos)
 
         return total_bytes
+
+    # Override
+    def get_protocol_data(self) -> dict:
+        """
+            Entrega la data asociada al protocolo 1 en forma de dict
+        """
+
+        # Batt sensor
+        data = super().get_protocol_data()
+
+        # Protocolo 1 data
+        # THPC sensor
+        temp = self.thpc.get_temp()
+        press = self.thpc.get_pres()
+        hum = self.thpc.get_hum()
+        co = self.thpc.get_co2()
+
+        data["temp"] = temp
+        data["press"] = press
+        data["hum"] = hum
+        data["co"] = co
+        
+        return data
 
 
 class Protocol2(Protocol):
@@ -207,6 +392,32 @@ class Protocol2(Protocol):
 
         return total_bytes+4
 
+    # Override
+    def get_protocol_data(self) -> dict:
+        """
+            Entrega la data asociada al protocolo 2 en forma de dict
+        """
+        # Batt sensor
+        data = super().get_protocol_data()
+
+        # Protocol 2 data
+        # THPC sensor
+        temp = self.thpc.get_temp()
+        press = self.thpc.get_pres()
+        hum = self.thpc.get_hum()
+        co = self.thpc.get_co2()
+
+        # RMS Kpi sensor
+        rms = self.kpi.get_rms()
+
+        data["temp"] = temp
+        data["press"] = press
+        data["hum"] = hum
+        data["co"] = co
+        data["rms"] = rms
+
+        return data 
+
 
 class Protocol3(Protocol):
     len_msg:int = 44
@@ -228,6 +439,44 @@ class Protocol3(Protocol):
         total_bytes += self.kpi.decode(arrBytes, pos)
 
         return total_bytes
+
+    # Override
+    def get_protocol_data(self) -> dict:
+        """
+            Entrega la data asociada al protocolo 3 como dict
+        """
+        # Batt sensor
+        data = super().get_protocol_data()
+
+        # Protocol 3 data
+        # THPC sensor
+        temp = self.thpc.get_temp()
+        press = self.thpc.get_pres()
+        hum = self.thpc.get_hum()
+        co = self.thpc.get_co2()
+
+        # KPI sensor
+        rms = self.kpi.get_rms()
+        amp_x = self.kpi.get_amp_x()
+        frec_x = self.kpi.get_frec_x()
+        amp_y = self.kpi.get_amp_y()
+        frec_y = self.kpi.get_frec_y()
+        amp_z = self.kpi.get_amp_z()
+        frec_z = self.kpi.get_frec_z()
+
+        data["temp"] = temp
+        data["press"] = press
+        data["hum"] = hum
+        data["co"] = co
+        data["rms"] = rms
+        data["amp_x"] = amp_x
+        data["frec_x"] = frec_x
+        data["amp_y"] = amp_y
+        data["frec_y"] = frec_y
+        data["amp_z"] = amp_z
+        data["frec_z"] = frec_z
+
+        return data 
 
 class Protocol4(Protocol):
     len_msg_without_acc:int = 16
@@ -267,6 +516,37 @@ class Protocol4(Protocol):
         self.len_data = size
 
         return total_bytes
+        
+    # Override
+    def get_protocol_data(self) -> dict:
+        """
+            Entrega la data del protocolo 4 como dict
+        """
+        # Batt sensor
+        data = super().get_protocol_data()
+
+        # Protocolo 4 data
+        # THPC sensor
+        temp = self.thpc.get_temp()
+        press = self.thpc.get_pres()
+        hum = self.thpc.get_hum()
+        co = self.thpc.get_co2()
+
+        # Accel Sensor
+        acc_x = self.acc.get_acc_x()
+        acc_y = self.acc.get_acc_y()
+        acc_z = self.acc.get_acc_z()
+
+        data["temp"] = temp
+        data["press"] = press
+        data["hum"] = hum
+        data["co"] = co
+
+        data["acc_x"] = acc_x
+        data["acc_y"] = acc_y
+        data["acc_z"] = acc_z
+
+        return data
 
 def decode_pkg(encoded_pkg: bytes) -> Protocol:
     translation: dict[str, Protocol] = {

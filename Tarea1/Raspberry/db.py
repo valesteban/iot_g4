@@ -1,5 +1,5 @@
 import mariadb
-
+import json
 class DB:
 
     def __init__(self, host, user, password, database) -> None:
@@ -49,46 +49,57 @@ class DB:
         self.cursor.execute(sql)
         return self.cursor.fetchall()
 
-    # TODO
-    def save_data(self, data:dict) -> None:
+    def save_data(self, protocol_values:dict) -> None:
         """
             Metodo que guarda datos en la DB
         """
 
-        try:
-            sql_save_data = '''
-                INSERT INTO datos
-                VALUES (%s, %s, %s, %s)
-            '''
-            # FIXME
-            # (id_device, timestamp, mac_address, data)
-            new_data = (data)
-            self.cursor.execute(sql_save_data, new_data)
-            self.db.commit() # actualizo la db
+        #try:
+        sql_save_data = '''
+            INSERT INTO datos (deviceId, timestamp, mac_address, data)
+            VALUES (%s, %s, %s, %s)
+        '''
 
-        except:
-            print("ERROR AL GUARDAR NUEVO DATO EN LA BASE DE DATOS")
+        # (id_device, timestamp, mac_address, data)
+        new_data = (protocol_values["id_device"], protocol_values["timestamp"], protocol_values["mac"], protocol_values["data"],)
+        print("NEW DATA:", new_data)
+        self.cursor.execute(sql_save_data, new_data)
+        self.db.commit() # actualizo la db
+
+        #except:
+        #    print("ERROR AL GUARDAR NUEVO DATO EN LA BASE DE DATOS")
 
     
-    # TODO
-    def save_log(self, data:dict) -> None:
+    def save_log(self, protocol_values:dict) -> None:
         """
-            Metodo que guarada un log en la DB
+            Metodo que guarda un log en la DB
         """
+        # Obtener id del dato
+        #try:
+        sql = '''
+            SELECT id
+            FROM datos
+            WHERE deviceId = %s
+            AND timestamp = %s
+        '''
+        self.cursor.execute(sql, (protocol_values["id_device"], protocol_values["timestamp"],))
+        dato_id = self.cursor.fetchall()[0][0]
+        #except:
+        #pprint("logs: ERROR AL ENCONTRAR EL DATO")
 
-        try:
-            sql_save_log = '''
-                INSERT INTO logs
-                VALUES (%s, %s, %s, %s)
-            '''
-            # FIXME
-            # (deviceId, timestamp, protocolId, transportLayer)
-            new_log = ()
-            self.cursor.execute(sql_save_log, new_log)
-            self.db.commit() # actualizo la db
+        # Guardar el log
+        #try:
+        sql_save_log = '''
+            INSERT INTO logs
+            VALUES (%s, %s, %s, %s, %s)
+        '''
+        # (datos_id, deviceId, timestamp, protocolId, transportLayer)
+        new_log = (dato_id, protocol_values["id_device"], protocol_values["timestamp"], protocol_values["id_protocol"], protocol_values["transport_layer"])
+        self.cursor.execute(sql_save_log, new_log)
+        self.db.commit() # actualizo la db
 
-        except:
-            print("ERROR AL GUARDAR NUEVO DATO EN LA BASE DE DATOS")
+        #except:
+        #    print("ERROR AL GUARDAR NUEVO DATO EN LA BASE DE DATOS")
 
 
     def change_config(self, id_protocol:int, transport_layer:int) -> None:
@@ -96,16 +107,13 @@ class DB:
             Meotodo que cambia la configuracionde la BBDD por una nueva
         """
 
-        try:
-            sql_change_config = '''
-                UPDATE configuracion
-                SET protocolId = %s, transportLayer = %s
-            '''
-            new_config = (id_protocol, transport_layer)
-            self.cursor.execute(sql_change_config, new_config)
-            self.db.commit() # actualizo la db
-        except:
-            print("ERROR AL CAMBIAR LA BASE DE DATOS")
+        sql_change_config = '''
+            UPDATE configuracion
+            SET protocolId = %s, transportLayer = %s
+        '''
+        new_config = (id_protocol, transport_layer)
+        self.cursor.execute(sql_change_config, new_config)
+        self.db.commit() # actualizo la db
 
     def return_config(self) -> tuple:
         """

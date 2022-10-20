@@ -1,3 +1,4 @@
+import os
 from time import sleep
 from db import DB
 
@@ -47,6 +48,24 @@ def show_db_logs() -> None:
     except:
         print("Error al mostrar los logs")
 
+def delete_db_data() -> None:
+    """
+        Elimina los datos de la tabla data
+    """
+    # host | user | pass | database
+    db = DB("localhost", "iot4", "12345678", "tarea1")
+    # Eliminamos los datos de la tabla datos.
+    db.delete_all_data()
+
+def delete_db_logs() -> None:
+    """
+        Elimina los logs que hay en la tabla
+    """
+    # host | user | pass | database
+    db = DB("localhost", "iot4", "12345678", "tarea1")
+    # Eliminamos los logs de la base de datos.
+    db.delete_all_logs()
+
 
 if __name__ == "__main__":
     """
@@ -64,51 +83,56 @@ if __name__ == "__main__":
             print("Bye :)")
             break
 
-        try:
-            opcion = int(opcion)
-            # Configuracion 
-            if opcion == 1:
-                print("\n===== OPCIONES DE CONFIGURACION =====")
-                print("[1] Cambiar configuracion\n[2] Ver Configuracion\n")
-                opcion = input("Elija una opcion: ")
+        opcion = int(opcion)
+        # Configuracion 
+        if opcion == 1:
+            print("\n===== OPCIONES DE CONFIGURACION =====")
+            print("[1] Cambiar configuracion\n[2] Ver Configuracion\n")
+            opcion = input("Elija una opcion: ")
 
-                # Cambiar configuracion
-                if opcion == "1":
-                    print("----- CAMBIAR LA CONFIGURACION DE LA BBDD -----\n")
+            # Cambiar configuracion
+            if opcion == "1":
+                print("----- CAMBIAR LA CONFIGURACION DE LA BBDD -----\n")
 
-                    new_id_protocol = input("Nuevo ID_PROTOCOL: ")
-                    new_transport_layer = input("Nuevo TRANSPORT_LAYER: ")
+                new_id_protocol = input("Nuevo ID_PROTOCOL: ")
+                new_transport_layer = input("Nuevo TRANSPORT_LAYER: ")
 
-                    print(f"Cambiando la configuracion por: ({new_id_protocol}, {new_transport_layer})")
-                    change_db_config(int(new_id_protocol), int(new_transport_layer))
+                print(f"Cambiando la configuracion por: ({new_id_protocol}, {new_transport_layer})")
+                change_db_config(int(new_id_protocol), int(new_transport_layer))
 
-                    print("----- NUEVA CONFIGURACION AGREGADA -----")
-                # Ver configuracion
-                elif opcion == "2":
-                    print("----- VER LA CONFIGURACION -----\n")
-                    config = return_db_config()
-                    print(f"Configuracion actual: {config}")                    
-                
-            # Datos
-            elif opcion == 2:
-                print("\n===== OPCIONES DE DATOS =====")
-                print("[1] Mostrar datos actuales\n[2] Mostrar datos continuamente\n")
-                opcion = input("Elija una opcion: ")
-                if opcion == "1":
+                print("----- NUEVA CONFIGURACION AGREGADA -----")
+            # Ver configuracion
+            elif opcion == "2":
+                print("----- VER LA CONFIGURACION -----\n")
+                config = return_db_config()
+                print(f"Configuracion actual: {config}")                    
+            
+        # Datos
+        elif opcion == 2:
+            print("\n===== OPCIONES DE DATOS =====")
+            print("[1] Mostrar datos actuales\n[2] Mostrar datos continuamente\n[3] Eliminar todos los datos (Borrar primero los logs)")
+            opcion = input("Elija una opcion: ")
+            if opcion == "1":
+                show_db_data()
+            elif opcion == "2":
+                while True:
                     show_db_data()
-                elif opcion == "2":
-                    while True:
-                        show_db_data()
-                        sleep(1)
-            # Logs
-            elif opcion == 3:
-                print("\n===== OPCIONES DE LOGS  =====")
-                print("[1] Mostrar logs actuales\n")
-                if opcion == "1":
-                    show_db_logs()  
-        except:
-            print("Opcion mal ingresada. Ingrese nuevamente.")
-            continue
+                    sleep(10)
+                    os.system('clear')
+            elif opcion == "3":
+                delete_db_data()
+                print("Datos eliminados")
+        # Logs
+        elif opcion == 3:
+            print("\n===== OPCIONES DE LOGS  =====")
+            print("[1] Mostrar logs actuales\n[2] Borrar los logs\n")
+            opcion = input("Elija una opcion: ")
+            if opcion == "1":
+                show_db_logs()
+            elif opcion == "2":
+                delete_db_logs()
+                print("Logs eliminados")
+
 
 
 

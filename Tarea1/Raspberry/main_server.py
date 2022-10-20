@@ -2,9 +2,38 @@
 # -- coding: utf-8 --
 import socket
 from xmlrpc.client import TRANSPORT_ERROR
+from desempaquetamiento import Protocol
 from db import DB
 import json
 from desempaquetamiento import decode_pkg, print_hex
+
+def get_protocol_values(data: Protocol) -> dict:
+    """
+        Funcion auxiliar que procesa un protocollo y obtiene
+        toda la info necesaria para ser guardada en la DB
+    """
+
+    header = data.get_header()
+    id_device = header.get_device_id()
+    mac = header.get_mac()
+    transport_layer = header.get_transport_layer()
+    id_protocol = header.get_protocol_id()
+
+    battery = data.get_battery()
+    timestamp = battery.get_timestamp()
+
+    protocol_data = json.dumps(data.get_protocol_data())
+
+    protocol_values = {
+        "id_device" : id_device,
+        "timestamp" : timestamp,
+        "mac": mac,
+        "id_protocol": id_protocol,
+        "transport_layer": transport_layer,
+        "data" : protocol_data
+    }
+
+    return protocol_values
 
 
 # "192.168.5.177"  # Standard loopback interface address (localhost)
@@ -55,11 +84,7 @@ def iniciar_servidor():
             break
     s.shutdown(socket.SHUT_RDWR)
     conn.close()
-    
-    
-        
-            
-                               
+              
 
     if TRANSPORT_LAYER == 0: #TCP
         
@@ -104,9 +129,23 @@ def iniciar_servidor():
                     # ojito, quizás se recibió un paquete :eyes:
                     data = decode_pkg(raw_data)
 
-                if data == b'':
-                    print(f"Termino no data {data}")
-                print(f"Paquete recibido: {data} \n")
+            if data == b'':
+                print(f"Termino no data {data}")
+
+            # Printeamos la data recibida
+            print(f"Paquete recibido: {data} \n")
+
+            # Info del paquete:
+            protocol_values = get_protocol_values(data)
+            print(f"PROTOCOL_DATA")
+            print(protocol_values)
+
+            # Guarda todo lo necesario en la base de datos
+            db.save_data(protocol_values)
+            db.save_log(protocol_values)
+
+
+        print("CHAO")
             
     else:           
         print("Hacer conexion UDP")
@@ -139,9 +178,6 @@ def iniciar_servidor():
             s.close()
             print("Desconectado")  
         print("CHAO")    
-
-
-
 
   
 if __name__ == "__main__":
