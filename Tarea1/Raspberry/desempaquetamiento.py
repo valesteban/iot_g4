@@ -70,6 +70,28 @@ class Header:
         """
         return self.protocol
 
+    def get_message_length(self) -> int:
+        """
+            Entrega el largo del mensaje
+        """
+        return self.len_msg
+
+    # CHECK DATA INTEGRITY
+    def check_t_layer(self) -> tuple[bool,str,int]:
+        attr_name = "t_layer"
+        attr_value =  getattr(self, attr_name)
+        integrity = attr_value == 0 or attr_value == 1
+        return integrity, attr_name, attr_value
+
+    def check_protocol(self) -> tuple[bool,str,int]:
+        attr_name = "t_layer"
+        attr_value =  getattr(self, attr_name)
+        integrity = attr_value in range(0,5)
+        return integrity, attr_name, attr_value
+
+    
+
+
 
 class BattSensor:
     bytes_size:int = 6
@@ -548,8 +570,7 @@ class Protocol4(Protocol):
 
         return data
 
-def decode_pkg(encoded_pkg: bytes) -> Protocol:
-    translation: dict[str, Protocol] = {
+translation: dict[str, Protocol] = {
         0: Protocol0,
         1: Protocol1,
         2: Protocol2,
@@ -557,6 +578,7 @@ def decode_pkg(encoded_pkg: bytes) -> Protocol:
         4: Protocol4
     }
 
+def decode_pkg(encoded_pkg: bytes) -> Protocol:
     curr = 0
 
     header = Header()
@@ -573,8 +595,37 @@ def decode_pkg(encoded_pkg: bytes) -> Protocol:
             e.args = e[0]+additional+e[1:]
             raise(e)
 
+    check_pkg_integrity(header, encoded_pkg[12:])
 
     return pro
+
+def check_pkg_integrity(a_header: Header, msg_bytes: bytes):
+
+    for fun_str in ["check_t_layer", "check_protocol"]:
+        fun = getattr(a_header, fun_str)
+        integrity, attr_name, attr_value = fun()
+        if not integrity:
+            raise Exception("Corrupt header:{}\n Incorrect value {} for attribute {}.".format(a_header, attr_value, attr_name))
+    
+    # check msg len
+    declared_msg_len = a_header.get_message_length()
+    declared_protocol = a_header.get_protocol_id()
+
+    actual_msg_len = len(msg_bytes)
+
+    if declared_msg_len != actual_msg_len:
+        raise Exception("Expected message of length {}, got {}".format(declared_msg_len, actual_msg_len))
+
+    if declared_protocol in range(0,4):
+        expected_msg_len = translation[declared_protocol].len_msg
+        if declared_msg_len != expected_msg_len:
+            raise Exception("Message of length {} does not match length of {} for Protocol {}".format(declared_msg_len, expected_msg_len, declared_protocol))
+        
+    else: #Protocolo 4
+        diff = translation[declared_protocol].len_msg_without_acc
+        declared_array_len = declared_msg_len - diff
+        if (diff % 12) != 0: # Bytes not divisible by 12
+            raise Exception("Cannot decode message as Protocol {}. Invalid array length of {}, should be divisible by 12.".format(declared_protocol, declared_array_len))
 
 def print_hex(hex_str):
     n = len(hex_str)

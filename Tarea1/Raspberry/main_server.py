@@ -6,6 +6,7 @@ from desempaquetamiento import Protocol
 from db import DB
 import json
 from desempaquetamiento import decode_pkg, print_hex
+import sys
 
 def get_protocol_values(data: Protocol) -> dict:
     """
@@ -175,7 +176,11 @@ def iniciar_servidor():
                     except Exception:
                         raise
                     # ojito, quizás se recibió un paquete :eyes: 
-                data = decode_pkg(raw_data)
+                try:
+                    data = decode_pkg(raw_data)
+                except Exception as e:
+                    print(e, file=sys.stderr)
+                    continue
                 # Info del paquete:
                 protocol_values = get_protocol_values(data)
                 print(f"PROTOCOL_DATA")
