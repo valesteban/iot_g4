@@ -162,6 +162,7 @@ def iniciar_servidor():
                     try: 
                         raw_fragment,addr = s.recvfrom(1024)
                         if raw_fragment == b'\0':
+                            print("All fragments received!\n")
                             break
                         else:
                             raw_data += raw_fragment
@@ -175,6 +176,17 @@ def iniciar_servidor():
                         raise
                     # ojito, quizás se recibió un paquete :eyes: 
                 data = decode_pkg(raw_data)
+                # Info del paquete:
+                protocol_values = get_protocol_values(data)
+                print(f"PROTOCOL_DATA")
+                print(protocol_values)
+
+                # Guarda todo lo necesario en la base de datos
+                db.save_data(protocol_values)
+                db.save_log(protocol_values)
+
+
+                
 
                 #VA A BUSCAR LOS VALORES DE LA BBDD Y ENVIARSELO AL CLIENTE, PORQUE CUANDO CAMBIEN 
                 #AHI EL CLIENTE PARARA LA EJECUCION

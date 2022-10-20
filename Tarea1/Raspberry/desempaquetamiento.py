@@ -565,7 +565,14 @@ def decode_pkg(encoded_pkg: bytes) -> Protocol:
 
     proClass = translation[header.protocol]
     pro = proClass.from_header(header)
-    pro.decode_msg(encoded_pkg, pos=curr)
+    try:
+        pro.decode_msg(encoded_pkg, pos=curr)
+    except Exception as e:
+        if len(e.args) >= 1:
+            additional = "    Received Header: {}\n".format(header)
+            e.args = e[0]+additional+e[1:]
+            raise(e)
+
 
     return pro
 
