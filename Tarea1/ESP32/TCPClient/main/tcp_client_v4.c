@@ -74,10 +74,10 @@ char* tcp_initial_connection(void){
         //CREA SOCKET
         int sock =  socket(addr_family, SOCK_STREAM, ip_protocol);
         if (sock < 0) {
-            ESP_LOGE(TAG, "Unable to create socket: errno %d", errno);
+            ESP_LOGE("Socket", "Unable to create socket: errno %d", errno);
             
         }
-        ESP_LOGI(TAG, "Socket created, connecting to %s:%d", host_ip, PORT);
+        ESP_LOGI("Socket", "Socket created, connecting to %s:%d", host_ip, PORT);
 
         //CONECTA SOCKET CON SERVODIR/RASPBERRY
         int err = connect(sock, (struct sockaddr *)&dest_addr, sizeof(dest_addr));
@@ -85,7 +85,7 @@ char* tcp_initial_connection(void){
             ESP_LOGE(TAG, "Socket unable to connect: errno %d", errno);
            
         }
-        ESP_LOGI(TAG, "Successfully connected");
+        ESP_LOGI("Socket", "Successfully connected");
 
         while (1) {
             //ENVIA UN PAQUETE 
@@ -98,7 +98,7 @@ char* tcp_initial_connection(void){
             //RECIVE PAQUETE CON CONTENIDO id_protocol y layer_protocol
             int len = recv(sock, rx_buffer, sizeof(rx_buffer) - 1, 0);
             // Error occurred during receiving
-            if (len < 0) {
+            if (len <= 0) {
                 ESP_LOGE(TAG, "recv failed: errno %d", errno);
                 break;
             }
@@ -127,6 +127,7 @@ char* tcp_initial_connection(void){
 
 
 void tcp_client(char id_protocol){
+    ESP_LOGI("tcp client", "Protocolo en uso: %c", id_protocol);
 
     while (1) {
         
@@ -188,10 +189,7 @@ void tcp_client(char id_protocol){
                     break;
                 }
 
-            }
-
-            
-            
+            }  
             
 
             //DEEPSLEEP 60 SEC
@@ -199,8 +197,8 @@ void tcp_client(char id_protocol){
             ESP_LOGI("Deep Sleep", "Powering off Wi-Fi...");
 
             //sleep(10);  //le puse 10 sec por mientras q lo 60 era muy largo
-            esp_wifi_stop();
-            esp_sleep_enable_timer_wakeup(60 * 1000000ull);
+            //esp_wifi_stop();
+            esp_sleep_enable_timer_wakeup(10 * 1000000ull);
             esp_deep_sleep_start();
             /*
             //RECIVIMOS RESPUESTA
