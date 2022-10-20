@@ -13,6 +13,7 @@
 #define PROTOCOL4_LEN_WITHOUT_ACC 16
 
 #define ACC_ARRAY_LEN 2000
+#define PROTOCOL4_MAX_POINT_PRINTS 200
 
 static const char *PKGTAG = "Paquete";
 
@@ -53,7 +54,7 @@ int encodeIdMac(Header* pHeader, unsigned char* arr, int pos)
         *(curr+i) = pHeader->mac[i];
     }
     *(curr+6) = pHeader->id;
-    *(curr+7) = (pHeader->id) << 8;
+    *(curr+7) = ((pHeader->id) >> 8);
     return 8;
 }
 
@@ -503,7 +504,7 @@ int printProtocol4(Protocol4* pro)
     ESP_LOGI(PKGTAG, ",\n\t");
     printThpcS(&(pro->thpc));
     ESP_LOGI(PKGTAG, ",\n\t");
-    printAccelP(&(pro->acc));
+    printAccelP(&(pro->acc), PROTOCOL4_MAX_POINT_PRINTS);
     ESP_LOGI(PKGTAG, "]\n");
     return 0;
 }
@@ -766,7 +767,7 @@ int main()
     AccelSensor atest;
     int readA = decodeAccelS(&atest, ACC_ARRAY_LEN,test, 0);
     printf("read Bytes: %d\n", readA);
-    printAccelP(&atest);
+    printAccelP(&atest,0);
 
     protocol4Destroy(&p4);
     
