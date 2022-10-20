@@ -552,6 +552,70 @@ int decodeProtocol4(Protocol4* pro, unsigned char* arr, int pos)
     return totalBytes;
 }
 
+int encode_pkg(
+    char id_protocol, 
+    unsigned char* mac, 
+    unsigned int device_id, 
+    unsigned char tlayer, 
+    unsigned char** dataPtr, 
+    int* dataSizePtr)
+{
+    Protocol0 pro0;
+    Protocol1 pro1;
+    Protocol23 pro2;
+    Protocol23 pro3;
+    Protocol4 pro4;
+
+    const char *anotherTag = "empaquetamiento";
+    
+    switch(id_protocol) {
+        case '0' :
+            ESP_LOGI(anotherTag, "Enviando paquete de Protocolo 0"); 
+            protocol0Init(&pro0, device_id, mac, tlayer);
+            *dataSizePtr = (HEADER_LEN + pro0.header.lenmsg)*sizeof(char);
+            *dataPtr = malloc(*dataSizePtr);
+            printProtocol0(&pro0);
+            encodeProtocol0(&pro0, *dataPtr, 0);
+            break;
+        case '1' :
+            ESP_LOGI(anotherTag, "Enviando paquete de Protocolo 1"); 
+            protocol1Init(&pro1, device_id, mac, tlayer);
+            *dataSizePtr = (HEADER_LEN + pro1.header.lenmsg)*sizeof(char);
+            *dataPtr = malloc(*dataSizePtr);
+            printProtocol1(&pro1);
+            encodeProtocol1(&pro1, *dataPtr, 0);
+            break;
+        case '2' :
+            ESP_LOGI(anotherTag, "Enviando paquete de Protocolo 2"); 
+            protocol2Init(&pro2, device_id, mac, tlayer);
+            *dataSizePtr= (HEADER_LEN + pro2.header.lenmsg)*sizeof(char);
+            *dataPtr = malloc(*dataSizePtr);
+            printProtocol23(&pro2);
+            encodeProtocol2(&pro2, *dataPtr, 0);
+            break;
+        case '3' :
+            ESP_LOGI(anotherTag, "Enviando paquete de Protocolo 3"); 
+            protocol3Init(&pro3, device_id, mac, tlayer);
+            *dataSizePtr = (HEADER_LEN + pro3.header.lenmsg)*sizeof(char);
+            *dataPtr = malloc(*dataSizePtr);
+            printProtocol23(&pro3);
+            encodeProtocol3(&pro3, *dataPtr, 0);
+            break;
+        case '4' :
+            ESP_LOGE(anotherTag, "Enviando paquete de Protocolo 4"); 
+            protocol4Init(&pro4, device_id, mac, tlayer);
+            *dataSizePtr = (HEADER_LEN + pro4.header.lenmsg)*sizeof(char);
+            *dataPtr = malloc(*dataSizePtr);
+            printProtocol4(&pro4);
+            encodeProtocol4(&pro4, *dataPtr, 0);
+            protocol4Destroy(&pro4);
+            break;
+        default:
+            ESP_LOGE(anotherTag, "ermanito, eso no es un protocolo....\n");  
+            return 1;
+    }
+    return 0;
+}
 
 /*
 int main()
