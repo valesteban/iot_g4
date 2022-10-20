@@ -13,6 +13,7 @@
 #include "esp_netif.h"
 #include "esp_log.h"
 #include "esp_mac.h"
+#include "esp_sleep.h"
 #include <sys/param.h>
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
