@@ -88,7 +88,7 @@ def iniciar_servidor():
               
 
     if TRANSPORT_LAYER == 0: #TCP
-        
+
         print("Hacer conexion TCP")
         s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         s.setsockopt(socket.SOL_SOCKET,socket.SO_REUSEADDR,1)
@@ -99,15 +99,17 @@ def iniciar_servidor():
         # address is the address bound to the socket on the other end of the connection.
         conn, addr = s.accept()
         print(f'Conectado por alguien ({addr[0]}) desde el puerto {addr[1]}')
-
-        while(True):
+        while True:
             if (ID_PROTOCOL == 4):
                 raw_data = b""
-                
+                size = 0
                 while(True):  #paquetes fragmentados
                     try: 
                         raw_fragment = conn.recv(1024)
+                        size += len(raw_fragment)
+                        print_hex(raw_fragment.hex())
                         if raw_fragment == b'\0':
+                            print("Paquete completo recibido b00")
                             break
                         else:
                             raw_data += raw_fragment
@@ -120,7 +122,8 @@ def iniciar_servidor():
                         
             else:
                 #otros protocolos
-                raw_data = conn.recv(1024)     
+                raw_data = conn.recv(1024)   
+                print_hex(raw_data.hex())
                 data = decode_pkg(raw_data)
                     
             if data == b'':
@@ -137,9 +140,6 @@ def iniciar_servidor():
             # Guarda todo lo necesario en la base de datos
             db.save_data(protocol_values)
             db.save_log(protocol_values)
-
-
-        print("CHAO")
             
     else:           
         print("Hacer conexion UDP")

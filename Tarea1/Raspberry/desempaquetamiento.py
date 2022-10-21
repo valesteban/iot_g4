@@ -525,6 +525,7 @@ class Protocol4(Protocol):
         sizeof_float = struct.calcsize("<f")
         num_coords = 3
         arr_len = int((size/sizeof_float)/num_coords)
+        print("ArrLen: ", arr_len)
 
         read_bytes = super().decode_msg(arrBytes, pos)
         total_bytes = read_bytes
@@ -583,6 +584,7 @@ def decode_pkg(encoded_pkg: bytes) -> Protocol:
 
     header = Header()
     read_bytes = header.decode(encoded_pkg, 0)
+    check_pkg_integrity(header, encoded_pkg[12:])
     curr += read_bytes
 
     proClass = translation[header.protocol]
@@ -592,11 +594,10 @@ def decode_pkg(encoded_pkg: bytes) -> Protocol:
     except Exception as e:
         if len(e.args) >= 1:
             additional = "    Received Header: {}\n".format(header)
-            e.args = e.args[0]+additional+e.args[1:]
+            e.args = (e.args[0]+str(additional),)+e.args[1:]
             raise(e)
 
-    check_pkg_integrity(header, encoded_pkg[12:])
-
+    
     return pro
 
 def check_pkg_integrity(a_header: Header, msg_bytes: bytes):
@@ -624,7 +625,7 @@ def check_pkg_integrity(a_header: Header, msg_bytes: bytes):
     else: #Protocolo 4
         diff = translation[declared_protocol].len_msg_without_acc
         declared_array_len = declared_msg_len - diff
-        if (diff % 12) != 0: # Bytes not divisible by 12
+        if (declared_array_len % 12) != 0: # Bytes not divisible by 12
             raise Exception("Cannot decode message as Protocol {}. Invalid array length of {}, should be divisible by 12.".format(declared_protocol, declared_array_len))
 
 def print_hex(hex_str):
