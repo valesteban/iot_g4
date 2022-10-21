@@ -177,11 +177,16 @@ void tcp_client(char id_protocol){
             
             if(id_protocol == '4'){
                 //FRAGMENTACIÓN
-                fragmentation(data, data_size, sock);
+                int err = fragmentation(data, data_size, sock);
+                free(data);
+                if (err < 0) {
+                    ESP_LOGE(TAG, "Error occurred during sending: errno %d", errno);
+                    break;
+                }
+                ESP_LOGI("Envio tcp", "Completado envío TCP de protocolo 4! err: %d", err);
             }else{
                 ESP_LOGI(TAG, "Paquete encodeado: \n");
                 ESP_LOG_BUFFER_HEX("Hexadecimal: ", data, data_size);
-                // int err = send(sock, data, strlen(payload), 0);
                 int err = send(sock, data, data_size, 0);
                 free(data);
                 if (err < 0) {
@@ -192,14 +197,22 @@ void tcp_client(char id_protocol){
             }  
             
 
+            sleep(10); //le puse 10 sec por mientras q lo 60 era muy largo
+            
+            /* matamos el deepsleep porque es re turbio...
+            // CERRANDO SOCKET
+            ESP_LOGI("Deep Sleep", "closing socket");
+            shutdown(sock, 0);
+            close(sock);
+
             //DEEPSLEEP 60 SEC
             ESP_LOGI("Deep Sleep", "sleeping for 60 sec");
-            ESP_LOGI("Deep Sleep", "Powering off Wi-Fi...");
+            //ESP_LOGI("Deep Sleep", "Powering off Wi-Fi...");
 
-            //sleep(10);  //le puse 10 sec por mientras q lo 60 era muy largo
             //esp_wifi_stop();
             esp_sleep_enable_timer_wakeup(10 * 1000000ull);
             esp_deep_sleep_start();
+            */
             /*
             //RECIVIMOS RESPUESTA
             int len = recv(sock, rx_buffer, sizeof(rx_buffer) - 1, 0);
