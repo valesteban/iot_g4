@@ -1,0 +1,6 @@
+pyqt5
+pyqt5-tools
+matplotlib
+numpy
+pandas
+pygatt
