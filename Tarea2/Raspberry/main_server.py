@@ -2,39 +2,14 @@
 # -- coding: utf-8 --
 import socket
 from xmlrpc.client import TRANSPORT_ERROR
-from desempaquetamiento import Protocol
-from db import DB
 import json
-from desempaquetamiento import decode_pkg, print_hex
 import sys
 
-def get_protocol_values(data: Protocol) -> dict:
-    """
-        Funcion auxiliar que procesa un protocollo y obtiene
-        toda la info necesaria para ser guardada en la DB
-    """
-
-    header = data.get_header()
-    id_device = header.get_device_id()
-    mac = header.get_mac()
-    transport_layer = header.get_transport_layer()
-    id_protocol = header.get_protocol_id()
-
-    battery = data.get_battery()
-    timestamp = battery.get_timestamp()
-
-    protocol_data = json.dumps(data.get_protocol_data())
-
-    protocol_values = {
-        "id_device" : id_device,
-        "timestamp" : timestamp,
-        "mac": mac,
-        "id_protocol": id_protocol,
-        "transport_layer": transport_layer,
-        "data" : protocol_data
-    }
-
-    return protocol_values
+from db import DB
+from desempaquetamiento import Protocol
+from desempaquetamiento import decode_pkg, print_hex
+from ServerProtocols.TCP import TCPRaspServer
+from ServerProtocols.UDP import UDPRaspServer
 
 
 # "192.168.5.177"  # Standard loopback interface address (localhost)
@@ -44,7 +19,6 @@ PORT = 5010  # Port to listen on (non-privileged ports are > 1023)
 # host | user | pass | database
 db = DB("localhost", "iot4", "12345678", "tarea1")
 
-#---TCP--CONNECTION ----------------------------------------------------------------------
 
 def iniciar_servidor():
     s = socket.socket(socket.AF_INET,socket.SOCK_STREAM)
@@ -86,125 +60,12 @@ def iniciar_servidor():
     s.shutdown(socket.SHUT_RDWR)
     conn.close()
               
-
-    if TRANSPORT_LAYER == 0: #TCP
-
-        print("Hacer conexion TCP")
-        s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        s.setsockopt(socket.SOL_SOCKET,socket.SO_REUSEADDR,1)
-        s.bind((HOST, PORT))
-        s.listen()
-        print(f"Listening on {HOST}:{PORT}")
-        # conn is a new socket object usable to send and receive data on the connection.
-        # address is the address bound to the socket on the other end of the connection.
-        conn, addr = s.accept()
-        print(f'Conectado por alguien ({addr[0]}) desde el puerto {addr[1]}')
-        while True:
-            if (ID_PROTOCOL == 4):
-                raw_data = b""
-                size = 0
-                while(True):  #paquetes fragmentados
-                    try: 
-                        raw_fragment = conn.recv(1024)
-                        size += len(raw_fragment)
-                        print_hex(raw_fragment.hex())
-                        if raw_fragment == b'\0':
-                            print("Paquete completo recibido b00")
-                            break
-                        else:
-                            raw_data += raw_fragment
-                    except TimeoutError:
-                        raise
-                    except Exception:
-                        raise
-                    # ojito, quizás se recibió un paquete :eyes: 
-                data = decode_pkg(raw_data)
-                        
-            else:
-                #otros protocolos
-                raw_data = conn.recv(1024)   
-                print_hex(raw_data.hex())
-                data = decode_pkg(raw_data)
-                    
-            if data == b'':
-                print(f"Termino no data {data}")
-
-            # Printeamos la data recibida
-            print(f"Paquete recibido: {data} \n")
-
-            # Info del paquete:
-            protocol_values = get_protocol_values(data)
-            print(f"PROTOCOL_DATA")
-            print(protocol_values)
-
-            # Guarda todo lo necesario en la base de datos
-            db.save_data(protocol_values)
-            db.save_log(protocol_values)
-            
+    # TCP
+    if TRANSPORT_LAYER == 0:
+        TCPRaspServer.run_tcp_protocol(HOST, PORT, ID_PROTOCOL)
+    # UDP
     else:           
-        print("Hacer conexion UDP")
-
-        with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as s:
-            s.bind((HOST, PORT))
-            print(f"Listening for UDP packets in {HOST}:{PORT}")
-
-            while(True):
-                # data,addr = s.recvfrom(1024)
-                # if data == b'':
-                #     print(f"No llego na-> {data } y {addr}")
-                #     break
-                # print(f"Paquete recibido: {data}")
-
-                raw_data = b""
-                while(True):  #paquetes fragmentados
-                    try: 
-                        raw_fragment,addr = s.recvfrom(1024)
-                        if raw_fragment == b'\0':
-                            print("All fragments received!\n")
-                            break
-                        else:
-                            raw_data += raw_fragment
-                            # enviar confirmación de que llegó el paquete
-                            s.sendto(b'\1', addr)
-                    except TimeoutError:
-                        raise
-                    except Exception:
-                        raise
-                    # ojito, quizás se recibió un paquete :eyes: 
-                try:
-                    data = decode_pkg(raw_data)
-                except Exception as e:
-                    print(e, file=sys.stderr)
-                    continue
-                # Info del paquete:
-                protocol_values = get_protocol_values(data)
-                print(f"PROTOCOL_DATA")
-                print(protocol_values)
-
-                # Guarda todo lo necesario en la base de datos
-                db.save_data(protocol_values)
-                db.save_log(protocol_values)
-
-
-                
-
-                #VA A BUSCAR LOS VALORES DE LA BBDD Y ENVIARSELO AL CLIENTE, PORQUE CUANDO CAMBIEN 
-                #AHI EL CLIENTE PARARA LA EJECUCION
-                # host | user | pass | database
-                db = DB("localhost", "iot4", "12345678", "tarea1")
-                # ((id_protocol, transport_layer))
-                protocol_config = db.get_protocol()
-                print(f"PROTOCOL_CONFIG: {protocol_config}")  #q envie de la misma forma porq asi lo parsie ya 
-                protocol_config = protocol_config[0] #q envie de la misma forma porq asi lo parsie ya 
-                ID_PROTOCOL = protocol_config[0]
-                TRANSPORT_LAYER = protocol_config[1]
-                protocol_config_data = str(protocol_config).encode()
-                
-                s.sendto(protocol_config_data, addr)
-
-            s.close()
-            print("Desconectado")  
-        print("CHAO")    
+        UDPRaspServer.run_udp_protocol(HOST, PORT)
 
   
 if __name__ == "__main__":

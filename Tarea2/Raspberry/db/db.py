@@ -1,5 +1,8 @@
 import mariadb
 import json
+from desempaquetamiento import Protocol
+
+
 class DB:
 
     def __init__(self, host, user, password, database) -> None:
@@ -151,5 +154,3 @@ class DB:
         self.cursor.execute(sql)
         self.db.commit()
 
-
-    
