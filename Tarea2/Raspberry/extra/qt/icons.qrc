@@ -1,0 +1,50 @@
+<RCC>
+  <qresource prefix="icon_refresh">
+    <file>images/refresh.png</file>
+  </qresource>
+  <qresource prefix="icon_arrow_left">
+    <file>images/icons8-chevron-left-24.png</file>
+  </qresource>
+  <qresource prefix="icon_arrow_right">
+    <file>images/icons8-chevron-right-24.png</file>
+  </qresource>
+  <qresource prefix="icon_plot">
+    <file>images/scatter-graph.png</file>
+  </qresource>
+  <qresource prefix="icon_start">
+    <file>images/play-button.png</file>
+  </qresource>
+  <qresource prefix="icon_pause">
+    <file>images/pause-button.png</file>
+  </qresource>
+  <qresource prefix="icon_restart">
+    <file>images/restart.png</file>
+  </qresource>
+  <qresource prefix="icon_config">
+    <file>images/settings.png</file>
+  </qresource>
+  <qresource prefix="icon_death">
+    <file>images/ghost.png</file>
+  </qresource>
+  <qresource prefix="icon_ready">
+    <file>images/check.png</file>
+  </qresource>
+  <qresource prefix="icon_wifi">
+    <file>images/wifi.png</file>
+  </qresource>
+  <qresource prefix="icon_bluetooth">
+    <file>images/bluetooth.png</file>
+  </qresource>
+  <qresource prefix="icon_close">
+    <file>images/close.png</file>
+  </qresource>
+  <qresource prefix="icon_add">
+    <file>images/plus.png</file>
+  </qresource>
+  <qresource prefix="icon_disconnected">
+    <file>images/plug.png</file>
+  </qresource>
+  <qresource prefix="icon_esp">
+    <file>images/esp.jpg</file>
+  </qresource>
+</RCC>

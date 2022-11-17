@@ -612,7 +612,7 @@ int encode_pkg(
             protocol4Destroy(&pro4);
             break;
         default:
-            ESP_LOGE(anotherTag, "ermanito, eso no es un protocolo....\n");  
+            ESP_LOGE(anotherTag, "Protocolo %c?: ermanito, eso no es un protocolo....\n", id_protocol);  
             return 1;
     }
     return 0;
