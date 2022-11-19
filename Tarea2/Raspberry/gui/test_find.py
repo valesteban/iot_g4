@@ -1,9 +1,10 @@
+import re
 from queue import Queue
 from multiprocessing import Process, Lock
 
-from PyQt5.QtWidgets import QApplication, QMainWindow, QFrame, QDialog, QPushButton, QLabel, QWidget, QLayout
-from PyQt5 import QtCore, QtWidgets
-from PyQt5.QtCore import QStateMachine, QState, QTimer, QObject, QEvent, QAbstractTransition, QEventTransition
+from PyQt5.QtWidgets import QApplication, QMainWindow, QFrame, QDialog, QPushButton, QLabel, QWidget, QLayout, QSpinBox, QLineEdit
+from PyQt5 import QtCore, QtWidgets, QtGui
+from PyQt5.QtCore import QStateMachine, QState, QTimer, QObject, QEvent, QAbstractTransition, QEventTransition, pyqtProperty, pyqtSignal, QMetaType, QSignalTransition
 import typing
 
 from forms import main_display, esp_found_item, esp_active_item,  esp_wifi_config, esp_config_win, live_plot
@@ -73,6 +74,12 @@ class ValidWifiConfigEvent(QEvent):
     EVENT_TYPE = QEvent.Type.User+11
     def __init__(self) -> None:
         super().__init__(self.EVENT_TYPE)
+
+class SendStartEvent(QEvent):
+    EVENT_TYPE = QEvent.Type.User+12
+    def __init__(self) ->None:
+        super().__init__(self.EVENT_TYPE)
+
 
 #endregion
 
@@ -227,6 +234,18 @@ class ValidWifiConfigTransition(QAbstractTransition):
     def onTransition(self, event: 'QEvent') -> None:
         return
 
+class SendStartTransition(QAbstractTransition):
+    def __init__(self, sourceState: typing.Optional['QState'] = None) -> None:
+        super().__init__(sourceState)
+
+    def eventTest(self, event: 'QEvent') -> bool:
+        if event.type() != SendStartEvent.EVENT_TYPE:
+            return False
+        else:
+            return True
+
+    def onTransition(self, event: 'QEvent') -> None:
+        return
 
 #endregion
 
@@ -255,6 +274,389 @@ class FoundState(QState):
         return super().onEntry(event)
 
     
+
+#endregion
+
+#region Properties
+class WifiProperties(QObject):
+    host_changed = pyqtSignal(str)
+    tcp_changed = pyqtSignal(int)
+    udp_changed = pyqtSignal(int)
+    ssid_changed = pyqtSignal(str)
+    passwd_changed = pyqtSignal(str)
+
+    host_invalidated = pyqtSignal()
+    tcp_invalidated = pyqtSignal()
+    udp_invalidated = pyqtSignal()
+    ssid_invalidated = pyqtSignal()
+    passwd_invalidated = pyqtSignal()
+
+    host_re = r"^"+"[.]".join([r"(?P<byte_"+str(i)+">25[0-5]|2[0-4][0-9]|1?[0-9]{1,2})" for i in range(1,5)]) + r"$"
+    attrs = ["host_ipv4", "port_tcp", "port_udp", "ssid", "passwd"]
+
+    def __init__(self):
+        QObject.__init__(self)
+        self._host_ipv4 = "255.255.255.255"
+        self._port_tcp = 5000
+        self._port_udp = 5000
+        self._ssid: QMetaType.Type.QString = ""
+        self._passwd: QMetaType.Type.QString = ""
+
+    #Host IP
+    def read_host_ipv4(self):
+        return self._host_ipv4
+
+    def set_host_ipv4(self, new_ip):
+        if new_ip != self._host_ipv4:
+            if self.validate_host_ipv4(new_ip):
+                self._host_ipv4 = new_ip
+                self.host_changed.emit(new_ip)
+
+    def validate_host_ipv4(self, new_ip):
+        m = re.match(self.host_re, new_ip)
+        if m is not None:
+            return True
+        else:
+            self.host_invalidated.emit()
+            return False
+
+    def reset_host_ipv4(self):
+        self._host_ipv4 = "255.255.255.255"
+
+    
+
+    #TCP
+    def read_port_tcp(self):
+        return self._port_tcp
+
+    def set_port_tcp(self, new_port):
+        if new_port != self._port_tcp:
+            if self.validate_port_tcp(new_port):
+                self._port_tcp = new_port
+                self.tcp_changed.emit(new_port)
+
+    def validate_port_tcp(self, new_port):
+        if new_port < 2**16:
+            return True
+        else:
+            self.tcp_invalidated.emit()
+            return False
+
+    def reset_port_tcp(self):
+        self._port_tcp = 5000
+
+    
+
+    #UDP
+    def read_port_udp(self):
+        return self._port_udp
+
+    def set_port_udp(self, new_port):
+        if new_port != self._port_udp:
+            if self.validate_port_udp(new_port):
+                self._port_udp = new_port
+                self.udp_changed.emit(new_port)
+
+    def validate_port_udp(self, new_port):
+        if new_port < 2**16:
+            return True
+        else:
+            self.udp_invalidated.emit()
+            return False
+
+    def reset_port_udp(self):
+        self._port_udp = 5000
+
+    
+
+    #SSID
+    def read_ssid(self):
+        return self._ssid
+
+    def set_ssid(self, new_ssid):
+        if new_ssid != self._ssid:
+            if self.validate_ssid(new_ssid):
+                self._ssid = new_ssid
+                self.ssid_changed.emit(new_ssid)
+
+    def validate_ssid(self, new_ssid):
+        if new_ssid != "":
+            return True
+        else:
+            self.ssid_invalidated.emit()
+            return False
+
+    def reset_ssid(self):
+        self._ssid = "dummy"
+
+    #Passwd
+    def read_passwd(self):
+        return self._passwd
+
+    def set_passwd(self, new_passwd):
+        if new_passwd != self._passwd:
+            if self.validate_passwd(new_passwd):
+                self._passwd = new_passwd
+                self.passwd_changed.emit(new_passwd)
+
+    def validate_passwd(self, new_passwd):
+        if new_passwd != "":
+            return True
+        else:
+            self.passwd_invalidated.emit()
+            return False
+
+    def reset_passwd(self):
+        self._passwd = "dummy"
+
+    def validate_all(self, *vals):
+        result = True
+        for i in range(len(self.attrs)):
+            attr = self.attrs[i]
+            mid_result = getattr(self, "validate_"+attr)(vals[i])
+            result = result and mid_result
+        return result
+
+    def set_all(self, *new_vals):
+        assert len(new_vals) == len(self.attrs)
+        for i in range(len(self.attrs)):
+            attr = self.attrs[i]
+            getattr(self, "set_"+ attr)(new_vals[i])
+        
+    def get_all(self):
+        return [getattr(self, attr) for attr in self.attrs]
+
+    host_ipv4 = pyqtProperty(str, read_host_ipv4, set_host_ipv4, notify=host_changed)
+    port_tcp = pyqtProperty(int, read_port_tcp, set_port_tcp, notify=tcp_changed)
+    port_udp = pyqtProperty(int, read_port_udp, set_port_udp, notify=udp_changed)
+    ssid = pyqtProperty(str, read_ssid, set_ssid, notify=ssid_changed)
+    passwd = pyqtProperty(str, read_passwd, set_passwd, notify=passwd_changed)
+
+class WifiIputUI(QObject):
+    base_style = ""
+    border_default_style = "border: 1px solid rgb(122, 122, 122);"
+    border_invalid_style = "border: 1px solid red"
+    
+    label_parent = "Form_wifi_config"
+    default_err_msg = "Invalid field input"
+    _translate = QtCore.QCoreApplication.translate
+
+    default_msg_color = QtGui.QColor(120, 120, 120)
+    err_msg_color = QtGui.QColor(255, 0, 0)
+    warn_msg_color = QtGui.QColor(244, 146, 0)
+
+    def __init__(self, input_ui: QWidget, msg_label: QLabel) -> None:
+        QObject.__init__(self)
+        self.ui_input = input_ui
+        self.ui_msg = msg_label
+
+    def set_default_box_view(self):
+        self.ui_input.setStyleSheet(self.base_style + self.border_default_style)
+
+    def set_invalid_box_view(self):
+        self.ui_input.setStyleSheet(self.base_style + self.border_invalid_style)
+
+    def set_msg_text(self, msg: str=""):
+        if msg == "":
+            msg = self.default_err_msg
+        self.ui_msg.setText(self._translate(self.label_parent, msg))
+
+    def set_msg_visibility(self, val: bool):
+        self.ui_msg.setVisible(val)
+
+    def set_msg_status_error(self):
+        self.set_msg_txt_color(self.err_msg_color, self.err_msg_color)
+
+    def set_msg_status_warning(self):
+        self.set_msg_txt_color(self.warn_msg_color, self.warn_msg_color)
+
+    def set_msg_txt_color(self,color_active=None, color_inactive=None, color_disabled=None):
+        if color_active is None:
+            color_active = self.default_msg_color
+        if color_inactive is None:
+            color_inactive = self.default_msg_color
+        if color_disabled is None:
+            color_disabled = self.default_msg_color
+        
+        palette = QtGui.QPalette()
+        brush = QtGui.QBrush(color_active)
+        brush.setStyle(QtCore.Qt.SolidPattern)
+        palette.setBrush(QtGui.QPalette.Active, QtGui.QPalette.WindowText, brush)
+        
+        brush = QtGui.QBrush(color_inactive)
+        brush.setStyle(QtCore.Qt.SolidPattern)
+        palette.setBrush(QtGui.QPalette.Inactive, QtGui.QPalette.WindowText, brush)
+        
+        brush = QtGui.QBrush(color_disabled)
+        brush.setStyle(QtCore.Qt.SolidPattern)
+        palette.setBrush(QtGui.QPalette.Disabled, QtGui.QPalette.WindowText, brush)
+
+        self.ui_msg.setPalette(palette)
+
+    def set_normal_status(self):
+        self.set_default_box_view()
+        self.set_msg_visibility(False)
+
+    def set_error_status(self, msg=""):
+        self.set_invalid_box_view()
+        self.set_msg_status_error()
+        self.set_msg_text(msg)
+        self.set_msg_visibility(True)
+
+    def set_warn_status(self, msg=""):
+        self.set_default_box_view()
+        self.set_msg_status_warning()
+        self.set_msg_text(msg)
+        self.set_msg_visibility(True)
+
+    def getVal(self):
+        pass
+
+    def setVal(self):
+        pass
+
+    def get_signal(self):
+        pass
+
+
+class HostIPBar(WifiIputUI):
+    base_style = "background:white;\n"
+    ip_changed = pyqtSignal(str)
+    
+    def __init__(self, ui_host_bar: QtWidgets.QGroupBox, spinbox_array: list[QSpinBox], msg_label) -> None:
+        super().__init__(ui_host_bar, msg_label)
+        self.spinbox_array = spinbox_array
+        self.set_changed_emission()
+
+    def getVal(self) -> str:
+        result = ".".join([str(spin.value()) for spin in self.spinbox_array])
+        return result
+
+    def setVal_from_list(self, *byte_values: list[int]):
+        assert len(byte_values) == len(self.spinbox_array)
+        for i in range(len(self.spinbox_array)):
+            spin = self.spinbox_array[i]
+            spin.setProperty("value", byte_values[i])
+
+    def setVal(self, host_ip: str):
+        self.setVal_from_list(*host_ip.split("."))
+    
+    def set_changed_emission(self):
+        def emit_slot():
+            self.ip_changed.emit(self.getVal())
+
+        for spin in self.spinbox_array:
+            spin.valueChanged.connect(emit_slot)
+    
+    def get_signal(self):
+        return self.ip_changed
+
+class WifiSpinboxUI(WifiIputUI):
+    def __init__(self, input_ui: QSpinBox, msg_label: QLabel) -> None:
+        super().__init__(input_ui, msg_label)
+
+    def getVal(self):
+        return self.ui_input.value()
+
+    def setVal(self, newVal: int):
+        self.ui_input.setProperty("value", newVal)
+
+    def get_signal(self):
+        return self.ui_input.valueChanged
+
+class WifiLineEditUI(WifiIputUI):
+    def __init__(self, input_ui: QLineEdit, msg_label: QLabel) -> None:
+        super().__init__(input_ui, msg_label)
+
+    def getVal(self):
+        return self.ui_input.text()
+
+    def setVal(self, new_text: str):
+        self.ui_input.setText(new_text)
+
+    def get_signal(self):
+        return self.ui_input.textEdited
+
+
+class WifiDisplay:
+    attrs = ["host_ui", "tcp_ui", "udp_ui", "ssid_ui", "passwd_ui"]
+
+    def __init__(self, ui_wifi: esp_wifi_config.Ui_Form_wifi_config, wifi_properties: WifiProperties):
+        self.ui_wifi = ui_wifi
+        self.wifi_properties = wifi_properties
+
+        self.host_ui = HostIPBar(
+            self.ui_wifi.groupBox_host_ip, 
+            [self.ui_wifi.spinBox_byte_1,
+            self.ui_wifi.spinBox_byte_2,
+            self.ui_wifi.spinBox_byte_3,
+            self.ui_wifi.spinBox_byte_4],
+            self.ui_wifi.label_host_ip_status_msg)
+        self.tcp_ui = WifiSpinboxUI(
+            self.ui_wifi.spinBox_tcp_port,
+            self.ui_wifi.label_tcp_port_status_msg)
+        self.udp_ui = WifiSpinboxUI(
+            self.ui_wifi.spinBox_udp_port,
+            self.ui_wifi.label_udp_port_status_msg)
+        self.ssid_ui = WifiLineEditUI(
+            self.ui_wifi.lineEdit_ssid,
+            self.ui_wifi.label_ssid_status_msg)
+        self.passwd_ui = WifiLineEditUI(
+            self.ui_wifi.lineEdit_pass,
+            self.ui_wifi.label_pass_status_msg)
+
+    def set_ui_to_default_view(self):
+        [getattr(self, attr).set_normal_status() for attr in self.attrs]
+
+    def get_signals(self):
+        return [getattr(self, attr).get_signal() for attr in self.attrs]
+        
+    def set_invalid_signal_slots(self):
+        self.wifi_properties.host_invalidated.connect(self.host_ui.set_error_status)
+        self.wifi_properties.tcp_invalidated.connect(self.tcp_ui.set_error_status)
+        self.wifi_properties.udp_invalidated.connect(self.udp_ui.set_error_status)
+        self.wifi_properties.ssid_invalidated.connect(lambda: self.ssid_ui.set_error_status("This field is required"))
+        self.wifi_properties.passwd_invalidated.connect(lambda: self.passwd_ui.set_error_status("This field is required"))
+
+    def set_valid_signal_slots(self):
+        self.wifi_properties.host_changed.connect(self.host_ui.set_normal_status)
+        self.wifi_properties.tcp_changed.connect(self.tcp_ui.set_normal_status)
+        self.wifi_properties.udp_changed.connect(self.udp_ui.set_normal_status)
+        self.wifi_properties.ssid_changed.connect(self.ssid_ui.set_normal_status)
+        self.wifi_properties.passwd_changed.connect(self.passwd_ui.set_normal_status)
+
+    def get_all_ui_values(self):
+        return [getattr(self, attr).getVal() for attr in self.attrs]
+
+    def set_all_ui_values(self, *vals):
+        assert len(vals) == len(self.attrs)
+        for i in range(len(self.attrs)):
+            attr = self.attrs[i]
+            getattr(self, attr).setVal(vals[i])
+    
+    def save_ui_into_properties(self):
+        self.wifi_properties.set_all(*self.get_all_ui_values())
+
+    def load_from_properties_into_ui(self):
+        self.set_all_ui_values(*self.wifi_properties.get_all())
+
+        
+
+w = WifiProperties()
+
+w.ssid_changed.connect(lambda port:print("changed!", port))
+w.host_invalidated.connect(lambda: print("is"))
+w.tcp_invalidated.connect(lambda: print("the"))
+w.udp_invalidated.connect(lambda: print("nut"))
+w.ssid_invalidated.connect(lambda: print("shack"))
+w.passwd_invalidated.connect(lambda: print("!!!"))
+
+w.host_ipv4 = "123.42.56.1111"
+w.port_tcp = 100000
+w.port_udp = 100000
+w.ssid = "lara"
+w.ssid = ""
+print(w.ssid)
 
 #endregion
 
@@ -317,10 +719,16 @@ class ESPDicts:
     def remove_esp() -> None:
         pass
 
+
+
+
 class ESPConfig:
     def __init__(self, esp: "ESP") -> None:
         self.esp = esp
         self.machine: QStateMachine = None
+
+        self.wifi_properties = WifiProperties()
+        self.wifi_ui = WifiDisplay(self.esp.ui_wifi, self.wifi_properties)
 
         self.config_wifi = None
         self.send_wifi = False
@@ -351,6 +759,14 @@ class ESPConfig:
         state_can_send.setInitialState(state_unable_to_send)
 
         self.machine.setInitialState(state_config_paralell)
+
+        state_no_config.entered.connect(self.wifi_ui.set_ui_to_default_view)
+
+        def _activate_wifi_config_check():
+            self.wifi_ui.set_invalid_signal_slots()
+            self.wifi_ui.set_valid_signal_slots()
+
+        state_no_config.exited.connect(_activate_wifi_config_check)
 
         self.esp.ui_active.pushButton_config_medium_bluetooth.clicked.connect(lambda: self.set_medium_and_post(config_wifi=False))
         self.esp.ui_active.pushButton_config_medium_bd.clicked.connect(lambda: self.set_medium_and_post(config_wifi=True))
@@ -410,6 +826,40 @@ class ESPConfig:
 
         state_config_wifi.entered.connect(_check_valid_connections)
         state_config_no_wifi.entered.connect(_check_valid_connections)
+        
+        trans_wifi_to_error = InvalidWifiConfigTransition()
+        trans_wifi_to_error.setTargetState(state_wifi_error)
+        state_config_wifi.addTransition(trans_wifi_to_error)
+
+        for signal in self.wifi_ui.get_signals():
+            trans_wifi_error = QSignalTransition(signal)
+            trans_wifi_error.setTargetState(state_wifi_error)
+            state_wifi_error.addTransition(trans_wifi_error)
+
+        trans_error_to_wifi = ValidWifiConfigTransition()
+        trans_error_to_wifi.setTargetState(state_config_wifi)
+        state_wifi_error.addTransition(trans_error_to_wifi)
+
+        def _check_valid_wifi():
+            print("checking stuff")
+            result = self.wifi_properties.validate_all(*self.wifi_ui.get_all_ui_values())
+            self.wifi_properties.set_all(*self.wifi_ui.get_all_ui_values())
+            if result:
+                self.machine.postEvent(ValidWifiConfigEvent())
+                self.machine.postEvent(AbleToSendEvent())
+
+        state_wifi_error.entered.connect(_check_valid_wifi)
+
+
+        def _on_start_click():
+            result = self.wifi_properties.validate_all(*self.wifi_ui.get_all_ui_values())
+            if result:
+                self.esp.machine.postEvent(SendStartEvent())
+            else:
+                self.machine.postEvent(InvalidWifiConfigEvent())
+                self.machine.postEvent(UnableToSendEvent())
+
+        self.esp.ui_active.pushButton_esp_active_restart.clicked.connect(_on_start_click)
 
         self.machine.start()
     
