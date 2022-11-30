@@ -5,11 +5,12 @@ from xmlrpc.client import TRANSPORT_ERROR
 import json
 import sys
 
-from db import DB
+from db import *
 from desempaquetamiento import Protocol
 from desempaquetamiento import decode_pkg, print_hex
-from ServerProtocols.TCP import TCPRaspServer
-from ServerProtocols.UDP import UDPRaspServer
+
+import tcp
+import udp
 
 
 # "192.168.5.177"  # Standard loopback interface address (localhost)
@@ -62,10 +63,10 @@ def iniciar_servidor():
               
     # TCP
     if TRANSPORT_LAYER == 0:
-        TCPRaspServer.run_tcp_protocol(HOST, PORT, ID_PROTOCOL)
+        tcp.run_tcp_protocol(HOST, PORT, ID_PROTOCOL)
     # UDP
     else:           
-        UDPRaspServer.run_udp_protocol(HOST, PORT)
+        udp.run_udp_protocol(HOST, PORT)
 
   
 if __name__ == "__main__":

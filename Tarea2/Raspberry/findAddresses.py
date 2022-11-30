@@ -25,6 +25,7 @@ def findAddresses():
     devices = asyncio.run(main())
     return [names,macs,UUIDs]
 
+
 def handle_data(handle, value):
     """
     handle -- integer, characteristic read handle the data was received on
