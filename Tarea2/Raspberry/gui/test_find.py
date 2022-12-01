@@ -4,7 +4,7 @@ from multiprocessing import Process, Lock
 
 from PyQt5.QtWidgets import QApplication, QMainWindow, QFrame, QDialog, QPushButton, QLabel, QWidget, QLayout, QSpinBox, QLineEdit
 from PyQt5 import QtCore, QtWidgets, QtGui
-from PyQt5.QtCore import QStateMachine, QState, QTimer, QObject, QEvent, QAbstractTransition, QEventTransition, pyqtProperty, pyqtSignal, QMetaType, QSignalTransition
+from PyQt5.QtCore import QStateMachine, QState, QFinalState, QTimer, QObject, QEvent, QAbstractTransition, QEventTransition, pyqtProperty, pyqtSignal, QMetaType, QSignalTransition
 import typing
 
 from forms import main_display, esp_found_item, esp_active_item,  esp_wifi_config, esp_config_win, live_plot
@@ -29,54 +29,65 @@ class ESPAddFoundEvent(QEvent):
         super().__init__(self.EVENT_TYPE)
         self.esp_widget = esp_widget
 
+class ESPRemoveFoundEvent(QEvent):
+    EVENT_TYPE = QEvent.Type.User+4
+    def __init__(self,esp_widget) -> None:
+        super().__init__(self.EVENT_TYPE)
+        self.esp_widget = esp_widget
+
 # used only to signal a transition within the ESP object itself
 class ESPActiveEvent(QEvent):
-    EVENT_TYPE = QEvent.Type.User+4
+    EVENT_TYPE = QEvent.Type.User+5
     def __init__(self) -> None:
         super().__init__(self.EVENT_TYPE)
 
 class ESPAddActiveEvent(QEvent):
-    EVENT_TYPE = QEvent.Type.User+5
+    EVENT_TYPE = QEvent.Type.User+6
     def __init__(self, esp_widget) -> None:
         super().__init__(self.EVENT_TYPE)
         self.esp_widget = esp_widget
 
 class ESPRemoveActiveEvent(QEvent):
-    EVENT_TYPE = QEvent.Type.User+6
-    def __init__(self, esp_id, esp_mac) -> None:
+    EVENT_TYPE = QEvent.Type.User+7
+    def __init__(self, esp_widget) -> None:
         super().__init__(self.EVENT_TYPE)
-        self.esp_id = esp_id
-        self.esp_mac = esp_mac
+        self.esp_widget = esp_widget
 
 class CheckNoWifiEvent(QEvent):
-    EVENT_TYPE = QEvent.Type.User+7
+    EVENT_TYPE = QEvent.Type.User+8
     def __init__(self, config_wifi: bool, send_wifi: bool) -> None:
         super().__init__(self.EVENT_TYPE)
         self.config_wifi = config_wifi
         self.send_wifi = send_wifi
 
 class UnableToSendEvent(QEvent):
-    EVENT_TYPE = QEvent.Type.User+8
-    def __init__(self) -> None:
-        super().__init__(self.EVENT_TYPE)
-
-class AbleToSendEvent(QEvent):
     EVENT_TYPE = QEvent.Type.User+9
     def __init__(self) -> None:
         super().__init__(self.EVENT_TYPE)
 
-class InvalidWifiConfigEvent(QEvent):
+class AbleToSendEvent(QEvent):
     EVENT_TYPE = QEvent.Type.User+10
     def __init__(self) -> None:
         super().__init__(self.EVENT_TYPE)
 
-class ValidWifiConfigEvent(QEvent):
+class InvalidWifiConfigEvent(QEvent):
     EVENT_TYPE = QEvent.Type.User+11
     def __init__(self) -> None:
         super().__init__(self.EVENT_TYPE)
 
-class SendStartEvent(QEvent):
+class ValidWifiConfigEvent(QEvent):
     EVENT_TYPE = QEvent.Type.User+12
+    def __init__(self) -> None:
+        super().__init__(self.EVENT_TYPE)
+
+class SendStartEvent(QEvent):
+    EVENT_TYPE = QEvent.Type.User+13
+    def __init__(self) ->None:
+        super().__init__(self.EVENT_TYPE)
+
+# internal ESP state when it is either removed from active list and found list
+class InactiveESPEvent(QEvent):
+    EVENT_TYPE = QEvent.Type.User+14    
     def __init__(self) ->None:
         super().__init__(self.EVENT_TYPE)
 
@@ -122,9 +133,11 @@ class ESPFoundTransition(QAbstractTransition):
         print(self.found_event.esp_id, self.found_event.esp_mac)
         self.esp_list.check_esp(self.found_event.esp_id, self.found_event.esp_mac)
 
+
 class ESPAddFoundTransition(QAbstractTransition):
-    def __init__(self, widget_list_parent: QWidget, list_layout: QLayout, sourceState: typing.Optional['QState'] = None) -> None:
+    def __init__(self, esp_lists: "ListsMachine", widget_list_parent: QWidget, list_layout: QLayout, sourceState: typing.Optional['QState'] = None) -> None:
         super().__init__(sourceState)
+        self.esp_lists = esp_lists
         self.widget_list_parent= widget_list_parent
         self.list_layout = list_layout
 
@@ -132,12 +145,37 @@ class ESPAddFoundTransition(QAbstractTransition):
         if event.type() != ESPAddFoundEvent.EVENT_TYPE:
             return False
         else:
+            self.esp_lists.num_found += 1
             event.esp_widget.setParent(self.widget_list_parent)
             self.list_layout.addWidget(event.esp_widget)
             return True
 
     def onTransition(self, event: 'QEvent') -> None:
         return 
+
+
+class ESPRemoveFoundTransition(QAbstractTransition):
+    def __init__(self, esp_lists: "ListsMachine", widget_list_parent: QWidget, list_layout: QLayout, sourceState: typing.Optional['QState'] = None) -> None:
+        super().__init__(sourceState)
+        self.esp_lists = esp_lists
+        self.widget_list_parent= widget_list_parent
+        self.list_layout = list_layout
+
+    def eventTest(self, event: 'QEvent') -> bool:
+        if event.type() != ESPRemoveFoundEvent.EVENT_TYPE:
+            return False
+        else:
+            self.esp_lists.num_found -= 1
+            
+            self.list_layout.removeWidget(event.esp_widget)
+            event.esp_widget.setParent(None)
+            if self.esp_lists.num_found == 0:
+                return True
+            return False
+
+    def onTransition(self, event: 'QEvent') -> None:
+        return 
+
 
 class ESPActiveTransition(QAbstractTransition):
     def __init__(self, sourceState: typing.Optional['QState'] = ...) -> None:
@@ -151,8 +189,9 @@ class ESPActiveTransition(QAbstractTransition):
             
 
 class ESPAddActiveTransition(QAbstractTransition):
-    def __init__(self, widget_list_parent: QWidget, list_layout: QLayout, sourceState: typing.Optional['QState'] = None) -> None:
+    def __init__(self, esp_lists: "ListsMachine", widget_list_parent: QWidget, list_layout: QLayout, sourceState: typing.Optional['QState'] = None) -> None:
         super().__init__(sourceState)
+        self.esp_lists = esp_lists
         self.widget_list_parent= widget_list_parent
         self.list_layout = list_layout
 
@@ -160,12 +199,37 @@ class ESPAddActiveTransition(QAbstractTransition):
         if event.type() != ESPAddActiveEvent.EVENT_TYPE:
             return False
         else:
+            self.esp_lists.num_active += 1
             event.esp_widget.setParent(self.widget_list_parent)
             self.list_layout.addWidget(event.esp_widget)
             return True
 
     def onTransition(self, event: 'QEvent') -> None:
         return 
+
+
+class ESPRemoveActiveTransition(QAbstractTransition):
+    def __init__(self, esp_lists: "ListsMachine", widget_list_parent: QWidget, list_layout: QLayout, sourceState: typing.Optional['QState'] = None) -> None:
+        super().__init__(sourceState)
+        self.esp_lists = esp_lists
+        self.widget_list_parent= widget_list_parent
+        self.list_layout = list_layout
+
+    def eventTest(self, event: 'QEvent') -> bool:
+        if event.type() != ESPRemoveActiveEvent.EVENT_TYPE:
+            return False
+        else:
+            self.esp_lists.num_active -= 1
+            self.list_layout.removeWidget(event.esp_widget)
+            event.esp_widget.setParent(None)
+            
+            if self.esp_lists.num_active == 0:
+                return True
+            return False
+
+    def onTransition(self, event: 'QEvent') -> None:
+        return 
+
 
 class CheckNoWifiTransition(QAbstractTransition):
     def __init__(self, sourceState: typing.Optional['QState'] = None) -> None:
@@ -247,6 +311,19 @@ class SendStartTransition(QAbstractTransition):
     def onTransition(self, event: 'QEvent') -> None:
         return
 
+class InactiveESPTransition(QAbstractTransition):
+    def __init__(self, sourceState: typing.Optional['QState'] = None) -> None:
+        super().__init__(sourceState)
+
+    def eventTest(self, event: 'QEvent') -> bool:
+        if event.type() != InactiveESPEvent.EVENT_TYPE:
+            return False
+        else:
+            return True
+
+    def onTransition(self, event: 'QEvent') -> None:
+        return
+
 #endregion
 
 #region Machines
@@ -270,7 +347,7 @@ class FoundState(QState):
         self.esp = esp
 
     def onEntry(self, event: QEvent) -> None:
-        self.esp.set_found_widget()
+        self.esp.found_widget.setVisible(True)
         return super().onEntry(event)
 
     
@@ -432,6 +509,21 @@ class WifiProperties(QObject):
     ssid = pyqtProperty(str, read_ssid, set_ssid, notify=ssid_changed)
     passwd = pyqtProperty(str, read_passwd, set_passwd, notify=passwd_changed)
 
+
+class ConfigProperties(QObject):
+    def __init__(self):
+        QObject.__init__(self)
+        self._status_conf = None
+        self._protocol_conf = 1
+        self._discontinuous_time = 60
+        self._acc_sampling = 10
+        self._acc_sensibility = 2
+        self._gyro_sensibility = 200
+        self._bme668_sampling = 1
+
+
+
+
 class WifiIputUI(QObject):
     base_style = ""
     border_default_style = "border: 1px solid rgb(122, 122, 122);"
@@ -551,6 +643,7 @@ class HostIPBar(WifiIputUI):
     def get_signal(self):
         return self.ip_changed
 
+
 class WifiSpinboxUI(WifiIputUI):
     def __init__(self, input_ui: QSpinBox, msg_label: QLabel) -> None:
         super().__init__(input_ui, msg_label)
@@ -563,6 +656,7 @@ class WifiSpinboxUI(WifiIputUI):
 
     def get_signal(self):
         return self.ui_input.valueChanged
+
 
 class WifiLineEditUI(WifiIputUI):
     def __init__(self, input_ui: QLineEdit, msg_label: QLabel) -> None:
@@ -663,38 +757,52 @@ print(w.ssid)
 
 class ListsMachine:
     def __init__(self, widget_list_parent: QWidget, list_layout: QLayout, widget_active_list_parent: QWidget, list_active_layout: QLayout) -> None:
+        self.num_found  = 0
+        self.num_active = 0
         self.widget_list_parent= widget_list_parent
         self.list_layout = list_layout
         self.widget_active_list_parent = widget_active_list_parent
         self.active_list_layout = list_active_layout
 
         self.machine = QStateMachine()
-        state_fempty_ampty = QState(self.machine)
-        state_found_ampty = QState(self.machine)
-        state_fempty_active = QState(self.machine)
-        state_found_active = QState(self.machine)
+        state_parallel = QState(childMode=QState.ChildMode.ParallelStates, parent=self.machine)
 
-        # add ESP item to found list
-        trans_fe_ae_f_ae = ESPAddFoundTransition(self.widget_list_parent, self.list_layout)
-        trans_fe_ae_f_ae.setTargetState(state_found_ampty)
-        state_fempty_ampty.addTransition(trans_fe_ae_f_ae)
+        state_emptiness = QState(state_parallel)
+        state_adding = QState(state_parallel)
 
-        trans_f_ae = ESPAddFoundTransition(self.widget_list_parent, self.list_layout)
-        state_found_ampty.addTransition(trans_f_ae)
+        state_found_empty = QState(state_emptiness)
+        state_found_filled = QState(state_emptiness)
+        state_active_empty = QState(state_adding)
+        state_active_filled = QState(state_adding)
 
-        trans_fe_a_f_a = ESPAddFoundTransition(self.widget_list_parent, self.list_layout)
-        trans_fe_a_f_a.setTargetState(state_found_active)
-        state_fempty_active.addTransition(trans_fe_a_f_a)
+        # transitions
 
-        trans_f_a = ESPAddFoundTransition(self.widget_list_parent, self.list_layout)
-        state_found_active.addTransition(trans_f_a)
+        trans_found_empty_to_filled = ESPAddFoundTransition(self, self.widget_list_parent, self.list_layout)
+        trans_found_empty_to_filled.setTargetState(state_found_filled)
+        state_found_empty.addTransition(trans_found_empty_to_filled)
 
-        # add ESP item to active list
-        trans_f_ae_fa_a = ESPAddActiveTransition(self.widget_active_list_parent,self.active_list_layout)
-        trans_f_ae_fa_a.setTargetState(state_fempty_active)
-        state_found_ampty.addTransition(trans_f_ae_fa_a)
+        trans_found_to_found = ESPAddFoundTransition(self, self.widget_list_parent, self.list_layout)
+        state_found_filled.addTransition(trans_found_to_found)
 
-        self.machine.setInitialState(state_fempty_ampty)
+        trans_active_empty_to_filled = ESPAddActiveTransition(self, self.widget_active_list_parent,self.active_list_layout)
+        trans_active_empty_to_filled.setTargetState(state_active_filled)
+        state_active_empty.addTransition(trans_active_empty_to_filled)
+
+        trans_active_to_active = ESPAddActiveTransition(self, self.widget_active_list_parent,self.active_list_layout)
+        state_active_filled.addTransition(trans_active_to_active)
+
+        trans_found_filled_to_empty = ESPRemoveFoundTransition(self, self.widget_list_parent, self.list_layout)
+        trans_found_filled_to_empty.setTargetState(state_found_empty)
+        state_found_filled.addTransition(trans_found_filled_to_empty)
+
+        trans_active_filled_to_empty = ESPRemoveActiveTransition(self, self.widget_active_list_parent,self.active_list_layout)
+        trans_active_filled_to_empty.setTargetState(state_active_empty)
+        state_active_filled.addTransition(trans_active_filled_to_empty)
+
+        state_emptiness.setInitialState(state_found_empty)
+        state_adding.setInitialState(state_active_empty)
+
+        self.machine.setInitialState(state_parallel)
         self.machine.start()
 
 class ESPDicts:
@@ -716,8 +824,13 @@ class ESPDicts:
         finally:
             self.mutex.release()
 
-    def remove_esp() -> None:
-        pass
+    def remove_esp(self, esp_id) -> None:
+        try:
+            self.mutex.acquire()
+            if esp_id in self.esp_dict.keys():
+                self.esp_dict.pop(esp_id)
+        finally:
+            self.mutex.release()
 
 
 
@@ -740,9 +853,13 @@ class ESPConfig:
             self.send_wifi = send_wifi
         self.machine.postEvent(CheckNoWifiEvent(self.config_wifi, self.send_wifi))
 
+    def _on_finish(self):
+        print("Config finished!")
+
     def set_machine(self) ->None:
         self.machine = QStateMachine()
         state_config_paralell = QState(childMode=QState.ChildMode.ParallelStates, parent=self.machine) 
+        state_finished = QFinalState(self.machine)
 
         state_configs = QState(state_config_paralell)
         state_can_send = QState(state_config_paralell)
@@ -759,6 +876,12 @@ class ESPConfig:
         state_can_send.setInitialState(state_unable_to_send)
 
         self.machine.setInitialState(state_config_paralell)
+        
+        trans_finished = InactiveESPTransition()
+        trans_finished.setTargetState(state_finished)
+        state_config_paralell.addTransition(trans_finished)
+
+        self.machine.finished.connect(self._on_finish)
 
         state_no_config.entered.connect(self.wifi_ui.set_ui_to_default_view)
 
@@ -774,9 +897,17 @@ class ESPConfig:
         self.esp.ui_config_win.pushButton_send_wifi.clicked.connect(lambda: self.set_medium_and_post(send_wifi=True))
 
         # la idea es abrir la ventana de configuración cuando la rasp no ha sido previamente configurada
-        state_no_config.exited.connect(self.esp.open_config_dialog)
-        state_no_config.addTransition(self.esp.ui_active.pushButton_config_medium_bluetooth.clicked, state_config_no_wifi)
-        state_no_config.addTransition(self.esp.ui_active.pushButton_config_medium_bd.clicked, state_config_wifi)
+        trans_no_config_to_bluetooth = QSignalTransition(self.esp.ui_active.pushButton_config_medium_bluetooth.clicked, state_no_config)
+        trans_no_config_to_bluetooth.setTargetState(state_config_no_wifi)
+        trans_no_config_to_bluetooth.triggered.connect(self.esp.open_config_dialog)
+
+        trans_no_config_to_wifi = QSignalTransition(self.esp.ui_active.pushButton_config_medium_bd.clicked, state_no_config)
+        trans_no_config_to_wifi.setTargetState(state_config_wifi)
+        trans_no_config_to_wifi.triggered.connect(self.esp.open_config_dialog)
+
+        #state_no_config.exited.connect(self.esp.open_config_dialog)
+        #state_no_config.addTransition(self.esp.ui_active.pushButton_config_medium_bluetooth.clicked, state_config_no_wifi)
+        #state_no_config.addTransition(self.esp.ui_active.pushButton_config_medium_bd.clicked, state_config_wifi)
 
         state_no_config.addTransition(self.esp.ui_config_win.pushButton_send_bluetooth.clicked, state_config_no_wifi)
         state_no_config.addTransition(self.esp.ui_config_win.pushButton_send_wifi.clicked, state_config_wifi)
@@ -873,7 +1004,10 @@ class ESP:
         self.esp_dict = esp_dict_list
         self.main_win = main_win
 
-        self.found_widget = None
+        self.found_widget: QFrame = None
+        self.set_found_widget()
+        self.found_widget.setVisible(False)
+
         self.add_btn: QPushButton = None
         self.ui_active: esp_active_item.Ui_Form_esp_active = None
         self.ui_wifi: esp_wifi_config.Ui_Form_wifi_config = None
@@ -883,6 +1017,11 @@ class ESP:
         self.ui_config_win.setupUi(self.ui_config_dialog)
 
         self.config: ESPConfig = None
+        self.active_widget: QFrame = None
+        self.set_active_widget()
+        self.active_widget.setVisible(False)
+
+        
 
 
     def set_machine(self) -> None:
@@ -891,9 +1030,17 @@ class ESP:
         state_activo = QState(self.machine)
         state_dead = QState(self.machine)
         state_envio = QState(self.machine)
+        state_finished = QFinalState(self.machine)
  
-
+        self.machine.finished.connect(self._on_finish)
         #state_encontrado.addTransition(_found_to_active_slot, state_activo)
+
+        for source_state in [state_encontrado, state_activo, state_dead]:
+
+            trans_make_inactive = InactiveESPTransition()
+            trans_make_inactive.setTargetState(state_finished)
+            source_state.addTransition(trans_make_inactive)
+
 
         trans_make_active = ESPFoundTransition(self.esp_dict)
         trans_make_active.setTargetState(state_activo)
@@ -902,12 +1049,20 @@ class ESP:
         self.machine.setInitialState(state_encontrado)
         self.machine.start()
 
+    def _on_finish(self):
+        self.config.machine.postEvent(InactiveESPEvent())
+        self.esp_lists_machine.machine.postEvent(ESPRemoveActiveEvent(self.active_widget))
+        self.esp_dict.remove_esp(self.esp_id)
+        print("Finished!")
+
     def _found_to_active_slot(self):
         self.machine.postEvent(ESPActiveEvent())
-        self.set_active_widget()
+        self.active_widget.setVisible(True)
         self.esp_lists_machine.machine.postEvent(ESPAddActiveEvent(self.active_widget))
+        self.esp_lists_machine.machine.postEvent(ESPRemoveFoundEvent(self.found_widget))
 
-    def set_found_widget(self):
+
+    def set_found_widget(self) -> QFrame:
         ui_found = esp_found_item.Ui_Form_esp_found_item()
         found_frame = QFrame()
         ui_found.setupUi(found_frame)
@@ -917,6 +1072,7 @@ class ESP:
         self.add_btn.clicked.connect(self._found_to_active_slot)
 
         self.esp_lists_machine.machine.postEvent(ESPAddFoundEvent(self.found_widget))
+        return found_frame
 
     def open_config_dialog(self):
         """
@@ -949,6 +1105,8 @@ class ESP:
 
         ui_active.pushButton_esp_active_config.clicked.connect(self.open_config_dialog)
         self.active_widget = active_frame
+
+        ui_active.pushButton_remove.clicked.connect(lambda: self.machine.postEvent(InactiveESPEvent()))
 
         self.config = ESPConfig(self)
         self.config.set_machine()
@@ -1047,29 +1205,6 @@ if __name__ == '__main__':
         ui_main_disp.verticalLayout_found_list.addWidget(found_frame)
 
     #ui_main_disp.pushButton_search_refresh.clicked.connect(add_found_item)
-
-    def add_active_item():
-        ui_wifi = esp_wifi_config.Ui_Form_wifi_config()
-        wifi_frame = QFrame()
-        ui_wifi.setupUi(wifi_frame)
-
-        ui_active = esp_active_item.Ui_Form_esp_active()
-        active_frame = QFrame()
-        ui_active.setupUi(active_frame)
-
-        ui_active.verticalLayout_wifi_config_expandable.addWidget(wifi_frame)
-
-        ui_active.toolButton_esp_active_wifi_config.setContent(wifi_frame)
-
-        def open_config_dialog():
-            ui_config = esp_config_win.Ui_Dialog_esp_config()
-            config_dialog = QDialog(window)
-            ui_config.setupUi(config_dialog)
-            config_dialog.show()
-
-        ui_main_disp.verticalLayout_active_list.addWidget(active_frame)
-
-        ui_active.pushButton_esp_active_config.clicked.connect(open_config_dialog)
 
 
 
