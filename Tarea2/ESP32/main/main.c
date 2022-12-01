@@ -11,6 +11,8 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
+#include "../components/conexion/udp.c"
+#include "../components/conexion/tcp.c"
 
 
 
