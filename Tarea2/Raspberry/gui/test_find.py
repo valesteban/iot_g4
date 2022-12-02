@@ -511,9 +511,32 @@ class WifiProperties(QObject):
 
 
 class ConfigProperties(QObject):
+    status_conf_changed = pyqtSignal(int)
+    protocols_conf_changed = pyqtSignal(int)
+    discontinuous_time_changed = pyqtSignal(int)
+    acc_sampling_changed = pyqtSignal(int)
+    acc_sensibility_changed = pyqtSignal(int)
+    gyro_sensibility_changed = pyqtSignal(int)
+    bme668_sampling_changed = pyqtSignal(int)
+
+    status_conf_invalidated = pyqtSignal()
+    protocols_conf_invalidated = pyqtSignal()
+    discontinuous_time_invalidated = pyqtSignal()
+    acc_sampling_invalidated = pyqtSignal()
+    acc_sensibility_invalidated = pyqtSignal()
+    gyro_sensibility_invalidated = pyqtSignal()
+    bme668_sampling_invalidated = pyqtSignal()
+
+    statuses_conf = { 21, 22, 23, 30, 31 }
+    protocols_conf = { i for i in range(1,6) }
+    acc_samplings = { 10, 100, 400, 1000 } 
+    acc_sensibilities = { 2,4,8,16 }
+    gyro_sensibilities = { 200, 250, 500 }
+    bme_samplings = { 1,2,3,4 }
+
     def __init__(self):
         QObject.__init__(self)
-        self._status_conf = None
+        self._status_conf = 21
         self._protocol_conf = 1
         self._discontinuous_time = 60
         self._acc_sampling = 10
@@ -521,7 +544,156 @@ class ConfigProperties(QObject):
         self._gyro_sensibility = 200
         self._bme668_sampling = 1
 
+    # status_conf
+    def read_status_conf(self):
+        return self._status_conf
 
+    def set_status_conf(self, new_status):
+        if self._status_conf != new_status:
+            if self.validate_status_conf(new_status):
+                self._status_conf = new_status
+                self.status_conf_changed.emit(new_status)
+
+    def validate_status_conf(self, new_status):
+        if new_status in self.statuses_conf:
+            return True
+        else:
+            self.status_conf_invalidated.emit()
+            return False
+
+    def reset_status_conf(self):
+        self._status_conf = 21
+
+    # protocol_conf
+    def read_protocols_conf(self):
+        return self._protocols_conf
+
+    def set_protocols_conf(self, new_protocol):
+        if self._protocols_conf != new_protocol:
+            if self.validate_protocols_conf(new_protocol):
+                self._protocols_conf = new_protocol
+                self.protocols_conf_changed.emit(new_protocol)
+
+    def validate_protocols_conf(self, new_protocol):
+        if new_protocol in self.protocols_conf:
+            return True
+        else:
+            self.protocols_conf_invalidated.emit()
+            return False
+
+    def reset_protocols_conf(self):
+        self._protocols_conf = 1
+
+    # discontinuous time
+    def read_discontinuous_time(self):
+        return self._discontinuous_time
+
+    def set_discontinuous_time(self, new_time):
+        if self._discontinuous_time != new_time:
+            if self.validate_discontinuous_time(new_time):
+                self._discontinuous_time = new_time
+                self.discontinuous_time_changed.emit(new_time)
+
+    def validate_discontinuous_time(self, new_time):
+        if new_time >= 10:
+            return True
+        else:
+            self.discontinuous_time_invalidated.emit()
+            return False
+
+    def reset_discontinuous_time(self):
+        self._discontinuous_time = 60
+
+    #acc_sampling
+    def read_acc_sampling(self):
+        return self._acc_sampling
+
+    def set_acc_sampling(self, new_sample):
+        if self._acc_sampling != new_sample:
+            if self.validate_acc_sampling(new_sample):
+                self._acc_sampling = new_sample
+                self.acc_sampling_changed.emit(new_sample)
+
+    def validate_acc_sampling(self, new_sample):
+        if new_sample in self.acc_samplings:
+            return True
+        else:
+            self.acc_sampling_invalidated.emit()
+            return False
+
+    def reset_acc_sampling(self):
+        self._acc_sampling = 10
+
+
+    #acc_sensibility
+    def read_acc_sensibility(self):
+        return self._acc_sensibility
+
+    def set_acc_sensibility(self, new_sensibility):
+        if self._acc_sensibility != new_sensibility:
+            if self.validate_acc_sensibility(new_sensibility):
+                self._acc_sensibility = new_sensibility
+                self.acc_sensibility_changed.emit(new_sensibility)
+
+    def validate_acc_sensibility(self, new_sensibility):
+        if new_sensibility in self.acc_sensibilities:
+            return True
+        else:
+            self.acc_sensibility_invalidated.emit()
+            return False
+
+    def reset_acc_sensibility(self):
+        self._acc_sensibility = 2
+
+
+    #gyro_sensibility
+    def read_gyro_sensibility(self):
+        return self._gyro_sensibility
+
+    def set_gyro_sensibility(self, new_sensibility):
+        if self._gyro_sensibility != new_sensibility:
+            if self.validate_gyro_sensibility(new_sensibility):
+                self._gyro_sensibility = new_sensibility
+                self.gyro_sensibility_changed.emit(new_sensibility)
+
+    def validate_gyro_sensibility(self, new_sensibility):
+        if new_sensibility in self.gyro_sensibilities:
+            return True
+        else:
+            self.gyro_sensibility_invalidated.emit()
+            return False
+
+    def reset_gyro_sensibility(self):
+        self._gyro_sensibility = 200
+
+
+    #gyro_sensibility
+    def read_bme668_sampling(self):
+        return self._bme668_sampling
+
+    def set_bme668_sampling(self, new_sample):
+        if self._bme668_sampling != new_sample:
+            if self.validate_bme668_sampling(new_sample):
+                self._bme668_sampling = new_sample
+                self.bme668_sampling_changed.emit(new_sample)
+
+    def validate_bme668_sampling(self, new_sample):
+        if new_sample in self.bme_samplings:
+            return True
+        else:
+            self.bme668_sampling_invalidated.emit()
+            return False
+
+    def reset_bme668_sampling(self):
+        self._bme668_sampling = 1
+
+    status_conf = pyqtProperty(int, read_status_conf, set_status_conf, freset=reset_status_conf, notify=status_conf_changed)
+    protocols_conf = pyqtProperty(int, read_protocols_conf, set_protocols_conf, freset=reset_protocols_conf, notify=protocols_conf_changed)
+    discontinuous_time = pyqtProperty(int, read_discontinuous_time, set_discontinuous_time, freset=reset_discontinuous_time, notify=discontinuous_time_changed)
+    acc_sampling = pyqtProperty(int, read_acc_sampling, set_acc_sampling, freset=reset_acc_sampling, notify=acc_sampling_changed)
+    acc_sensibility = pyqtProperty(int, read_acc_sensibility, set_acc_sensibility, freset=reset_acc_sensibility, notify=acc_sensibility_changed)
+    gyro_sensibility = pyqtProperty(int, read_gyro_sensibility, set_gyro_sensibility, freset=reset_gyro_sensibility, notify=gyro_sensibility_changed)
+    bme668_sampling = pyqtProperty(int, read_bme668_sampling, set_bme668_sampling, freset=reset_bme668_sampling, notify=bme668_sampling_changed)
 
 
 class WifiIputUI(QObject):
@@ -734,7 +906,90 @@ class WifiDisplay:
     def load_from_properties_into_ui(self):
         self.set_all_ui_values(*self.wifi_properties.get_all())
 
-        
+
+class AbstractPortType:
+    def __init__(self) -> None:
+        pass
+
+class PortTypeTCP(AbstractPortType):
+    def __init__(self) -> None:
+        super().__init__()
+
+class PortTypeUDP(AbstractPortType):
+    def __init__(self) -> None:
+        super().__init__()
+
+class AbstractDiscontinuousType:
+    def __init__(self) -> None:
+        pass
+
+class TypeDiscontinuous(AbstractDiscontinuousType):
+    def __init__(self) -> None:
+        super().__init__()
+
+class TypeContinuous(AbstractDiscontinuousType):
+    def __init__(self) -> None:
+        super().__init__()
+
+class StatusUI:
+    def __init__(self) -> None:
+        self._num: int = None
+        self._name: str = None
+
+        self._discontinuous_type:AbstractDiscontinuousType = None
+
+class AbstractStatusWifiUI(StatusUI):
+    def __init__(self) -> None:
+        super().__init__()
+        self._port_type: AbstractPortType = None
+
+class StatusTCPContinuous(AbstractStatusWifiUI):
+    def __init__(self) -> None:
+        super().__init__()
+        self._num = 21
+        self._name = "21 - TCP continuous connection"
+
+        self._discontinuous_type = TypeContinuous()
+        self._port_type = PortTypeTCP()
+
+class StatusTCPDiscontinuous(AbstractStatusWifiUI):
+    def __init__(self) -> None:
+        super().__init__()
+        self._num = 22
+        self._name = "22 - TCP discontinuous connection"
+
+        self._discontinuous_type = TypeDiscontinuous()
+        self._port_type = PortTypeTCP()
+
+class StatusUDP(AbstractStatusWifiUI):
+    def __init__(self) -> None:
+        super().__init__()
+        self._num = 23
+        self._name = "23 - UDP connection"
+
+        self._discontinuous_type = TypeContinuous()
+        self._port_type = PortTypeUDP()
+
+class StatusBLEContinuous(StatusUI):
+    def __init__(self) -> None:
+        super().__init__()
+        self._num = 30
+        self._name = "30 - BLE continuous"
+
+        self._discontinuous_type = TypeContinuous()
+
+class StatusBLEDiscontinuous(StatusUI):
+    def __init__(self) -> None:
+        super().__init__()
+        self._num = 31
+        self._name = "31 - BLE discontinuous"
+
+        self._discontinuous_type = TypeDiscontinuous()
+
+
+
+class StatusWifi:
+    pass        
 
 w = WifiProperties()
 
