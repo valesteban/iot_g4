@@ -36,7 +36,8 @@
            </property>
            <property name="icon">
             <iconset resource="icons.qrc">
-             <normaloff>:/icon_bluetooth/images/bluetooth.png</normaloff>:/icon_bluetooth/images/bluetooth.png</iconset>
+             <normaloff>:/icon_bluetooth/images/bluetooth.png</normaloff>
+             <activeon>:/icon_bluetooth/images/bluetooth_active.png</activeon>:/icon_bluetooth/images/bluetooth.png</iconset>
            </property>
            <property name="checkable">
             <bool>true</bool>
@@ -56,7 +57,8 @@
            </property>
            <property name="icon">
             <iconset resource="icons.qrc">
-             <normaloff>:/icon_wifi/images/wifi.png</normaloff>:/icon_wifi/images/wifi.png</iconset>
+             <normaloff>:/icon_wifi/images/wifi.png</normaloff>
+             <activeon>:/icon_wifi/images/wifi_active.png</activeon>:/icon_wifi/images/wifi.png</iconset>
            </property>
            <property name="checkable">
             <bool>true</bool>
