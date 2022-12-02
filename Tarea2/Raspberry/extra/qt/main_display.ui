@@ -153,12 +153,17 @@
                  </item>
                  <item>
                   <widget class="QPushButton" name="pushButton_search_refresh">
+                   <property name="enabled">
+                    <bool>true</bool>
+                   </property>
                    <property name="text">
                     <string/>
                    </property>
                    <property name="icon">
                     <iconset resource="icons.qrc">
-                     <normaloff>:/icon_refresh/images/refresh.png</normaloff>:/icon_refresh/images/refresh.png</iconset>
+                     <normaloff>:/icon_refresh/images/refresh.png</normaloff>
+                     <disabledoff>:/icon_refresh/images/refresh_disabled.png</disabledoff>
+                     <disabledon>:/icon_refresh/images/refresh_disabled.png</disabledon>:/icon_refresh/images/refresh.png</iconset>
                    </property>
                   </widget>
                  </item>
