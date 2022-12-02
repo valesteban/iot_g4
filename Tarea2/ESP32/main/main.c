@@ -11,14 +11,17 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
-#include "../components/conexion/udp.c"
+
+#include "../components/conexion/ble.c"
 #include "../components/conexion/tcp.c"
+#include "../components/conexion/udp.c"
+// #include "tcp.c"
 
 
 
-extern char* tcp_initial_connection(void);
-extern void tcp_client();
-extern void udp_client();
+// extern char* tcp_initial_connection(void);
+// extern void tcp_client();
+// extern void udp_client();
 
 
 static const char *TAG = "";
@@ -48,13 +51,13 @@ void app_main(void)
 
     
 
-    ESP_LOGE(TAG, "loe ee eotocolo %c, %c",id_protocol,transport_layer);
+    // ESP_LOGE(TAG, "loe ee eotocolo %c, %c",id_protocol,transport_layer);
     
     //esto por mientras nomas me da lata parsear aun la *res donde esta n los valores q realmente recibe
     //imaginemos que obtuvo los valores y son 
 
-    //int id_protocol = 0;
-    //int transport_layer = 0; //TCP
+    // int id_protocol = 0;
+    // int transport_layer = 0; //TCP
 
 
     ESP_LOGE(TAG, "****************************************************************************");

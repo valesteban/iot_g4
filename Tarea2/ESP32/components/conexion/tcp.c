@@ -30,6 +30,7 @@
 #include "lwip/sys.h"
 #include <lwip/netdb.h>
 #include "addr_from_stdin.h"
+
 #include "../payload/empaquetamiento.c"
 #include "../payload/fragmentacion.c"
 
@@ -49,14 +50,13 @@
 #define TCP_LAYER_ID 0
 #define UDP_LAYER_ID 1
 
-static const char *TAG = "example";
+static const char *TAG2 = "example";
 static const char *payload = "Message from ESP32 ";
 
 char rx_buffer[128];
 char host_ip[] = HOST_IP_ADDR;
 int addr_family = 0;
 int ip_protocol = 0;
-
 
 char* tcp_initial_connection(void){
             
@@ -83,7 +83,7 @@ char* tcp_initial_connection(void){
         //CONECTA SOCKET CON SERVODIR/RASPBERRY
         int err = connect(sock, (struct sockaddr *)&dest_addr, sizeof(dest_addr));
         if (err != 0) {
-            ESP_LOGE(TAG, "Socket unable to connect: errno %d", errno);
+            ESP_LOGE(TAG2, "Socket unable to connect: errno %d", errno);
            
         }
         ESP_LOGI("Socket", "Successfully connected");
@@ -92,7 +92,7 @@ char* tcp_initial_connection(void){
             //ENVIA UN PAQUETE 
             int err = send(sock, payload, strlen(payload), 0);
             if (err < 0) {
-                ESP_LOGE(TAG, "Error occurred during sending: errno %d", errno);
+                ESP_LOGE(TAG2, "Error occurred during sending: errno %d", errno);
                 break;
             }
 
@@ -100,13 +100,13 @@ char* tcp_initial_connection(void){
             int len = recv(sock, rx_buffer, sizeof(rx_buffer) - 1, 0);
             // Error occurred during receiving
             if (len <= 0) {
-                ESP_LOGE(TAG, "recv failed: errno %d", errno);
+                ESP_LOGE(TAG2, "recv failed: errno %d", errno);
                 break;
             }
             else {
                 rx_buffer[len] = 0; // Null-terminate whatever we received and treat like a string
-                ESP_LOGI(TAG, "Received %d bytes from %s:", len, host_ip);
-                ESP_LOGI(TAG, "%s", rx_buffer);
+                ESP_LOGI(TAG2, "Received %d bytes from %s:", len, host_ip);
+                ESP_LOGI(TAG2, "%s", rx_buffer);
                 if (strlen(rx_buffer) > 0){
                     break; //salimos del loop si si llego algo
                 }
@@ -115,15 +115,16 @@ char* tcp_initial_connection(void){
         }
         
         if (sock != -1) {
-            ESP_LOGE(TAG, "Shutting down socket and restarting...");
+            ESP_LOGE(TAG2, "Shutting down socket and restarting...");
             shutdown(sock, 0);
             close(sock);
         }
 
     
-    ESP_LOGE(TAG, "retornamosss");   
+    ESP_LOGE(TAG2, "retornamosss");   
     return rx_buffer;
 }
+
 
 
 void tcp_client(char id_protocol){
@@ -146,18 +147,18 @@ void tcp_client(char id_protocol){
         //CREAMOS SOCKET
         int sock =  socket(addr_family, SOCK_STREAM, ip_protocol);
         if (sock < 0) {
-            ESP_LOGE(TAG, "Unable to create socket: errno %d", errno);
+            ESP_LOGE(TAG2, "Unable to create socket: errno %d", errno);
             break;
         }
-        ESP_LOGI(TAG, "Socket created, connecting to %s:%d", host_ip, PORT);
+        ESP_LOGI(TAG2, "Socket created, connecting to %s:%d", host_ip, PORT);
 
         //CONECTAMOS SOCKET CON SERV
         int err = connect(sock, (struct sockaddr *)&dest_addr, sizeof(dest_addr));
         if (err != 0) {
-            ESP_LOGE(TAG, "Socket unable to connect: errno %d", errno);
+            ESP_LOGE(TAG2, "Socket unable to connect: errno %d", errno);
             break;
         }
-        ESP_LOGI(TAG, "Successfully connected");
+        ESP_LOGI(TAG2, "Successfully connected");
 
         int change_bbdd= 0;
         while (change_bbdd == 0) {
@@ -180,17 +181,17 @@ void tcp_client(char id_protocol){
                 int err = fragmentation(data, data_size, sock);
                 free(data);
                 if (err < 0) {
-                    ESP_LOGE(TAG, "Error occurred during sending: errno %d", errno);
+                    ESP_LOGE(TAG2, "Error occurred during sending: errno %d", errno);
                     break;
                 }
                 ESP_LOGI("Envio tcp", "Completado envío TCP de protocolo 4! err: %d", err);
             }else{
-                ESP_LOGI(TAG, "Paquete encodeado: \n");
+                ESP_LOGI(TAG2, "Paquete encodeado: \n");
                 ESP_LOG_BUFFER_HEX("Hexadecimal: ", data, data_size);
                 int err = send(sock, data, data_size, 0);
                 free(data);
                 if (err < 0) {
-                    ESP_LOGE(TAG, "Error occurred during sending: errno %d", errno);
+                    ESP_LOGE(TAG2, "Error occurred during sending: errno %d", errno);
                     break;
                 }
 
@@ -218,13 +219,13 @@ void tcp_client(char id_protocol){
             int len = recv(sock, rx_buffer, sizeof(rx_buffer) - 1, 0);
             // Error occurred during receiving
             if (len < 0) {
-                ESP_LOGE(TAG, "recv failed: errno %d", errno);
+                ESP_LOGE(TAG2, "recv failed: errno %d", errno);
                 break;
             }
             else {
                 rx_buffer[len] = 0; // Null-terminate whatever we received and treat like a string
-                ESP_LOGI(TAG, "Received %d bytes from %s:", len, host_ip);
-                ESP_LOGI(TAG, "%s", rx_buffer);
+                ESP_LOGI(TAG2, "Received %d bytes from %s:", len, host_ip);
+                ESP_LOGI(TAG2, "%s", rx_buffer);
             }
             
             */
@@ -234,9 +235,11 @@ void tcp_client(char id_protocol){
 
         //CERRAMOS SOCKET Y CHAO
         if (sock != -1) {
-            ESP_LOGE(TAG, "Shutting down socket and restarting...");
+            ESP_LOGE(TAG2, "Shutting down socket and restarting...");
             shutdown(sock, 0);
             close(sock);
         }
     }
 }
+
+
