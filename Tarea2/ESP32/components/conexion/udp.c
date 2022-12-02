@@ -171,4 +171,9 @@ void udp_client(char id_protocol){
     }
 }
 
+void udp_cliente(){
+    // lo estoy haciendo .....
+    // version para tarea2
+}
+
 

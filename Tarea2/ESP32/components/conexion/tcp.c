@@ -242,4 +242,11 @@ void tcp_client(char id_protocol){
     }
 }
 
+void tcp_continuo(){
+    // lo estoy haciendo .....
+}
+
+void tcp_discontinuo(){
+    // lo estoy haciendo .....
+}
 
