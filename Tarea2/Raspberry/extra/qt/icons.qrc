@@ -1,5 +1,7 @@
 <RCC>
   <qresource prefix="icon_refresh">
+    <file>images/refresh_disabled.png</file>
+    <file>images/refresh_active.png</file>
     <file>images/refresh.png</file>
   </qresource>
   <qresource prefix="icon_arrow_left">
@@ -13,33 +15,56 @@
   </qresource>
   <qresource prefix="icon_start">
     <file>images/play-button.png</file>
+    <file>images/play_button_green.png</file>
+    <file>images/play_button_disabled.png</file>
   </qresource>
   <qresource prefix="icon_pause">
+    <file>images/pause-button_disabled.png</file>
+    <file>images/pause-button_red.png</file>
     <file>images/pause-button.png</file>
   </qresource>
   <qresource prefix="icon_restart">
+    <file>images/restart_disabled.png</file>
     <file>images/restart.png</file>
   </qresource>
   <qresource prefix="icon_config">
     <file>images/settings.png</file>
   </qresource>
   <qresource prefix="icon_death">
+    <file>images/ghost_grey.png</file>
     <file>images/ghost.png</file>
   </qresource>
   <qresource prefix="icon_ready">
+    <file>images/check_blue.png</file>
     <file>images/check.png</file>
   </qresource>
   <qresource prefix="icon_wifi">
+    <file>images/wifi_red.png</file>
+    <file>images/wifi_light_blue.png</file>
+    <file>images/wifi_disabled.png</file>
+    <file>images/wifi_green.png</file>
+    <file>images/wifi_active.png</file>
     <file>images/wifi.png</file>
   </qresource>
   <qresource prefix="icon_bluetooth">
+    <file>images/bluetooth_disabled.png</file>
+    <file>images/bluetooth_green.png</file>
+    <file>images/bluetooth_light_blue.png</file>
+    <file>images/bluetooth_red.png</file>
+    <file>images/bluetooth_active.png</file>
     <file>images/bluetooth.png</file>
   </qresource>
   <qresource prefix="icon_close">
     <file>images/close.png</file>
   </qresource>
   <qresource prefix="icon_add">
+    <file>images/plus_green.png</file>
     <file>images/plus.png</file>
+  </qresource>
+  <qresource prefix="icon_stop">
+    <file>images/stop-button_disabled.png</file>
+    <file>images/stop-button_red.png</file>
+    <file>images/stop-button.png</file>
   </qresource>
   <qresource prefix="icon_disconnected">
     <file>images/plug.png</file>
