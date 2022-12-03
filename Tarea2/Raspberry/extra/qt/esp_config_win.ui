@@ -11,7 +11,7 @@
    </rect>
   </property>
   <property name="windowTitle">
-   <string>Dialog</string>
+   <string>ESP-32 Configuration</string>
   </property>
   <layout class="QVBoxLayout" name="verticalLayout_esp_config">
    <item>
@@ -99,7 +99,7 @@
         <item row="1" column="0">
          <widget class="QLabel" name="label_disc_time">
           <property name="text">
-           <string>Discontinuos Time (s)</string>
+           <string>Discontinuous Time (s)</string>
           </property>
          </widget>
         </item>
