@@ -15,7 +15,7 @@
 #include "../components/conexion/ble.c"
 #include "../components/conexion/tcp.c"
 #include "../components/conexion/udp.c"
-#include "../components/utils.c"
+// #include "../components/utils.c"
 
 
 
@@ -60,17 +60,21 @@ void app_main(void){
     // int transport_layer = 0; //TCP
 
 
-    // ESP_LOGE(TAG, "****************TCP-CONFIGURACION***********************************************");
-    // tcp_configuracion();
+    ESP_LOGE(TAG, "****************TCP-CONFIGURACION***********************************************");
+    int8_t id_protocol = 1 ;
+    tcp_configuracion(id_protocol);
 
     // ESP_LOGE(TAG, "****************TCP-CONTINUO***********************************************");
-    // tcp_continuo();
+    // int8_t id_protocol = 1 ;
+    // tcp_continuo(id_protocol);
 
     // ESP_LOGE(TAG, "****************TCP-DISCONTINUO***********************************************");
-    // tcp_discontinuo();
+    // int8_t id_protocolo = 1;
+    // int32_t tiempo_discontinuo = 100;
+    // tcp_discontinuo(id_protocolo, tiempo_discontinuo);
 
-    ESP_LOGE(TAG, "****************UDP***********************************************");
-    protocolo_udp(1);
+    // ESP_LOGE(TAG, "****************UDP***********************************************");
+    // protocolo_udp(1);
 
 
     
