@@ -225,7 +225,7 @@ void protocolo_udp(int id_protocol){
 
 
             
-            int err = sendto(sock, data, sizeof(data) -1, 0, (struct sockaddr *)&dest_addr, sizeof(dest_addr));
+            int err = sendto(sock, data, strlen(data) , 0, (struct sockaddr *)&dest_addr, sizeof(dest_addr));
             if (err < 0) {
                 ESP_LOGE(TAG_UDP, "Error occurred during sending: errno %d", errno);
                 break;
@@ -256,6 +256,16 @@ void protocolo_udp(int id_protocol){
                     break;
                 }
             }
+
+            // OBTENER VALOR DE STATUS Y DEPENDIENDO DE ESO CAMBIO
+
+            // char status[2];
+            // memcpy(status,(char*) rx_buffer[1], 2);
+            // strcpy(status, rx_buffer_udp,);
+         
+
+            // ESP_LOGI(TAG_UDP, "status -> %s", status);
+
 
             //SI LO RECIBIDO CAMBIO A LO ORIGINAL PARAMOS LOOP
             // si cambia status llamamos funicon controla status

@@ -68,3 +68,68 @@ def run_udp_protocol(IP_HOST, PORT):
         s.close()
         print("SOCKET UDP CERRADO")  
     print("FIN CONEXION UDP")    
+
+# TAREA 2 -----------------------------------------------------------------------------------------
+
+
+#  Conexión UDP 
+#  - status = 23
+#  - protocolos -> 1-2-3-4-5
+#  - Raspeberry detiene conexion (interfaz gráfica)
+def protocolo_udp(host,port):
+    print(f" host : {host} \n puerto : {port}")
+
+    while(True):
+        print(f"creo socket")
+
+        with socket.socket(socket.AF_INET,socket.SOCK_DGRAM) as s:
+            s.settimeout(10)
+            s.bind((host,port))
+            print(f"Escuchando UDP en el host : {host} y puerto : {port}")
+            
+        
+            raw_data = b""
+
+            # while(True):
+            #     try:
+            #         raw_fragment ,addr = s.recvfrom(1024)
+            #         if raw_fragment == b'\0':
+            #             print("Llegarón todos los fragmentos")
+            #             break
+            #         else:
+            #             raw_data += raw_fragment
+            #             s.sendto(b'\1',addr)
+            #     except TimeoutError:
+            #         raise
+            #     except Exception:
+            #         raise
+            try:
+                data ,addr= s.recvfrom(1024)
+                print(f"La data que llego -> {data.decode()}")
+            except Exception as e:
+                print(e,file=sys.stderr) 
+                break
+
+            # ENVIA PAQUETE DE LA 
+            #por mientras una tupla
+            data_envi = (23,            # STATUS
+                        False           # STOP
+                        )
+            s.sendto(str(data_envi).encode(), addr) 
+
+            #SI DATA ENVIADA PIDE PARAR (por interfaz) 
+            #break 
+
+            #SI DATA ENVIADA CAMBIA STATUS 20
+            #retornamos 20 para que la funcion main se encarge de llamar
+            ##a la funcion tcp_configuracion()
+
+
+            #SI DATA ENVIADA CAMBIA STATUS A 0
+            #retornamos 0 para que la funcion main se encarge de llamar
+            ##a la funcion ble_configuracion()
+
+
+            s.close()
+            print("Se desconectó socket")  
+
