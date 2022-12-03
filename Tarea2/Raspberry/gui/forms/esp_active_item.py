@@ -194,6 +194,7 @@ class Ui_Form_esp_active(object):
         icon4.addPixmap(QtGui.QPixmap(":/icon_start/images/play_button_disabled.png"), QtGui.QIcon.Disabled, QtGui.QIcon.On)
         self.pushButton_esp_active_restart.setIcon(icon4)
         self.pushButton_esp_active_restart.setObjectName("pushButton_esp_active_restart")
+        
         self.horizontalLayout_esp_active_bottom.addWidget(self.pushButton_esp_active_restart)
         self.pushButton_esp_active_start_stop = QtWidgets.QPushButton(Form_esp_active)
         self.pushButton_esp_active_start_stop.setEnabled(False)

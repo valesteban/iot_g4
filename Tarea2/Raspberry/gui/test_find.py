@@ -1561,6 +1561,24 @@ class ESPConfig:
         self.machine.start()
     
 
+class startButtonUI:
+    def __init__(self, button_start: QPushButton) -> None:
+        self.ui_button = button_start
+
+        icon_play = QtGui.QIcon()
+        icon_play.addPixmap(QtGui.QPixmap(":/icon_start/images/play_button_green.png"), QtGui.QIcon.Normal, QtGui.QIcon.Off)
+        icon_play.addPixmap(QtGui.QPixmap(":/icon_start/images/play_button_disabled.png"), QtGui.QIcon.Disabled, QtGui.QIcon.Off)
+        icon_play.addPixmap(QtGui.QPixmap(":/icon_start/images/play_button_disabled.png"), QtGui.QIcon.Disabled, QtGui.QIcon.On)
+        self.icon_play = icon_play
+
+        icon_restart = QtGui.QIcon()
+        icon_restart
+        
+        self.ui_button.setIcon(icon_play)      
+    
+
+
+
 class ESP:
     def __init__(self, esp_id, esp_mac, esp_lists_machine: ListsMachine, esp_dict_list: "ESPDicts", main_win) -> None:
         self.esp_id = esp_id
@@ -1595,8 +1613,12 @@ class ESP:
         state_encontrado = FoundState(self, self.machine)
         state_activo = QState(self.machine)
         state_dead = QState(self.machine)
-        state_envio = QState(self.machine)
+        state_proceso_envio = QState(self.machine)
         state_finished = QFinalState(self.machine)
+ 
+        state_configurando = QState(state_proceso_envio)
+        state_envio = QState(state_proceso_envio)
+        state_mimir = QState(state_proceso_envio)
  
         self.machine.finished.connect(self._on_finish)
         #state_encontrado.addTransition(_found_to_active_slot, state_activo)
@@ -1612,6 +1634,14 @@ class ESP:
         trans_make_active.setTargetState(state_activo)
         state_dead.addTransition(trans_make_active)
 
+        trans_begin_send = SendStartTransition()
+        trans_begin_send.setTargetState(state_proceso_envio)
+        state_activo.addTransition(trans_begin_send)
+
+        state_configurando.entered.connect()
+
+
+        state_proceso_envio.setInitialState(state_configurando)
         self.machine.setInitialState(state_encontrado)
         self.machine.start()
 
