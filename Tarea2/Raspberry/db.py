@@ -1,11 +1,17 @@
 import mariadb
 import json
-from desempaquetamiento import Protocol
 
 
+"""
+    DB Tarea 2
+"""
+
+# Campos:
+# db
+# cursor
 class DB:
 
-    def __init__(self, host, user, password, database) -> None:
+    def __init__(self, host:str, user:str, password:str, database:str) -> None:
         """
             Constructor de la BBDD
         """
@@ -16,6 +22,51 @@ class DB:
             database = database
         )
         self.cursor = self.db.cursor()
+
+    """
+    ===    Tabla Configuracion    ===
+    """
+
+    def change_config(self, configuration_dict:dict) -> None:
+        """
+            Meotodo que cambia la configuracionde la BBDD por una nueva.
+
+            Example:
+                configuration_dict = {
+                    "id_device" : 4,
+                    "status_conf" " 20
+                    ...
+                    }
+                DB.change_config(configuration_dict)
+        """
+
+        sql = '''
+            UPDATE configuracion
+            SET id_device = %s, status_conf = %s, protocol_conf = %s, acc_sampling = %s, acc_sensibility = %s,
+            gyro_sensibility = %s, bme688_sampling = %s, discontinuos_time = %s, tcp_port = %s, udp_port = %s,
+            host_ip_addr = %s, ssid = %s, pas = %s   
+        '''
+
+        id_device = configuration_dict["id_device"] # primary key
+        status_conf = configuration_dict["status_conf"]
+        protocol_conf = configuration_dict["protocol_conf"]
+        acc_sampling = configuration_dict["acc_sampling"]
+        acc_sensibility = configuration_dict["acc_sensibility"]
+        gyro_sensibility = configuration_dict["gyro_sensibility"]
+        bme688_sampling = configuration_dict["bme688_sampling"]
+        discontinuos_time = configuration_dict["discontinuos_time"]
+        tcp_port = configuration_dict["tcp_port"]
+        udp_port = configuration_dict["udp_port"]
+        host_ip_addr = configuration_dict["host_ip_addr"]
+        ssid = configuration_dict["ssid"]
+        pas = configuration_dict["pass"]
+
+        new_config = (id_device, status_conf, protocol_conf, acc_sampling, acc_sensibility, \
+            gyro_sensibility, bme688_sampling, discontinuos_time, \
+                tcp_port, udp_port, host_ip_addr, ssid, pas)
+        self.cursor.execute(sql, new_config)
+        self.db.commit() # actualizo la db
+    
 
     def get_data(self) -> tuple:
         """
@@ -104,19 +155,6 @@ class DB:
         #except:
         #    print("ERROR AL GUARDAR NUEVO DATO EN LA BASE DE DATOS")
 
-
-    def change_config(self, id_protocol:int, transport_layer:int) -> None:
-        """
-            Meotodo que cambia la configuracionde la BBDD por una nueva
-        """
-
-        sql_change_config = '''
-            UPDATE configuracion
-            SET protocolId = %s, transportLayer = %s
-        '''
-        new_config = (id_protocol, transport_layer)
-        self.cursor.execute(sql_change_config, new_config)
-        self.db.commit() # actualizo la db
 
     def return_config(self) -> tuple:
         """

@@ -226,7 +226,7 @@
             </sizepolicy>
            </property>
            <property name="title">
-            <string>Configurar ESP-32 mediante:</string>
+            <string>Configure ESP-32 through:</string>
            </property>
            <layout class="QHBoxLayout" name="horizontalLayout_8">
             <item>
@@ -250,7 +250,7 @@
             <item>
              <widget class="QPushButton" name="pushButton_config_medium_bd">
               <property name="text">
-               <string>Database (via TCP)</string>
+               <string>Database (TCP)</string>
               </property>
               <property name="icon">
                <iconset resource="icons.qrc">
@@ -339,23 +339,33 @@
      </item>
      <item>
       <widget class="QPushButton" name="pushButton_esp_active_restart">
+       <property name="enabled">
+        <bool>false</bool>
+       </property>
        <property name="text">
-        <string>Restart</string>
+        <string>Start</string>
        </property>
        <property name="icon">
         <iconset resource="icons.qrc">
-         <normaloff>:/icon_restart/images/restart.png</normaloff>:/icon_restart/images/restart.png</iconset>
+         <normaloff>:/icon_start/images/play_button_green.png</normaloff>
+         <disabledoff>:/icon_start/images/play_button_disabled.png</disabledoff>
+         <disabledon>:/icon_start/images/play_button_disabled.png</disabledon>:/icon_start/images/play_button_green.png</iconset>
        </property>
       </widget>
      </item>
      <item>
       <widget class="QPushButton" name="pushButton_esp_active_start_stop">
+       <property name="enabled">
+        <bool>false</bool>
+       </property>
        <property name="text">
         <string>Stop</string>
        </property>
        <property name="icon">
         <iconset resource="icons.qrc">
-         <normaloff>:/icon_stop/images/stop-button_red.png</normaloff>:/icon_stop/images/stop-button_red.png</iconset>
+         <normaloff>:/icon_stop/images/stop-button_red.png</normaloff>
+         <disabledoff>:/icon_stop/images/stop-button_disabled.png</disabledoff>
+         <disabledon>:/icon_stop/images/stop-button_disabled.png</disabledon>:/icon_stop/images/stop-button_red.png</iconset>
        </property>
       </widget>
      </item>

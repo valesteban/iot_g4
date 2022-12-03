@@ -7,13 +7,19 @@
     <x>0</x>
     <y>0</y>
     <width>681</width>
-    <height>417</height>
+    <height>252</height>
    </rect>
   </property>
   <property name="windowTitle">
    <string>Form</string>
   </property>
   <layout class="QVBoxLayout" name="verticalLayout_live_plot">
+   <property name="topMargin">
+    <number>3</number>
+   </property>
+   <property name="bottomMargin">
+    <number>3</number>
+   </property>
    <item>
     <widget class="QFrame" name="frame_live_plot">
      <property name="frameShape">
@@ -23,6 +29,15 @@
       <enum>QFrame::Raised</enum>
      </property>
      <layout class="QVBoxLayout" name="verticalLayout_frame_live_plot" stretch="0,8,1">
+      <property name="topMargin">
+       <number>3</number>
+      </property>
+      <property name="rightMargin">
+       <number>10</number>
+      </property>
+      <property name="bottomMargin">
+       <number>3</number>
+      </property>
       <item>
        <layout class="QGridLayout" name="gridLayout_live_plot_selection" rowstretch="8,1" columnstretch="3,4,2" rowminimumheight="2,1">
         <item row="0" column="0">
@@ -62,6 +77,9 @@
          <layout class="QHBoxLayout" name="horizontalLayout_live_plot_var">
           <item>
            <widget class="QPushButton" name="pushButton_live_plot_left_var">
+            <property name="enabled">
+             <bool>false</bool>
+            </property>
             <property name="sizePolicy">
              <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
               <horstretch>0</horstretch>
@@ -82,6 +100,9 @@
           </item>
           <item>
            <widget class="QPushButton" name="pushButton_live_plot_right_var">
+            <property name="enabled">
+             <bool>false</bool>
+            </property>
             <property name="sizePolicy">
              <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
               <horstretch>0</horstretch>
@@ -163,6 +184,12 @@
       </item>
       <item>
        <widget class="QFrame" name="frame_live_plot_display">
+        <property name="minimumSize">
+         <size>
+          <width>0</width>
+          <height>150</height>
+         </size>
+        </property>
         <property name="frameShape">
          <enum>QFrame::StyledPanel</enum>
         </property>
@@ -188,12 +215,17 @@
         </item>
         <item>
          <widget class="QPushButton" name="pushButton_bottom_stop_play">
+          <property name="enabled">
+           <bool>false</bool>
+          </property>
           <property name="text">
            <string/>
           </property>
           <property name="icon">
            <iconset resource="icons.qrc">
-            <normaloff>:/icon_start/images/play-button.png</normaloff>:/icon_start/images/play-button.png</iconset>
+            <normaloff>:/icon_start/images/play_button_green.png</normaloff>
+            <disabledoff>:/icon_start/images/play_button_disabled.png</disabledoff>
+            <disabledon>:/icon_start/images/play_button_disabled.png</disabledon>:/icon_start/images/play_button_green.png</iconset>
           </property>
          </widget>
         </item>

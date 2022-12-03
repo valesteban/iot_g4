@@ -11,14 +11,12 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
-#include "../components/conexion/udp.c"
+
+#include "../components/conexion/ble.c"
 #include "../components/conexion/tcp.c"
+#include "../components/conexion/udp.c"
+#include "../components/utils.c"
 
-
-
-extern char* tcp_initial_connection(void);
-extern void tcp_client();
-extern void udp_client();
 
 
 static const char *TAG = "";
@@ -28,44 +26,63 @@ char *getSubstring(char* dst,const char *src,size_t start,size_t ens){
 }
 
 
-void app_main(void)
-{
+void app_main(void){
+    ESP_LOGI(TAG, "****************COMIENZO***********************************************");
+
     // Test 0.2.0
     ESP_ERROR_CHECK(nvs_flash_init());
     ESP_ERROR_CHECK(esp_netif_init());
     ESP_ERROR_CHECK(esp_event_loop_create_default());
+    ESP_LOGI(TAG, "****************TEST***********************************************");
+
 
     /* This helper function configures Wi-Fi or Ethernet, as selected in menuconfig.
      * Read "Establishing Wi-Fi or Ethernet Connection" section in
      * examples/protocols/README.md for more information about this function.
      */
     ESP_ERROR_CHECK(example_connect());
+    ESP_LOGI(TAG, "****************EXAMPLE***********************************************");
 
-    char *res = tcp_initial_connection();
+
+    // char *res = tcp_initial_connection();
     
-    char id_protocol = res[1];
-    char transport_layer = res[4];
+    // char id_protocol = res[1];
+    // char transport_layer = res[4];
 
     
 
-    ESP_LOGE(TAG, "loe ee eotocolo %c, %c",id_protocol,transport_layer);
+    // ESP_LOGE(TAG, "loe ee eotocolo %c, %c",id_protocol,transport_layer);
     
     //esto por mientras nomas me da lata parsear aun la *res donde esta n los valores q realmente recibe
     //imaginemos que obtuvo los valores y son 
 
-    //int id_protocol = 0;
-    //int transport_layer = 0; //TCP
+    // int id_protocol = 0;
+    // int transport_layer = 0; //TCP
 
 
-    ESP_LOGE(TAG, "****************************************************************************");
-    if ( transport_layer == '0'){
-        ESP_LOGE(TAG, "Conexion TCP");
-        tcp_client(id_protocol);
-    }
-    else{
-        ESP_LOGE(TAG, "Conexion UDP");
-        udp_client(id_protocol);
+    // ESP_LOGE(TAG, "****************TCP-CONFIGURACION***********************************************");
+    // tcp_configuracion();
 
-    }
+    // ESP_LOGE(TAG, "****************TCP-CONTINUO***********************************************");
+    // tcp_continuo();
+
+    // ESP_LOGE(TAG, "****************TCP-DISCONTINUO***********************************************");
+    // tcp_discontinuo();
+
+    ESP_LOGE(TAG, "****************UDP***********************************************");
+    protocolo_udp(1);
+
+
+    
+    // if ( transport_layer == '0'){
+    //     ESP_LOGE(TAG, "Conexion TCP");
+    //     tcp_client(id_protocol);
+    // }
+    // else{
+    //     ESP_LOGE(TAG, "Conexion UDP");
+    //     udp_client(id_protocol);
+
+    // }
 
 }
+
