@@ -2,12 +2,19 @@ import re
 from queue import Queue
 from multiprocessing import Process, Lock
 
-from PyQt5.QtWidgets import QApplication, QMainWindow, QFrame, QDialog, QPushButton, QLabel, QWidget, QLayout, QSpinBox, QLineEdit
+from PyQt5.QtWidgets import QApplication, QMainWindow, QFrame, QDialog, QPushButton, QLabel, QWidget, QLayout, QSpinBox, QLineEdit, QComboBox, QStackedWidget, QVBoxLayout
 from PyQt5 import QtCore, QtWidgets, QtGui
 from PyQt5.QtCore import QStateMachine, QState, QFinalState, QTimer, QObject, QEvent, QAbstractTransition, QEventTransition, pyqtProperty, pyqtSignal, QMetaType, QSignalTransition
 import typing
 
 from forms import main_display, esp_found_item, esp_active_item,  esp_wifi_config, esp_config_win, live_plot
+
+import matplotlib.pyplot as plt
+from matplotlib import rcParams
+from matplotlib.axes import Axes
+from matplotlib.backends.backend_qtagg import FigureCanvasQTAgg, NavigationToolbar2QT as NavigationToolbar
+from matplotlib.legend import _get_legend_handles_labels
+import numpy as np
 
 #region Events
 
@@ -90,6 +97,18 @@ class InactiveESPEvent(QEvent):
     EVENT_TYPE = QEvent.Type.User+14    
     def __init__(self) ->None:
         super().__init__(self.EVENT_TYPE)
+
+class LivePlotAddEvent(QEvent):
+    EVENT_TYPE = QEvent.Type.User+15
+    def __init__(self,plot_widget) -> None:
+        super().__init__(self.EVENT_TYPE)
+        self.plot_widget = plot_widget
+
+class LivePlotRemoveEvent(QEvent):
+    EVENT_TYPE = QEvent.Type.User+16
+    def __init__(self,plot_widget) -> None:
+        super().__init__(self.EVENT_TYPE)
+        self.plot_widget = plot_widget
 
 
 #endregion
@@ -323,6 +342,50 @@ class InactiveESPTransition(QAbstractTransition):
 
     def onTransition(self, event: 'QEvent') -> None:
         return
+
+class LivePlotAddTransition(QAbstractTransition):
+    def __init__(self, plot_lists: "PlotListsMachine", widget_list_parent: QWidget, list_layout: QLayout, sourceState: typing.Optional['QState'] = None) -> None:
+        super().__init__(sourceState)
+        self.plot_lists = plot_lists
+        self.widget_list_parent= widget_list_parent
+        self.list_layout = list_layout
+
+    def eventTest(self, event: 'QEvent') -> bool:
+        if event.type() != LivePlotAddEvent.EVENT_TYPE:
+            return False
+        else:
+            self.plot_lists.num_plots += 1
+            event.plot_widget.setParent(self.widget_list_parent)
+            self.list_layout.addWidget(event.plot_widget)
+            return True
+
+    def onTransition(self, event: 'QEvent') -> None:
+        return 
+
+
+class LivePlotRemoveTransition(QAbstractTransition):
+    def __init__(self, plot_lists: "PlotListsMachine", widget_list_parent: QWidget, list_layout: QLayout, sourceState: typing.Optional['QState'] = None) -> None:
+        super().__init__(sourceState)
+        self.plot_lists = plot_lists
+        self.widget_list_parent= widget_list_parent
+        self.list_layout = list_layout
+
+    def eventTest(self, event: 'QEvent') -> bool:
+        if event.type() != LivePlotRemoveEvent.EVENT_TYPE:
+            return False
+        else:
+            self.plot_lists.num_plots -= 1
+            
+            self.list_layout.removeWidget(event.plot_widget)
+            event.plot_widget.setParent(None)
+            if self.plot_lists.num_plots == 0:
+                return True
+            return False
+
+    def onTransition(self, event: 'QEvent') -> None:
+        return 
+
+
 
 #endregion
 
@@ -908,88 +971,220 @@ class WifiDisplay:
 
 
 class AbstractPortType:
-    def __init__(self) -> None:
+    def __init__(self, tcp_widgets, udp_widgets) -> None:
+        self.tcp_widgets = tcp_widgets
+        self.udp_widgets = udp_widgets
+
+    def toggle_tcp_udp(self, bool_):
+        [widget.setVisible(bool_) for widget in self.tcp_widgets]
+        [widget.setVisible(not bool_) for widget in self.udp_widgets]
+
+    def on_dynamic_change(self):
         pass
 
 class PortTypeTCP(AbstractPortType):
-    def __init__(self) -> None:
-        super().__init__()
+    def __init__(self, tcp_widgets, udp_widgets) -> None:
+        super().__init__(tcp_widgets, udp_widgets)
+
+    def on_dynamic_change(self):
+        self.toggle_tcp_udp(True)
 
 class PortTypeUDP(AbstractPortType):
-    def __init__(self) -> None:
-        super().__init__()
+    def __init__(self, tcp_widgets, udp_widgets) -> None:
+        super().__init__(tcp_widgets, udp_widgets)
+
+    def on_dynamic_change(self):
+        self.toggle_tcp_udp(False)
 
 class AbstractDiscontinuousType:
-    def __init__(self) -> None:
+    def __init__(self, disc_widgets) -> None:
+        self.disc_widgets = disc_widgets
+
+    def change_disc_widgets_visibility(self, bool_):
+        [widget.setVisible(bool_) for widget in self.disc_widgets]
+
+    def on_dynamic_change(self):
         pass
 
 class TypeDiscontinuous(AbstractDiscontinuousType):
-    def __init__(self) -> None:
-        super().__init__()
+    def __init__(self, disc_widgets) -> None:
+        super().__init__(disc_widgets)
+
+    def on_dynamic_change(self):
+        self.change_disc_widgets_visibility(True)
 
 class TypeContinuous(AbstractDiscontinuousType):
-    def __init__(self) -> None:
-        super().__init__()
+    def __init__(self, disc_widgets) -> None:
+        super().__init__(disc_widgets)
+
+    def on_dynamic_change(self):
+        self.change_disc_widgets_visibility(False)
 
 class StatusUI:
-    def __init__(self) -> None:
-        self._num: int = None
-        self._name: str = None
+    def __init__(self, disc_type: AbstractDiscontinuousType, protocol_type: "AbstractProtocolsUI",status_comboBox: QComboBox, disc_widgets, protocol_comboBox: QComboBox) -> None:
+        self.num: int = None
+        self.name: str = None
 
-        self._discontinuous_type:AbstractDiscontinuousType = None
+        self._discontinuous_type:AbstractDiscontinuousType = disc_type
+        self._protocol_type = protocol_type
+
+        self.status_comboBox = status_comboBox
+        self.disc_widgets = disc_widgets
+        self.protocol_comboBox = protocol_comboBox
+
+        self.status_comboBox.currentTextChanged.connect(self.dynamic_check)
+
+    def dynamic_check(self, comboBox_text):
+        print(comboBox_text)
+        if comboBox_text == self.name:
+            self.dynamic_change()
+
+    def dynamic_change(self):
+        self._discontinuous_type.on_dynamic_change()
+        self._protocol_type.on_dynamic_change()
 
 class AbstractStatusWifiUI(StatusUI):
-    def __init__(self) -> None:
-        super().__init__()
-        self._port_type: AbstractPortType = None
+    def __init__(self, disc_type: AbstractDiscontinuousType, port_type: AbstractPortType, status_comboBox: QComboBox, disc_widgets, protocol_comboBox: QComboBox, tcp_widgets, udp_widgets) -> None:
+        super().__init__(disc_type, ProtocolExtendedUI(protocol_comboBox),status_comboBox, disc_widgets, protocol_comboBox)
+        self._port_type = port_type
+
+        self.tcp_widgets = tcp_widgets
+        self.udp_widgets = udp_widgets
+
+    def dynamic_change(self):
+        super().dynamic_change()
+        self._port_type.on_dynamic_change()
 
 class StatusTCPContinuous(AbstractStatusWifiUI):
-    def __init__(self) -> None:
-        super().__init__()
-        self._num = 21
-        self._name = "21 - TCP continuous connection"
+    def __init__(self,  status_comboBox: QComboBox, disc_widgets, protocol_comboBox: QComboBox, tcp_widgets, udp_widgets) -> None:
+        super().__init__(TypeContinuous(disc_widgets), PortTypeTCP( tcp_widgets, udp_widgets), status_comboBox, disc_widgets, protocol_comboBox, tcp_widgets, udp_widgets)
+        self.num = 21
+        self.name = "21 - TCP continuous connection"
 
-        self._discontinuous_type = TypeContinuous()
-        self._port_type = PortTypeTCP()
+
 
 class StatusTCPDiscontinuous(AbstractStatusWifiUI):
-    def __init__(self) -> None:
-        super().__init__()
-        self._num = 22
-        self._name = "22 - TCP discontinuous connection"
+    def __init__(self,  status_comboBox: QComboBox, disc_widgets, protocol_comboBox: QComboBox, tcp_widgets, udp_widgets) -> None:
+        super().__init__(TypeDiscontinuous(disc_widgets), PortTypeTCP( tcp_widgets, udp_widgets), status_comboBox, disc_widgets, protocol_comboBox, tcp_widgets, udp_widgets)
+        self.num = 22
+        self.name = "22 - TCP discontinuous connection"
 
-        self._discontinuous_type = TypeDiscontinuous()
-        self._port_type = PortTypeTCP()
 
 class StatusUDP(AbstractStatusWifiUI):
-    def __init__(self) -> None:
-        super().__init__()
-        self._num = 23
-        self._name = "23 - UDP connection"
+    def __init__(self,  status_comboBox: QComboBox, disc_widgets, protocol_comboBox: QComboBox, tcp_widgets, udp_widgets) -> None:
+        super().__init__(TypeContinuous(disc_widgets), PortTypeUDP( tcp_widgets, udp_widgets), status_comboBox, disc_widgets, protocol_comboBox, tcp_widgets, udp_widgets)
+        self.num = 23
+        self.name = "23 - UDP connection"
 
-        self._discontinuous_type = TypeContinuous()
-        self._port_type = PortTypeUDP()
+class AbstractStatusBluetoothUI(StatusUI):
+    def __init__(self, disc_type: AbstractDiscontinuousType,  status_comboBox: QComboBox, disc_widgets, protocol_comboBox: QComboBox) -> None:
+        super().__init__(disc_type, ProtocolBaseUI(protocol_comboBox),status_comboBox, disc_widgets, protocol_comboBox)
 
-class StatusBLEContinuous(StatusUI):
-    def __init__(self) -> None:
-        super().__init__()
-        self._num = 30
-        self._name = "30 - BLE continuous"
-
-        self._discontinuous_type = TypeContinuous()
-
-class StatusBLEDiscontinuous(StatusUI):
-    def __init__(self) -> None:
-        super().__init__()
-        self._num = 31
-        self._name = "31 - BLE discontinuous"
-
-        self._discontinuous_type = TypeDiscontinuous()
+class StatusBLEContinuous(AbstractStatusBluetoothUI):
+    def __init__(self,  status_comboBox: QComboBox, disc_widgets, protocol_comboBox: QComboBox) -> None:
+        super().__init__(TypeContinuous(disc_widgets), status_comboBox, disc_widgets, protocol_comboBox)
+        self.num = 30
+        self.name = "30 - BLE continuous"
 
 
+class StatusBLEDiscontinuous(AbstractStatusBluetoothUI):
+    def __init__(self,  status_comboBox: QComboBox, disc_widgets, protocol_comboBox: QComboBox) -> None:
+        super().__init__(TypeDiscontinuous(disc_widgets), status_comboBox, disc_widgets, protocol_comboBox)
+        self.num = 31
+        self.name = "31 - BLE discontinuous"
 
-class StatusWifi:
-    pass        
+
+class BasicProtocolsUI:
+    def __init__(self, protocol_combobox: QComboBox) -> None:
+        self.comboBox = protocol_combobox
+        self.names = { "Protocol " + str(i): i for i in range(1,5) }
+        self.set_comboBox()
+        self.set_item_tooltips()
+
+    def set_comboBox(self):
+        self.comboBox.addItems([key for key in self.names])
+
+    def set_item_tooltips(self):
+        tooltips = [
+            "Sends basic info such as ESP battery level and message timestamp.",
+            "Sends ESP basic info and data collected by BME688 (gas, pressure, humidity and temperature sensors).",
+            "Sends ESP basic info, data collected by BME688 and the RMS of the vibrations meassured by BMI270.",
+            "Sends ESP basic info, data collected by BME688 and BMI270 (frecuency and amplitude of vibrations and their RMS).",
+            ]
+
+        for i in range(len(tooltips)):
+
+            self.comboBox.setItemData(i, tooltips[i], QtCore.Qt.ToolTipRole)
+
+
+class ProtocolBaseUI:
+    def __init__(self, protocol_combobox: QComboBox) -> None:
+        self.comboBox = protocol_combobox
+        self.extra_name = "Protocol 5"
+        self.extra_tooltip = "Sends ESP basic info, data collected by BME688 and BMI270 (accelerometer and gyroscope vectors. Warning: huge size)."
+
+
+    def check_extra_present(self):
+        return self.comboBox.findText(self.extra_name)
+
+    def on_dynamic_change(self):
+        index = self.check_extra_present()
+        if index != -1:
+            self.comboBox.removeItem(index)
+        
+
+class ProtocolExtendedUI(ProtocolBaseUI):
+    def __init__(self, protocol_combobox: QComboBox) -> None:
+        super().__init__(protocol_combobox)
+
+    def on_dynamic_change(self):
+        index = self.check_extra_present()
+        if index == -1:
+            index = self.comboBox.count()
+            self.comboBox.insertItem(index, self.extra_name)
+            self.comboBox.setItemData(index, self.extra_tooltip, QtCore.Qt.ToolTipRole)
+
+
+
+class StatusConfigUI:
+    def __init__(self, ui_status: esp_config_win.Ui_Dialog_esp_config , ui_wifi: esp_wifi_config.Ui_Form_wifi_config,status_properties: ConfigProperties):
+        self.ui_status = ui_status
+        self.ui_wifi = ui_wifi
+        self.status_properties = status_properties
+        self.protocols_ui = BasicProtocolsUI(self.ui_status.comboBox_protocol)
+
+        self.actual_status: StatusUI = None
+        self.wifi_statuses = { 
+            item.name: item 
+            for item in [class_name(
+                self.ui_status.comboBox_conf_status, 
+                [self.ui_status.label_disc_time, self.ui_status.spinBox_disc_time],
+                self.ui_status.comboBox_protocol,
+                [ui_wifi.label_tcp_port, ui_wifi.label_tcp_port_status_msg, ui_wifi.spinBox_tcp_port],
+                [ui_wifi.label_udp_port, ui_wifi.label_udp_port_status_msg, ui_wifi.spinBox_udp_port]) 
+            for class_name in [StatusTCPContinuous, StatusTCPDiscontinuous, StatusUDP]]}
+        self.bluetooth_statuses = { 
+            item.name: item 
+            for item in [class_name(
+                self.ui_status.comboBox_conf_status, 
+                [self.ui_status.label_disc_time, self.ui_status.spinBox_disc_time],
+                self.ui_status.comboBox_protocol ) 
+            for class_name in [StatusBLEContinuous, StatusBLEDiscontinuous]]}
+
+        self.ui_status.pushButton_send_wifi.clicked.connect(self.set_statuses_wifi)
+        self.ui_status.pushButton_send_bluetooth.clicked.connect(self.set_statuses_bluetooth)
+
+
+    def set_statuses_wifi(self):
+        self.ui_status.comboBox_conf_status.clear()
+        self.ui_status.comboBox_conf_status.addItems([key for key in self.wifi_statuses])
+    
+    def set_statuses_bluetooth(self):
+        self.ui_status.comboBox_conf_status.clear()
+        self.ui_status.comboBox_conf_status.addItems([key for key in self.bluetooth_statuses])
+
+
+
 
 w = WifiProperties()
 
@@ -1100,6 +1295,9 @@ class ESPConfig:
 
         self.config_wifi = None
         self.send_wifi = False
+
+        self.status_properties = ConfigProperties()
+        self.status_ui = StatusConfigUI(self.esp.ui_config_win, self.esp.ui_wifi, self.status_properties)
 
     def set_medium_and_post(self, config_wifi: bool=None, send_wifi:bool=None):
         if config_wifi is not None:
@@ -1367,6 +1565,124 @@ class ESP:
         self.config.set_machine()
 
 
+class PlotListsMachine:
+    def __init__(self, widget_list_parent: QWidget, list_layout: QLayout, filled_page: QStackedWidget) -> None:
+        self.num_plots  = 0
+        self.widget_list_parent= widget_list_parent
+        self.list_layout = list_layout
+        self.page_filled = filled_page
+
+        self.machine = QStateMachine()
+
+        state_plot_empty = QState(self.machine)
+        state_plot_filled = QState(self.machine)
+
+        state_plot_empty.assignProperty(self.page_filled, "currentIndex", 1)
+        state_plot_filled.assignProperty(self.page_filled, "currentIndex", 0)
+
+        # transitions
+
+        trans_plot_empty_to_filled = LivePlotAddTransition(self, self.widget_list_parent, self.list_layout)
+        trans_plot_empty_to_filled.setTargetState(state_plot_filled)
+        state_plot_empty.addTransition(trans_plot_empty_to_filled)
+
+        trans_filled_to_filled = LivePlotAddTransition(self, self.widget_list_parent, self.list_layout)
+        state_plot_filled.addTransition(trans_filled_to_filled)
+
+        trans_plot_filled_to_empty = LivePlotRemoveTransition(self, self.widget_list_parent, self.list_layout)
+        trans_plot_filled_to_empty.setTargetState(state_plot_empty)
+        state_plot_filled.addTransition(trans_plot_filled_to_empty)
+
+        self.machine.setInitialState(state_plot_empty)
+        self.machine.start()
+
+class MatplotlibCanvas(FigureCanvasQTAgg):
+    def __init__(self, axes: Axes, parent=None, layout=None, width=5, height=4, dpi=120):
+        self.axes = axes
+        self.parent = parent
+        self.layout: QVBoxLayout = layout
+        self.toolbar: NavigationToolbar = None
+        super(MatplotlibCanvas, self).__init__(axes.figure)
+        axes.figure.tight_layout()
+
+        handles, labels = _get_legend_handles_labels([axes], dict())
+        if handles:
+        #if True:
+            legend = self.axes.legend()
+            legend.set_draggable(True)
+
+        #self.set_toolbar()
+
+    def set_toolbar(self):
+
+        rcParams['toolbar'] = 'None'
+        my_toolitems = NavigationToolbar.toolitems.copy()
+        remove_these = ["Subplots", "Save"]
+        for i in range(len(my_toolitems)-1,-1,-1):
+            item_first_name = my_toolitems[i][0]
+            if item_first_name in remove_these:
+                my_toolitems.pop(i)
+
+        NavigationToolbar.toolitems = my_toolitems
+        self.toolbar = NavigationToolbar(self, self.parent)
+        #canv = self.axes.figure.canvas
+        #canv.manager.toolmanager.remove_tool("subplots")
+        # IMPORTANT: don't use "if self.layout: ", for some reason, bool(self.layout) is False
+        if self.layout is not None:
+            self.layout.addWidget(self.toolbar)
+
+class LivePlot:
+    def __init__(self, plot_id, plot_list: PlotListsMachine, plot_manager: "LivePlotManager") -> None:
+        self.plot_id = plot_id
+        self.plot_list = plot_list
+        self.plot_manager = plot_manager
+
+        self.ui_plot = live_plot.Ui_Form_live_plot()
+        self.plot_frame = QFrame()
+        self.ui_plot.setupUi(self.plot_frame)
+        self.ui_plot.frame_live_plot_display.setMinimumSize(QtCore.QSize(150,150))
+
+        self.fig = plt.figure(facecolor='black')
+
+        #plt.plot(x,y)
+
+        #self.axes = plt.axes()
+
+        self.axes = self.fig.add_axes((0,0,1,1))
+        self.axes.set_facecolor("black")
+
+        #self.axes.plot([1,2,3,4],[4,1,3,2])
+        #self.axes = Axes()
+
+        canvas_layout = QVBoxLayout(self.ui_plot.frame_live_plot_display)
+        self.canvas = MatplotlibCanvas(axes=self.axes, parent=self.ui_plot.frame_live_plot_display, layout=canvas_layout)
+        canvas_layout.addWidget(self.canvas)
+        #self.canvas = MatplotlibCanvas(axes=self.fig, parent=self.ui_plot.frame_live_plot_display, layout=canvas_layout)
+
+
+        self.ui_plot.pushButton_remove.clicked.connect(self.remove_plot)
+
+    def remove_plot(self):
+        self.plot_manager.live_plots.pop(self.plot_id)
+        self.plot_list.machine.postEvent(LivePlotRemoveEvent(self.plot_frame))
+
+class LivePlotManager:
+    def __init__(self, ui_main: main_display.Ui_MainWindow) -> None:
+        self.plot_list = PlotListsMachine(
+            ui_main_disp.scrollAreaWidgetContents_added_plots, 
+            ui_main_disp.verticalLayout_added_plots_list,
+            ui_main.stackedWidget_plot_count)
+        self.ui_main = ui_main
+        self.live_plots = dict()
+
+        ui_main.pushButton_add_live_plot.clicked.connect(self.add_new_plot)
+
+    def add_new_plot(self):
+        new_plot = LivePlot(self.plot_list.num_plots, self.plot_list, self)
+        self.live_plots[self.plot_list.num_plots] = new_plot
+        self.plot_list.machine.postEvent(LivePlotAddEvent(new_plot.plot_frame))
+
+
 
 
     
@@ -1397,6 +1713,9 @@ if __name__ == '__main__':
     window = QMainWindow()
     ui_main_disp = main_display.Ui_MainWindow()
     ui_main_disp.setupUi(window)
+
+    plot_manager = LivePlotManager(ui_main_disp)
+
 
     debug_dialog = QDialog(window)
     verticalLayout_debug= QtWidgets.QVBoxLayout(debug_dialog)
@@ -1471,7 +1790,7 @@ if __name__ == '__main__':
         ui_plot.setupUi(plot_frame)
         ui_main_disp.verticalLayout_added_plots_list.addWidget(plot_frame)
 
-    ui_main_disp.pushButton_add_live_plot.clicked.connect(add_live_plot)
+    #ui_main_disp.pushButton_add_live_plot.clicked.connect(add_live_plot)
 
     window.show()
     debug_dialog.show()
