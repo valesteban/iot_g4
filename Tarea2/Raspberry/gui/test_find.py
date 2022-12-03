@@ -549,6 +549,7 @@ class WifiProperties(QObject):
     def reset_passwd(self):
         self._passwd = "dummy"
 
+    # utility functions
     def validate_all(self, *vals):
         result = True
         for i in range(len(self.attrs)):
@@ -575,7 +576,7 @@ class WifiProperties(QObject):
 
 class ConfigProperties(QObject):
     status_conf_changed = pyqtSignal(int)
-    protocols_conf_changed = pyqtSignal(int)
+    protocol_conf_changed = pyqtSignal(int)
     discontinuous_time_changed = pyqtSignal(int)
     acc_sampling_changed = pyqtSignal(int)
     acc_sensibility_changed = pyqtSignal(int)
@@ -583,7 +584,7 @@ class ConfigProperties(QObject):
     bme668_sampling_changed = pyqtSignal(int)
 
     status_conf_invalidated = pyqtSignal()
-    protocols_conf_invalidated = pyqtSignal()
+    protocol_conf_invalidated = pyqtSignal()
     discontinuous_time_invalidated = pyqtSignal()
     acc_sampling_invalidated = pyqtSignal()
     acc_sensibility_invalidated = pyqtSignal()
@@ -596,6 +597,8 @@ class ConfigProperties(QObject):
     acc_sensibilities = { 2,4,8,16 }
     gyro_sensibilities = { 200, 250, 500 }
     bme_samplings = { 1,2,3,4 }
+
+    attrs = ["status_conf", "protocol_conf", "discontinuous_time", "acc_sampling", "acc_sensibility", "gyro_sensibility", "bme668_sampling"]
 
     def __init__(self):
         QObject.__init__(self)
@@ -628,24 +631,24 @@ class ConfigProperties(QObject):
         self._status_conf = 21
 
     # protocol_conf
-    def read_protocols_conf(self):
-        return self._protocols_conf
+    def read_protocol_conf(self):
+        return self._protocol_conf
 
-    def set_protocols_conf(self, new_protocol):
-        if self._protocols_conf != new_protocol:
-            if self.validate_protocols_conf(new_protocol):
-                self._protocols_conf = new_protocol
-                self.protocols_conf_changed.emit(new_protocol)
+    def set_protocol_conf(self, new_protocol):
+        if self._protocol_conf != new_protocol:
+            if self.validate_protocol_conf(new_protocol):
+                self._protocol_conf = new_protocol
+                self.protocol_conf_changed.emit(new_protocol)
 
-    def validate_protocols_conf(self, new_protocol):
+    def validate_protocol_conf(self, new_protocol):
         if new_protocol in self.protocols_conf:
             return True
         else:
-            self.protocols_conf_invalidated.emit()
+            self.protocol_conf_invalidated.emit()
             return False
 
-    def reset_protocols_conf(self):
-        self._protocols_conf = 1
+    def reset_protocol_conf(self):
+        self._protocol_conf = 1
 
     # discontinuous time
     def read_discontinuous_time(self):
@@ -750,8 +753,26 @@ class ConfigProperties(QObject):
     def reset_bme668_sampling(self):
         self._bme668_sampling = 1
 
+    # utility functions
+    def validate_all(self, *vals):
+        result = True
+        for i in range(len(self.attrs)):
+            attr = self.attrs[i]
+            mid_result = getattr(self, "validate_"+attr)(vals[i])
+            result = result and mid_result
+        return result
+
+    def set_all(self, *new_vals):
+        assert len(new_vals) == len(self.attrs)
+        for i in range(len(self.attrs)):
+            attr = self.attrs[i]
+            getattr(self, "set_"+ attr)(new_vals[i])
+        
+    def get_all(self):
+        return [getattr(self, attr) for attr in self.attrs]
+
     status_conf = pyqtProperty(int, read_status_conf, set_status_conf, freset=reset_status_conf, notify=status_conf_changed)
-    protocols_conf = pyqtProperty(int, read_protocols_conf, set_protocols_conf, freset=reset_protocols_conf, notify=protocols_conf_changed)
+    protocol_conf = pyqtProperty(int, read_protocol_conf, set_protocol_conf, freset=reset_protocol_conf, notify=protocol_conf_changed)
     discontinuous_time = pyqtProperty(int, read_discontinuous_time, set_discontinuous_time, freset=reset_discontinuous_time, notify=discontinuous_time_changed)
     acc_sampling = pyqtProperty(int, read_acc_sampling, set_acc_sampling, freset=reset_acc_sampling, notify=acc_sampling_changed)
     acc_sensibility = pyqtProperty(int, read_acc_sensibility, set_acc_sensibility, freset=reset_acc_sensibility, notify=acc_sensibility_changed)
@@ -971,30 +992,28 @@ class WifiDisplay:
 
 
 class AbstractPortType:
-    def __init__(self, tcp_widgets, udp_widgets) -> None:
-        self.tcp_widgets = tcp_widgets
+    def __init__(self, udp_widgets) -> None:
         self.udp_widgets = udp_widgets
 
-    def toggle_tcp_udp(self, bool_):
-        [widget.setVisible(bool_) for widget in self.tcp_widgets]
-        [widget.setVisible(not bool_) for widget in self.udp_widgets]
+    def change_udp_visibility(self, bool_):
+        [widget.setVisible(bool_) for widget in self.udp_widgets]
 
     def on_dynamic_change(self):
         pass
 
 class PortTypeTCP(AbstractPortType):
-    def __init__(self, tcp_widgets, udp_widgets) -> None:
-        super().__init__(tcp_widgets, udp_widgets)
+    def __init__(self, udp_widgets) -> None:
+        super().__init__(udp_widgets)
 
     def on_dynamic_change(self):
-        self.toggle_tcp_udp(True)
+        self.change_udp_visibility(False)
 
 class PortTypeUDP(AbstractPortType):
-    def __init__(self, tcp_widgets, udp_widgets) -> None:
-        super().__init__(tcp_widgets, udp_widgets)
+    def __init__(self, udp_widgets) -> None:
+        super().__init__(udp_widgets)
 
     def on_dynamic_change(self):
-        self.toggle_tcp_udp(False)
+        self.change_udp_visibility(True)
 
 class AbstractDiscontinuousType:
     def __init__(self, disc_widgets) -> None:
@@ -1020,13 +1039,16 @@ class TypeContinuous(AbstractDiscontinuousType):
     def on_dynamic_change(self):
         self.change_disc_widgets_visibility(False)
 
-class StatusUI:
-    def __init__(self, disc_type: AbstractDiscontinuousType, protocol_type: "AbstractProtocolsUI",status_comboBox: QComboBox, disc_widgets, protocol_comboBox: QComboBox) -> None:
+class StatusUI(QObject):
+    status_selected = pyqtSignal(object)
+
+    def __init__(self, disc_type: AbstractDiscontinuousType, protocol_type: "ProtocolBaseUI",status_comboBox: QComboBox, disc_widgets, protocol_comboBox: QComboBox) -> None:
+        QObject.__init__(self)
         self.num: int = None
         self.name: str = None
 
-        self._discontinuous_type:AbstractDiscontinuousType = disc_type
-        self._protocol_type = protocol_type
+        self.discontinuous_type:AbstractDiscontinuousType = disc_type
+        self.protocol_type = protocol_type
 
         self.status_comboBox = status_comboBox
         self.disc_widgets = disc_widgets
@@ -1034,21 +1056,27 @@ class StatusUI:
 
         self.status_comboBox.currentTextChanged.connect(self.dynamic_check)
 
+    def __str__(self) -> str:
+        return "Status {}: {}".format(self.num, self.name)
+
     def dynamic_check(self, comboBox_text):
-        print(comboBox_text)
         if comboBox_text == self.name:
+            self.status_selected.emit(self)
             self.dynamic_change()
 
     def dynamic_change(self):
-        self._discontinuous_type.on_dynamic_change()
-        self._protocol_type.on_dynamic_change()
+        self.discontinuous_type.on_dynamic_change()
+        self.protocol_type.on_dynamic_change()
+
+    def setComboBoxVal(self):
+        index = self.status_comboBox.findText(self.name)
+        self.status_comboBox.setCurrentIndex(index)
 
 class AbstractStatusWifiUI(StatusUI):
-    def __init__(self, disc_type: AbstractDiscontinuousType, port_type: AbstractPortType, status_comboBox: QComboBox, disc_widgets, protocol_comboBox: QComboBox, tcp_widgets, udp_widgets) -> None:
+    def __init__(self, disc_type: AbstractDiscontinuousType, port_type: AbstractPortType, status_comboBox: QComboBox, disc_widgets, protocol_comboBox: QComboBox, udp_widgets) -> None:
         super().__init__(disc_type, ProtocolExtendedUI(protocol_comboBox),status_comboBox, disc_widgets, protocol_comboBox)
         self._port_type = port_type
 
-        self.tcp_widgets = tcp_widgets
         self.udp_widgets = udp_widgets
 
     def dynamic_change(self):
@@ -1056,23 +1084,23 @@ class AbstractStatusWifiUI(StatusUI):
         self._port_type.on_dynamic_change()
 
 class StatusTCPContinuous(AbstractStatusWifiUI):
-    def __init__(self,  status_comboBox: QComboBox, disc_widgets, protocol_comboBox: QComboBox, tcp_widgets, udp_widgets) -> None:
-        super().__init__(TypeContinuous(disc_widgets), PortTypeTCP( tcp_widgets, udp_widgets), status_comboBox, disc_widgets, protocol_comboBox, tcp_widgets, udp_widgets)
+    def __init__(self,  status_comboBox: QComboBox, disc_widgets, protocol_comboBox: QComboBox, udp_widgets) -> None:
+        super().__init__(TypeContinuous(disc_widgets), PortTypeTCP(udp_widgets), status_comboBox, disc_widgets, protocol_comboBox, udp_widgets)
         self.num = 21
         self.name = "21 - TCP continuous connection"
 
 
 
 class StatusTCPDiscontinuous(AbstractStatusWifiUI):
-    def __init__(self,  status_comboBox: QComboBox, disc_widgets, protocol_comboBox: QComboBox, tcp_widgets, udp_widgets) -> None:
-        super().__init__(TypeDiscontinuous(disc_widgets), PortTypeTCP( tcp_widgets, udp_widgets), status_comboBox, disc_widgets, protocol_comboBox, tcp_widgets, udp_widgets)
+    def __init__(self,  status_comboBox: QComboBox, disc_widgets, protocol_comboBox: QComboBox, udp_widgets) -> None:
+        super().__init__(TypeDiscontinuous(disc_widgets), PortTypeTCP(udp_widgets), status_comboBox, disc_widgets, protocol_comboBox, udp_widgets)
         self.num = 22
         self.name = "22 - TCP discontinuous connection"
 
 
 class StatusUDP(AbstractStatusWifiUI):
-    def __init__(self,  status_comboBox: QComboBox, disc_widgets, protocol_comboBox: QComboBox, tcp_widgets, udp_widgets) -> None:
-        super().__init__(TypeContinuous(disc_widgets), PortTypeUDP( tcp_widgets, udp_widgets), status_comboBox, disc_widgets, protocol_comboBox, tcp_widgets, udp_widgets)
+    def __init__(self,  status_comboBox: QComboBox, disc_widgets, protocol_comboBox: QComboBox, udp_widgets) -> None:
+        super().__init__(TypeContinuous(disc_widgets), PortTypeUDP(udp_widgets), status_comboBox, disc_widgets, protocol_comboBox, udp_widgets)
         self.num = 23
         self.name = "23 - UDP connection"
 
@@ -1093,6 +1121,28 @@ class StatusBLEDiscontinuous(AbstractStatusBluetoothUI):
         self.num = 31
         self.name = "31 - BLE discontinuous"
 
+
+class ConfigIntComboBoxUI:
+    def __init__(self, input_ui: QComboBox) -> None:
+        self.ui_input = input_ui
+
+    def getVal(self):
+        return int(self.ui_input.currentText())
+
+    def setVal(self, newVal: int):
+        index = self.ui_input.findText(str(newVal))
+        self.ui_input.setCurrentIndex(index)
+
+class ConfigSpinBoxUI:
+    def __init__(self, input_ui: QSpinBox) -> None:
+        self.ui_input = input_ui
+
+    def getVal(self):
+        return self.ui_input.value()
+
+    def setVal(self, newVal: int):
+        self.ui_input.setProperty("value", newVal)
+ 
 
 class BasicProtocolsUI:
     def __init__(self, protocol_combobox: QComboBox) -> None:
@@ -1120,6 +1170,8 @@ class BasicProtocolsUI:
 class ProtocolBaseUI:
     def __init__(self, protocol_combobox: QComboBox) -> None:
         self.comboBox = protocol_combobox
+        self.names = { "Protocol " + str(i): i for i in range(1,5) }
+        self.ids = { i: "Protocol " + str(i) for i in range(1,5) }
         self.extra_name = "Protocol 5"
         self.extra_tooltip = "Sends ESP basic info, data collected by BME688 and BMI270 (accelerometer and gyroscope vectors. Warning: huge size)."
 
@@ -1131,11 +1183,21 @@ class ProtocolBaseUI:
         index = self.check_extra_present()
         if index != -1:
             self.comboBox.removeItem(index)
+
+    def getVal(self):
+        text = self.comboBox.currentText()
+        return self.names.get(text)
+
+    def setVal(self, newVal: int):
+        index = self.comboBox.findText(self.ids[newVal])
+        self.comboBox.setCurrentIndex(index)
         
 
 class ProtocolExtendedUI(ProtocolBaseUI):
     def __init__(self, protocol_combobox: QComboBox) -> None:
         super().__init__(protocol_combobox)
+        self.names[self.extra_name] = 5
+        self.ids[5] = self.extra_name
 
     def on_dynamic_change(self):
         index = self.check_extra_present()
@@ -1147,6 +1209,8 @@ class ProtocolExtendedUI(ProtocolBaseUI):
 
 
 class StatusConfigUI:
+    attrs = ["discontinuous_time_ui", "acc_sampling_ui", "acc_sensibility_ui", "gyro_sensibility_ui", "bme668_sampling_ui"]
+
     def __init__(self, ui_status: esp_config_win.Ui_Dialog_esp_config , ui_wifi: esp_wifi_config.Ui_Form_wifi_config,status_properties: ConfigProperties):
         self.ui_status = ui_status
         self.ui_wifi = ui_wifi
@@ -1154,17 +1218,22 @@ class StatusConfigUI:
         self.protocols_ui = BasicProtocolsUI(self.ui_status.comboBox_protocol)
 
         self.actual_status: StatusUI = None
+        self.discontinuous_time_ui = ConfigSpinBoxUI(self.ui_status.spinBox_disc_time)
+        self.acc_sampling_ui = ConfigIntComboBoxUI(self.ui_status.comboBox_acc_sampling)
+        self.acc_sensibility_ui = ConfigIntComboBoxUI(self.ui_status.comboBox_acc_sensibility)
+        self.gyro_sensibility_ui = ConfigIntComboBoxUI(self.ui_status.comboBox_gyro_sensibility)
+        self.bme668_sampling_ui = ConfigIntComboBoxUI(self.ui_status.comboBox_bme_sampling)
+
         self.wifi_statuses = { 
-            item.name: item 
+            item.num: item 
             for item in [class_name(
                 self.ui_status.comboBox_conf_status, 
                 [self.ui_status.label_disc_time, self.ui_status.spinBox_disc_time],
                 self.ui_status.comboBox_protocol,
-                [ui_wifi.label_tcp_port, ui_wifi.label_tcp_port_status_msg, ui_wifi.spinBox_tcp_port],
-                [ui_wifi.label_udp_port, ui_wifi.label_udp_port_status_msg, ui_wifi.spinBox_udp_port]) 
+                [ui_wifi.label_udp_port, ui_wifi.spinBox_udp_port]) 
             for class_name in [StatusTCPContinuous, StatusTCPDiscontinuous, StatusUDP]]}
         self.bluetooth_statuses = { 
-            item.name: item 
+            item.num: item 
             for item in [class_name(
                 self.ui_status.comboBox_conf_status, 
                 [self.ui_status.label_disc_time, self.ui_status.spinBox_disc_time],
@@ -1174,15 +1243,59 @@ class StatusConfigUI:
         self.ui_status.pushButton_send_wifi.clicked.connect(self.set_statuses_wifi)
         self.ui_status.pushButton_send_bluetooth.clicked.connect(self.set_statuses_bluetooth)
 
+        for key in self.wifi_statuses:
+            self.wifi_statuses[key].status_selected.connect(self.update_actual_status)
+        for key in self.bluetooth_statuses:
+            self.bluetooth_statuses[key].status_selected.connect(self.update_actual_status)
+
+        self.ui_status.buttonBox_esp_config_confirm.accepted.connect(self.save_ui_into_properties)
+
+    def update_actual_status(self, status_obj):
+        self.actual_status = status_obj
+        print(self.actual_status)
 
     def set_statuses_wifi(self):
         self.ui_status.comboBox_conf_status.clear()
-        self.ui_status.comboBox_conf_status.addItems([key for key in self.wifi_statuses])
+        self.ui_status.comboBox_conf_status.addItems([self.wifi_statuses[key].name for key in self.wifi_statuses])
     
     def set_statuses_bluetooth(self):
         self.ui_status.comboBox_conf_status.clear()
-        self.ui_status.comboBox_conf_status.addItems([key for key in self.bluetooth_statuses])
+        self.ui_status.comboBox_conf_status.addItems([self.bluetooth_statuses[key].name for key in self.bluetooth_statuses])
 
+    def set_actual_status(self, status_id):
+        status = self.wifi_statuses.get(status_id)
+        if status:
+            self.set_statuses_wifi()
+            self.ui_status.pushButton_send_wifi.setChecked(True)
+            self.actual_status = status
+            self.actual_status.setComboBoxVal()
+        else:
+            status = self.bluetooth_statuses.get(status_id)
+            if status:
+                self.set_statuses_bluetooth()
+                self.ui_status.pushButton_send_bluetooth.setChecked(True)
+                self.actual_status = status
+                self.actual_status.setComboBoxVal()
+
+    def get_all_ui_values(self):
+        res = [self.actual_status.num]
+        res.append(self.actual_status.protocol_type.getVal())
+        res.extend([getattr(self, attr).getVal() for attr in self.attrs])
+        return res
+
+    def set_all_ui_values(self, *vals):
+        assert len(vals) == len(self.attrs)+2
+        self.set_actual_status(vals[0])
+        self.actual_status.protocol_type.setVal(vals[1])
+        for i in range(len(self.attrs)):
+            attr = self.attrs[i]
+            getattr(self, attr).setVal(vals[i+2])
+
+    def save_ui_into_properties(self):
+        self.status_properties.set_all(*self.get_all_ui_values())
+
+    def load_from_properties_into_ui(self):
+        self.set_all_ui_values(*self.status_properties.get_all())
 
 
 
@@ -1536,6 +1649,7 @@ class ESP:
         self.ui_config_win.setupUi(config_dialog)
         """
         if self.ui_config_dialog.isVisible:
+            self.config.status_ui.load_from_properties_into_ui()
             self.ui_config_dialog.show()
 
     def set_active_widget(self):

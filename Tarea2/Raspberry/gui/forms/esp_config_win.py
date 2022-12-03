@@ -137,12 +137,12 @@ class Ui_Dialog_esp_config(object):
 
     def retranslateUi(self, Dialog_esp_config):
         _translate = QtCore.QCoreApplication.translate
-        Dialog_esp_config.setWindowTitle(_translate("Dialog_esp_config", "Dialog"))
+        Dialog_esp_config.setWindowTitle(_translate("Dialog_esp_config", "ESP-32 Configuration"))
         self.groupBox_send_medium.setTitle(_translate("Dialog_esp_config", "Data transfer medium"))
         self.pushButton_send_bluetooth.setText(_translate("Dialog_esp_config", "Bluetooth"))
         self.pushButton_send_wifi.setText(_translate("Dialog_esp_config", "Wi-Fi"))
         self.label_conf_status.setText(_translate("Dialog_esp_config", "Configuration Status"))
-        self.label_disc_time.setText(_translate("Dialog_esp_config", "Discontinuos Time (s)"))
+        self.label_disc_time.setText(_translate("Dialog_esp_config", "Discontinuous Time (s)"))
         self.label_protocol.setText(_translate("Dialog_esp_config", "Protocol"))
         self.label_esp_params.setText(_translate("Dialog_esp_config", "ESP-32 Parameters"))
         self.label_acc_sensibility.setText(_translate("Dialog_esp_config", "Acc Sensibility"))
