@@ -41,7 +41,7 @@ if __name__ == '__main__':
 
     ## Buttons signals
     btn_end_find.clicked.connect(lambda: rasp.device_search.machine.postEvent(EndFindEvent()))
-    esp_1_btn_found.clicked.connect(lambda: rasp.device_search.machine.postEvent(ESPFoundEvent(1110, "aa-bb-cc-dd-ee-ff")))
+    esp_1_btn_found.clicked.connect(lambda: rasp.device_search.machine.postEvent(ESPFoundEvent(3, "aa-bb-cc-dd-ee-ff")))
     esp_2_btn_found.clicked.connect(post_ev)
     esp_3_btn_found.clicked.connect(lambda: rasp.esp_dict_list.esp_dict[1110].machine.postEvent(ESPSleepingEvent()))
 

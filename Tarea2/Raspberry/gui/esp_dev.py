@@ -3,6 +3,8 @@ from PyQt5.QtCore import QStateMachine, QState, QFinalState, QSignalTransition
 from PyQt5.QtWidgets import QFrame, QDialog, QPushButton
 from multiprocessing import Lock
 
+import ipaddress
+
 from gui.all_events import CheckNoWifiEvent, ValidWifiConfigEvent, InvalidWifiConfigEvent, InactiveESPEvent, AbleToSendEvent, UnableToSendEvent, SendStartEvent, ESPActiveEvent, ESPRemoveActiveEvent, ESPAddActiveEvent, ESPRemoveFoundEvent, ESPAddFoundEvent, ESPFoundEvent
 from gui.states import WifiState, NoWifiState, FoundState
 from gui.transitions import InactiveESPTransition, CheckNoWifiTransition, AbleToSendTransition, UnableToSendTransition, ValidWifiConfigTransition, InvalidWifiConfigTransition, StartClickTransition, ESPActiveTransition, ESPFoundTransition, SendStartTransition, ESPSendingTransition, ESPSleepingTransition
@@ -10,7 +12,7 @@ from gui.esp_lists import ListsMachine
 from gui.properties import WifiProperties, ConfigProperties
 from gui.wifi_ui import WifiDisplay
 from gui.config_ui import StatusConfigUI
-from gui.active_ui import StartButtonUI, SendStatusUI
+from gui.active_ui import StartButtonUI, SendStatusUI, ESPInfo
 
 from gui.forms import esp_found_item, esp_active_item,  esp_wifi_config, esp_config_win
 
@@ -94,8 +96,7 @@ class ESPConfig:
 
         self.machine.finished.connect(self._on_finish)
 
-        state_no_config.entered.connect(self.wifi_ui.set_ui_to_default_view)
-        state_no_config.entered.connect(self._load_config_from_model)
+        state_no_config.entered.connect(self._enter_no_config)
 
         def _activate_wifi_config_check():
             self.wifi_ui.set_invalid_signal_slots()
@@ -203,20 +204,53 @@ class ESPConfig:
         state_config_no_wifi.addTransition(trans_send_clicked_nowifi)
 
         self.machine.start()
+
+    def _enter_no_config(self):
+        self.wifi_ui.set_ui_to_default_view()
+        self._load_config_from_model()
+        self.wifi_ui.load_from_properties_into_ui()
     
     def _load_config_from_model(self):
         print(self.esp.esp_id)
+        
         res = self.esp.controller.config_get(self.esp.esp_id)
         print(res)
 
+        if res:
+            res = res[0]
+            print(ipaddress.IPv4Address(res[10]))
+            host_ipv4 = str(ipaddress.IPv4Address(res[10]))
+            bd_wifi_conf = (host_ipv4, res[8], res[9], res[11], res[12])
+            bd_status_conf = (res[1], res[2], res[7], res[3], res[4], res[5], res[6])
 
+            self.wifi_properties.set_all(*bd_wifi_conf)
+            self.status_properties.set_all(*bd_status_conf)
 
+    def _save_config_into_model(self):
+        wifi_conf = self.wifi_properties.get_all()
+        status_conf = self.status_properties.get_all()
 
+        wifi_keys = WifiProperties.attrs
+        status_keys = ConfigProperties.attrs
 
+        host_ipv4 = int(ipaddress.IPv4Address(wifi_conf[0]))
+        new_ = {
+            "id_device": self.esp.esp_id,
+            "discontinuos_time": status_conf[3],
+            "host_ip_addr": host_ipv4,
+            "tcp_port": wifi_conf[1],
+            "udp_port": wifi_conf[2],
+            "host_ip_addr": int(ipaddress.IPv4Address("192.168.28.1")),
+            "pass": wifi_conf[4] 
+        }
+        
+        [new_.__setitem__(status_keys[i],status_conf[i]) for i in range(2)]
+        [new_.__setitem__(status_keys[i],status_conf[i]) for i in range(3,7)]
+        new_[wifi_keys[3]] = wifi_conf[3]
 
+        print(new_)
 
-    
-
+        self.esp.controller.config_set(new_)
 
 class ESPDevice:
     def __init__(self, esp_id, esp_mac, esp_lists_machine: ListsMachine, esp_dict_list: "ESPDicts", main_win, controller: "Controller") -> None:
@@ -227,6 +261,8 @@ class ESPDevice:
         self.esp_dict = esp_dict_list
         self.main_win = main_win
         self.controller = controller
+
+        self.ui_found: esp_found_item.Ui_Form_esp_found_item = None
 
         self.found_widget: QFrame = None
         self.set_found_widget()
@@ -250,6 +286,19 @@ class ESPDevice:
             self.ui_active.label_esp_active_status_icon, 
             self.ui_active.label_esp_active_status_edit)
 
+        self.esp_info_found = ESPInfo(
+            self.ui_found.label_esp_found_id_edit,
+            self.ui_found.label_esp_found_mac_edit
+        )
+
+        self.esp_info_active = ESPInfo(
+            self.ui_active.label_esp_active_id_edit,
+            self.ui_active.label_esp_active_mac_edit
+        )
+
+        self.esp_info_found.set_id(self.esp_id, self.esp_mac)
+        self.esp_info_active.set_id(self.esp_id, self.esp_mac)
+      
 
     def set_machine(self) -> None:
         self.machine = QStateMachine()
@@ -330,6 +379,9 @@ class ESPDevice:
         self.start_btn.set_restart_button()
         self.ui_active.pushButton_remove.setDisabled(True)
         self.ui_active.pushButton_esp_active_start_stop.setDisabled(True)
+        #save all values into BD
+        self.config.wifi_ui.save_ui_into_properties()
+        self.config._save_config_into_model()
 
     def _on_send_configure(self):
         self.start_btn.ui_button.setDisabled(True)
@@ -367,7 +419,7 @@ class ESPDevice:
         self.found_widget = found_frame
 
         self.add_btn.clicked.connect(self._found_to_active_slot)
-
+        self.ui_found = ui_found
         self.esp_lists_machine.machine.postEvent(ESPAddFoundEvent(self.found_widget))
         return found_frame
 
