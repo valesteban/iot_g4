@@ -12,10 +12,17 @@
 #include <string.h>
 #include <stdio.h>
 
-#include "../components/conexion/ble.c"
-#include "../components/conexion/tcp.c"
-#include "../components/conexion/udp.c"
-// #include "../components/utils.c"
+
+
+
+// #include "../components/conexion/ble.c"
+
+// #include "../components/conexion/tcp.c"
+// #include "../components/conexion/udp.c"
+#include "../components/conexion/ble/gatts_table_creat_demo.c"
+
+
+#include "../components/utils.c"
 
 
 
@@ -27,21 +34,21 @@ char *getSubstring(char* dst,const char *src,size_t start,size_t ens){
 
 
 void app_main(void){
-    ESP_LOGI(TAG, "****************COMIENZO***********************************************");
+    // ESP_LOGI(TAG, "****************COMIENZO***********************************************");
 
     // Test 0.2.0
-    ESP_ERROR_CHECK(nvs_flash_init());
-    ESP_ERROR_CHECK(esp_netif_init());
-    ESP_ERROR_CHECK(esp_event_loop_create_default());
-    ESP_LOGI(TAG, "****************TEST***********************************************");
+    // ESP_ERROR_CHECK(nvs_flash_init());
+    // ESP_ERROR_CHECK(esp_netif_init());
+    // ESP_ERROR_CHECK(esp_event_loop_create_default());
+    // ESP_LOGI(TAG, "****************TEST***********************************************");
 
 
     /* This helper function configures Wi-Fi or Ethernet, as selected in menuconfig.
      * Read "Establishing Wi-Fi or Ethernet Connection" section in
      * examples/protocols/README.md for more information about this function.
      */
-    ESP_ERROR_CHECK(example_connect());
-    ESP_LOGI(TAG, "****************EXAMPLE***********************************************");
+    // ESP_ERROR_CHECK(example_connect());
+    // ESP_LOGI(TAG, "****************EXAMPLE***********************************************");
 
 
     // char *res = tcp_initial_connection();
@@ -59,23 +66,38 @@ void app_main(void){
     // int id_protocol = 0;
     // int transport_layer = 0; //TCP
 
+    // IF STATUS ES 0 
+    // ELIMINAMOS WIFI ---> ESP_ERR_WIFI_NOT_INIT:WIFI
+    // ESP_LOGE(TAG, "****************TCP-CONFIGURACION***********************************************");
+    // int8_t id_protocol = 1 ;
+    // tcp_configuracion(id_protocol);
 
-    ESP_LOGE(TAG, "****************TCP-CONFIGURACION***********************************************");
-    int8_t id_protocol = 1 ;
-    tcp_configuracion(id_protocol);
 
     // ESP_LOGE(TAG, "****************TCP-CONTINUO***********************************************");
-    // int8_t id_protocol = 1 ;
+    // char id_protocol = '1' ;
     // tcp_continuo(id_protocol);
 
     // ESP_LOGE(TAG, "****************TCP-DISCONTINUO***********************************************");
-    // int8_t id_protocolo = 1;
+    // char id_protocolo = '4';
     // int32_t tiempo_discontinuo = 100;
     // tcp_discontinuo(id_protocolo, tiempo_discontinuo);
 
     // ESP_LOGE(TAG, "****************UDP***********************************************");
-    // protocolo_udp(1);
+    // char id_protocol = '1';
+    // char* host_ip_addr = "192.168.28.1";
+    // int port_udp = 5010;
+    // char* ssid = "iot4";
+    // char* pass = "12345678" ;
 
+
+
+    // protocolo_udp(id_protocol);
+
+    // protocolo_udp(host_ip_addr,port_udp,ssid,pass,id_protocol);
+
+    ESP_LOGE(TAG,"*******************BLE CONF*************************************");
+    int i = protocolo_ble();
+    ESP_LOGE(TAG,"%d",i);
 
     
     // if ( transport_layer == '0'){

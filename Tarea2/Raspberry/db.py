@@ -56,7 +56,7 @@ class DB:
 
     def get_device_config(self, id_device) -> tuple:
         """
-            Metodo que entrega la configuracion de un device
+            Metodo que entrega la configuracion especifica de un device
         """
 
         sql = """
@@ -65,7 +65,7 @@ class DB:
             WHERE id_device = %s
         """
 
-        self.cursor.execute(sql, id_device)
+        self.cursor.execute(sql, (id_device, ))
         return self.cursor.fetchall()
 
 
