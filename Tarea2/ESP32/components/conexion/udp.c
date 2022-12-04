@@ -164,13 +164,15 @@ void udp_client(char id_protocol){
         }
 
     }
+
+    
 }
 
 // Conexión UDP 
 // - status = 23
 // - protocolos -> 1-2-3-4-5
 // - Raspeberry detiene conexion (interfaz gráfica)
-void protocolo_udp(int id_protocol){
+void protocolo_udp(char id_protocol){
     ESP_LOGI(TAG_UDP, "Comienzo protocolo UDP");
 
 
@@ -179,6 +181,18 @@ void protocolo_udp(int id_protocol){
 
     // LOOP CREACION SOCKET
     while (1) {
+        // struct sockaddr_in dest_addr;
+        // dest_addr.sin_addr.s_addr = inet_addr(HOST_IP_ADDR);
+        // dest_addr.sin_family = AF_INET;
+        // dest_addr.sin_port = htons(PORT);
+        // addr_family_udp = AF_INET;
+        // ip_protocol_udp = IPPROTO_IP;
+        // ESP_LOGI(TAG_UDP, "Se creó el socket", inet_addr(HOST_IP_ADDR));
+        // ESP_LOGI(TAG_UDP, "Se creó el socket",AF_INET);
+        // ESP_LOGI(TAG_UDP, "Se creó el socket",htons(PORT));
+        // ESP_LOGI(TAG_UDP, "Se creó el socket", htons(PORT));
+        // ESP_LOGI(TAG_UDP, "Se creó el socket", IPPROTO_IP);
+
 
         #if defined(CONFIG_EXAMPLE_IPV4)
                 struct sockaddr_in dest_addr;
@@ -208,35 +222,35 @@ void protocolo_udp(int id_protocol){
 
         // ESP_LOGI(TAG_UDP, "Socket created, sending to %s:%d", HOST_IP_ADDR, PORT);
 
-        // char ddbb_layerProtocol = '1';
+        char ddbb_layerProtocol = '1';
 
         // LOOP ENVIO PAQUETES UDP
         while (1) {
 
             //CREAMOS PAQUETE DEPENDIENDO DEL PROTOCOLO QUE NOS LLEGO
-            char *data = "paquete hardcodeado";
+            // char *data = "paquete hardcodeado";
 
-            // unsigned char *data = NULL;
-            // int data_size = 0;
-            // uint8_t mac[6];
-            // esp_base_mac_addr_get(mac);
+            unsigned char *data = NULL;
+            int data_size = 0;
+            uint8_t mac[6];
+            esp_base_mac_addr_get(mac);
+            ddbb_layerProtocol =
+            encode_pkg(id_protocol, mac, DEVICE_ID, ddbb_layerProtocol, &data, &data_size);
+
+
             
-            // encode_pkg(id_protocol, mac, DEVICE_ID, ddbb_layerProtocol, &data, &data_size);
-
-
-            
-            int err = sendto(sock, data, strlen(data) , 0, (struct sockaddr *)&dest_addr, sizeof(dest_addr));
-            if (err < 0) {
-                ESP_LOGE(TAG_UDP, "Error occurred during sending: errno %d", errno);
-                break;
-            }
-            ESP_LOGI(TAG_UDP, "Paquete enviado correctamente ");
+            // int err = sendto(sock, data, strlen(data) , 0, (struct sockaddr *)&dest_addr, sizeof(dest_addr));
+            // if (err < 0) {
+            //     ESP_LOGE(TAG_UDP, "Error occurred during sending: errno %d", errno);
+            //     break;
+            // }
+            // ESP_LOGI(TAG_UDP, "Paquete enviado correctamente ");
             
 
             struct sockaddr_storage source_addr; // Large enough for both IPv4 or IPv6
             socklen_t socklen = sizeof(source_addr);
 
-            // fragmentationUDP(data, data_size, sock, (struct sockaddr *)&dest_addr, sizeof(dest_addr), (struct sockaddr *)&source_addr, &socklen);
+            fragmentationUDP(data, data_size, sock, (struct sockaddr *)&dest_addr, sizeof(dest_addr), (struct sockaddr *)&source_addr, &socklen);
             
             //DEVUELTA RECIBIMOS LOS VALORES DE LA BBDD
             int len = recvfrom(sock, rx_buffer_udp, sizeof(rx_buffer_udp) - 1, 0, (struct sockaddr *)&source_addr, &socklen);
