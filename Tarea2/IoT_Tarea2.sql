@@ -34,7 +34,7 @@ CREATE TABLE IF NOT EXISTS `IoT_Tarea2`.`Configuration` (
   `discontinuos_time` INT NULL,
   `tcp_port` INT NULL,
   `udp_port` INT NULL,
-  `host_ip_addr` INT NULL,
+  `host_ip_addr` INT UNSIGNED NULL,
   `ssid` VARCHAR(45) NULL,
   `pass` VARCHAR(45) NULL,
   PRIMARY KEY (`id_device`))

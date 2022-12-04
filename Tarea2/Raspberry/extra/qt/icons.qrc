@@ -24,6 +24,7 @@
     <file>images/pause-button.png</file>
   </qresource>
   <qresource prefix="icon_restart">
+    <file>images/restart_enabled.png</file>
     <file>images/restart_disabled.png</file>
     <file>images/restart.png</file>
   </qresource>
