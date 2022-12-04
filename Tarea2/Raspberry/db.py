@@ -54,9 +54,27 @@ class DB:
     ===    Tabla Configuracion    ===
     """
 
-    def get_config(self) -> tuple:
+    def get_device_config(self, id_device) -> tuple:
         """
-            Metodo que entrega la configuracion actual
+            Metodo que entrega la configuracion de un device
+        """
+
+        sql = """
+            SELECT *
+            FROM Configuracion
+            WHERE id_device = %s
+        """
+
+        self.cursor.execute(sql, id_device)
+        return self.cursor.fetchall()
+
+
+    def get_all_config(self) -> tuple:
+        """
+            Metodo que entrega toda la configuracion actual
+
+            Returns:
+                [(id_device, status_conf, protocol_conf, ...)]
         """
 
         sql_show_config = '''
