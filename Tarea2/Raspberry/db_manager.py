@@ -122,7 +122,7 @@ if __name__ == "__main__":
 
                 configuration_dict = {
                     "id_device": 3,
-                    "status_conf": 20,
+                    "status_conf": 23,
                     "protocol_conf": 2,
                     "acc_sampling": 400,
                     "acc_sensibility": 16,

@@ -8,12 +8,12 @@ import logging
 
 import struct
 from db import DB
-from main_server import Raspberry
+#from main_server import Raspberry
 
 
 class GUIController:
-    def __init__(self, raspberry:Raspberry):
-        self.raspberry = raspberry
+    def __init__(self):
+        #self.raspberry = raspberry
         # TODO:
         # Descomentar Ui
         #self.ui = Ui_Dialog()

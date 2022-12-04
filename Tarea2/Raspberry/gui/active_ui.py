@@ -110,3 +110,16 @@ class StartButtonUI:
         self.ui_button.setIcon(self.icon_restart)
         self.ui_button.setText(self._translate("Form_esp_active", "Restart"))
     
+
+class ESPInfo:
+    _translate = QtCore.QCoreApplication.translate
+    def __init__(self, id_label: QtWidgets.QLabel, mac_label: QtWidgets.QLabel) -> None:
+        self.id_label = id_label
+        self.mac_label = mac_label
+    
+    def set_id(self, new_id:str, new_mac:str):
+        new_id = str(new_id)
+        new_mac = str(new_mac)
+
+        self.id_label.setText(self._translate("Form_esp_active", new_id))
+        self.id_label.setText(self._translate("Form_esp_active", new_mac))
