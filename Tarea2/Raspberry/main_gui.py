@@ -1,9 +1,10 @@
 from PyQt5.QtWidgets import QApplication, QMainWindow, QDialog, QPushButton, QLabel
 from PyQt5 import QtWidgets
 
-from gui.rasp import Rasp
+from gui.rasp import Rasp, Controller
 from gui.all_events import ESPSendingEvent, ESPSleepingEvent, EndFindEvent, ESPFoundEvent
 
+from db_manager import change_db_config, return_db_config
 
 
 if __name__ == '__main__':
@@ -13,7 +14,9 @@ if __name__ == '__main__':
     app = QApplication(sys.argv)
     window = QMainWindow()
 
-    rasp = Rasp(window)
+
+    controller = Controller(change_db_config, return_db_config)
+    rasp = Rasp(window, controller)
 
     debug_dialog = QDialog(window)
     verticalLayout_debug= QtWidgets.QVBoxLayout(debug_dialog)

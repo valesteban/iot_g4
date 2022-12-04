@@ -3,7 +3,7 @@ from PyQt5.QtCore import QStateMachine, QState, QFinalState, QSignalTransition
 from PyQt5.QtWidgets import QFrame, QDialog, QPushButton
 from multiprocessing import Lock
 
-from gui.all_events import CheckNoWifiEvent, ValidWifiConfigEvent, InvalidWifiConfigEvent, InactiveESPEvent, AbleToSendEvent, UnableToSendEvent, SendStartEvent, ESPActiveEvent, ESPRemoveActiveEvent, ESPAddActiveEvent, ESPRemoveFoundEvent, ESPAddFoundEvent
+from gui.all_events import CheckNoWifiEvent, ValidWifiConfigEvent, InvalidWifiConfigEvent, InactiveESPEvent, AbleToSendEvent, UnableToSendEvent, SendStartEvent, ESPActiveEvent, ESPRemoveActiveEvent, ESPAddActiveEvent, ESPRemoveFoundEvent, ESPAddFoundEvent, ESPFoundEvent
 from gui.states import WifiState, NoWifiState, FoundState
 from gui.transitions import InactiveESPTransition, CheckNoWifiTransition, AbleToSendTransition, UnableToSendTransition, ValidWifiConfigTransition, InvalidWifiConfigTransition, StartClickTransition, ESPActiveTransition, ESPFoundTransition, SendStartTransition, ESPSendingTransition, ESPSleepingTransition
 from gui.esp_lists import ListsMachine
@@ -15,10 +15,11 @@ from gui.active_ui import StartButtonUI, SendStatusUI
 from gui.forms import esp_found_item, esp_active_item,  esp_wifi_config, esp_config_win
 
 class ESPDicts:
-    def __init__(self, esp_lists_machine, main_win) -> None:
+    def __init__(self, esp_lists_machine, main_win, controller: "Controller") -> None:
         self.mutex = Lock()
         self.esp_lists_machine = esp_lists_machine
         self.main_win = main_win
+        self.controller = controller
 
         self.esp_dict = dict()
 
@@ -26,7 +27,7 @@ class ESPDicts:
         try:
             self.mutex.acquire()
             if esp_id not in self.esp_dict.keys():
-                self.esp_dict[esp_id] = ESPDevice(esp_id, esp_mac, self.esp_lists_machine, self, self.main_win)
+                self.esp_dict[esp_id] = ESPDevice(esp_id, esp_mac, self.esp_lists_machine, self, self.main_win, self.controller)
                 self.esp_dict[esp_id].set_machine()
             else:
                 self.esp_dict[esp_id].machine.postEvent(ESPFoundEvent(esp_id, esp_mac))
@@ -94,6 +95,7 @@ class ESPConfig:
         self.machine.finished.connect(self._on_finish)
 
         state_no_config.entered.connect(self.wifi_ui.set_ui_to_default_view)
+        state_no_config.entered.connect(self._load_config_from_model)
 
         def _activate_wifi_config_check():
             self.wifi_ui.set_invalid_signal_slots()
@@ -200,20 +202,11 @@ class ESPConfig:
         trans_send_clicked_nowifi = StartClickTransition(self, self.esp.ui_active.pushButton_esp_active_restart.clicked)
         state_config_no_wifi.addTransition(trans_send_clicked_nowifi)
 
-
-        def _on_start_click():
-            result = self.wifi_properties.validate_all(*self.wifi_ui.get_all_ui_values())
-            self.machine.postEvent(InvalidWifiConfigEvent(not result))
-            if result:
-                self.esp.machine.postEvent(SendStartEvent())
-            else:
-                pass
-                
-
-        #self.esp.ui_active.pushButton_esp_active_restart.clicked.connect(_on_start_click)
-
         self.machine.start()
-
+    
+    def _load_config_from_model(self):
+        res = self.esp.controller.config_get()
+        print(res)
 
 
 
@@ -225,13 +218,14 @@ class ESPConfig:
 
 
 class ESPDevice:
-    def __init__(self, esp_id, esp_mac, esp_lists_machine: ListsMachine, esp_dict_list: "ESPDicts", main_win) -> None:
+    def __init__(self, esp_id, esp_mac, esp_lists_machine: ListsMachine, esp_dict_list: "ESPDicts", main_win, controller: "Controller") -> None:
         self.esp_id = esp_id
         self.esp_mac = esp_mac
         self.machine: QStateMachine = None
         self.esp_lists_machine: ListsMachine = esp_lists_machine
         self.esp_dict = esp_dict_list
         self.main_win = main_win
+        self.controller = controller
 
         self.found_widget: QFrame = None
         self.set_found_widget()
