@@ -37,13 +37,13 @@ if __name__ == '__main__':
     verticalLayout_debug.addWidget(esp_4_btn_found)
 
     def post_ev():
-        rasp.esp_dict_list.esp_dict[1110].machine.postEvent(ESPSendingEvent())
+        rasp.esp_dict_list.esp_dict[3].machine.postEvent(ESPSendingEvent())
 
     ## Buttons signals
     btn_end_find.clicked.connect(lambda: rasp.device_search.machine.postEvent(EndFindEvent()))
     esp_1_btn_found.clicked.connect(lambda: rasp.device_search.machine.postEvent(ESPFoundEvent(3, "aa-bb-cc-dd-ee-ff")))
     esp_2_btn_found.clicked.connect(post_ev)
-    esp_3_btn_found.clicked.connect(lambda: rasp.esp_dict_list.esp_dict[1110].machine.postEvent(ESPSleepingEvent()))
+    esp_3_btn_found.clicked.connect(lambda: rasp.esp_dict_list.esp_dict[3].machine.postEvent(ESPSleepingEvent()))
 
     window.show()
     debug_dialog.show()

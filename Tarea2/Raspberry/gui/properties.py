@@ -165,7 +165,7 @@ class ConfigProperties(QObject):
     acc_sampling_changed = pyqtSignal(int)
     acc_sensibility_changed = pyqtSignal(int)
     gyro_sensibility_changed = pyqtSignal(int)
-    bme668_sampling_changed = pyqtSignal(int)
+    bme688_sampling_changed = pyqtSignal(int)
 
     status_conf_invalidated = pyqtSignal()
     protocol_conf_invalidated = pyqtSignal()
@@ -173,7 +173,7 @@ class ConfigProperties(QObject):
     acc_sampling_invalidated = pyqtSignal()
     acc_sensibility_invalidated = pyqtSignal()
     gyro_sensibility_invalidated = pyqtSignal()
-    bme668_sampling_invalidated = pyqtSignal()
+    bme688_sampling_invalidated = pyqtSignal()
 
     statuses_conf = { 21, 22, 23, 30, 31 }
     protocols_conf = { i for i in range(1,6) }
@@ -182,7 +182,7 @@ class ConfigProperties(QObject):
     gyro_sensibilities = { 200, 250, 500 }
     bme_samplings = { 1,2,3,4 }
 
-    attrs = ["status_conf", "protocol_conf", "discontinuous_time", "acc_sampling", "acc_sensibility", "gyro_sensibility", "bme668_sampling"]
+    attrs = ["status_conf", "protocol_conf", "discontinuous_time", "acc_sampling", "acc_sensibility", "gyro_sensibility", "bme688_sampling"]
 
     def __init__(self):
         QObject.__init__(self)
@@ -192,7 +192,7 @@ class ConfigProperties(QObject):
         self._acc_sampling = 10
         self._acc_sensibility = 2
         self._gyro_sensibility = 200
-        self._bme668_sampling = 1
+        self._bme688_sampling = 1
 
     # status_conf
     def read_status_conf(self):
@@ -318,24 +318,24 @@ class ConfigProperties(QObject):
 
 
     #gyro_sensibility
-    def read_bme668_sampling(self):
-        return self._bme668_sampling
+    def read_bme688_sampling(self):
+        return self._bme688_sampling
 
-    def set_bme668_sampling(self, new_sample):
-        if self._bme668_sampling != new_sample:
-            if self.validate_bme668_sampling(new_sample):
-                self._bme668_sampling = new_sample
-                self.bme668_sampling_changed.emit(new_sample)
+    def set_bme688_sampling(self, new_sample):
+        if self._bme688_sampling != new_sample:
+            if self.validate_bme688_sampling(new_sample):
+                self._bme688_sampling = new_sample
+                self.bme688_sampling_changed.emit(new_sample)
 
-    def validate_bme668_sampling(self, new_sample):
+    def validate_bme688_sampling(self, new_sample):
         if new_sample in self.bme_samplings:
             return True
         else:
-            self.bme668_sampling_invalidated.emit()
+            self.bme688_sampling_invalidated.emit()
             return False
 
-    def reset_bme668_sampling(self):
-        self._bme668_sampling = 1
+    def reset_bme688_sampling(self):
+        self._bme688_sampling = 1
 
     # utility functions
     def validate_all(self, *vals):
@@ -361,5 +361,5 @@ class ConfigProperties(QObject):
     acc_sampling = pyqtProperty(int, read_acc_sampling, set_acc_sampling, freset=reset_acc_sampling, notify=acc_sampling_changed)
     acc_sensibility = pyqtProperty(int, read_acc_sensibility, set_acc_sensibility, freset=reset_acc_sensibility, notify=acc_sensibility_changed)
     gyro_sensibility = pyqtProperty(int, read_gyro_sensibility, set_gyro_sensibility, freset=reset_gyro_sensibility, notify=gyro_sensibility_changed)
-    bme668_sampling = pyqtProperty(int, read_bme668_sampling, set_bme668_sampling, freset=reset_bme668_sampling, notify=bme668_sampling_changed)
+    bme688_sampling = pyqtProperty(int, read_bme688_sampling, set_bme688_sampling, freset=reset_bme688_sampling, notify=bme688_sampling_changed)
 
