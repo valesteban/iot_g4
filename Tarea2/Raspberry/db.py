@@ -61,7 +61,7 @@ class DB:
 
         sql = """
             SELECT *
-            FROM Configuracion
+            FROM Configuration
             WHERE id_device = %s
         """
 
