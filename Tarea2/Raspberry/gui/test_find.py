@@ -111,6 +111,27 @@ class LivePlotRemoveEvent(QEvent):
         super().__init__(self.EVENT_TYPE)
         self.plot_widget = plot_widget
 
+class ESPConfiguringEvent(QEvent):
+    EVENT_TYPE = QEvent.Type.User+17
+    def __init__(self) -> None:
+        super().__init__(self.EVENT_TYPE)
+
+class ESPSendingEvent(QEvent):
+    EVENT_TYPE = QEvent.Type.User+18
+    def __init__(self) -> None:
+        super().__init__(self.EVENT_TYPE)
+
+class ESPSleepingEvent(QEvent):
+    EVENT_TYPE = QEvent.Type.User+19
+    def __init__(self) -> None:
+        super().__init__(self.EVENT_TYPE)
+
+class ESPErroringEvent(QEvent):
+    EVENT_TYPE = QEvent.Type.User+20
+    def __init__(self) -> None:
+        super().__init__(self.EVENT_TYPE)
+
+
 
 #endregion
 
@@ -391,6 +412,57 @@ class LivePlotRemoveTransition(QAbstractTransition):
     def onTransition(self, event: 'QEvent') -> None:
         return 
 
+class ESPConfiguringTransition(QAbstractTransition):
+    def __init__(self, sourceState: typing.Optional['QState'] = None) -> None:
+        super().__init__(sourceState)
+
+    def eventTest(self, event: 'QEvent') -> bool:
+        if event.type() != ESPConfiguringEvent.EVENT_TYPE:
+            return False
+        else:
+            return True
+
+    def onTransition(self, event: 'QEvent') -> None:
+        return
+
+class ESPSendingTransition(QAbstractTransition):
+    def __init__(self, sourceState: typing.Optional['QState'] = None) -> None:
+        super().__init__(sourceState)
+
+    def eventTest(self, event: 'QEvent') -> bool:
+        if event.type() != ESPSendingEvent.EVENT_TYPE:
+            return False
+        else:
+            return True
+
+    def onTransition(self, event: 'QEvent') -> None:
+        return
+
+class ESPSleepingTransition(QAbstractTransition):
+    def __init__(self, sourceState: typing.Optional['QState'] = None) -> None:
+        super().__init__(sourceState)
+
+    def eventTest(self, event: 'QEvent') -> bool:
+        if event.type() != ESPSleepingEvent.EVENT_TYPE:
+            return False
+        else:
+            return True
+
+    def onTransition(self, event: 'QEvent') -> None:
+        return
+
+class ESPErroringTransition(QAbstractTransition):
+    def __init__(self, sourceState: typing.Optional['QState'] = None) -> None:
+        super().__init__(sourceState)
+
+    def eventTest(self, event: 'QEvent') -> bool:
+        if event.type() != ESPErroringEvent.EVENT_TYPE:
+            return False
+        else:
+            return True
+
+    def onTransition(self, event: 'QEvent') -> None:
+        return
 
 
 #endregion
@@ -1637,6 +1709,86 @@ class StartButtonUI:
         self.ui_button.setText(self._translate("Form_esp_active", "Restart"))
     
 
+class SendStatusUI:
+    _translate = QtCore.QCoreApplication.translate
+    def __init__(self, status_icon: QtWidgets.QLabel, status_label, config_method_wifi: bool = True, send_method_wifi: bool = True, status_name: str = "", protocol_name: str = "") -> None:
+        self.default_active = QtGui.QPixmap(":/icon_ready/images/check_blue.png")
+        self.dead_icon = QtGui.QPixmap(":/icon_ready/images/ghost_grey.png")
+
+        self.wifi_icons = {
+            "config": QtGui.QPixmap(":/icon_wifi/images/wifi_active.png"),
+            "deepsleep": QtGui.QPixmap(":/icon_wifi/images/wifi_light_blue.png"),
+            "send": QtGui.QPixmap(":/icon_wifi/images/wifi_green.png"),
+            "error": QtGui.QPixmap(":/icon_wifi/images/wifi_red.png"),
+        }
+
+        self.bluetooth_icons = {
+            "config": QtGui.QPixmap(":/icon_bluetooth/images/bluetooth_active.png"),
+            "deepsleep": QtGui.QPixmap(":/icon_bluetooth/images/bluetooth_light_blue.png"),
+            "send": QtGui.QPixmap(":/icon_bluetooth/images/bluetooth_green.png"),
+            "error": QtGui.QPixmap(":/icon_bluetooth/images/bluetooth_red.png"),
+        }
+
+        self.status_icon = status_icon
+        self.status_label = status_label
+        self.config_method_wifi = config_method_wifi
+        self.send_method_wifi = send_method_wifi
+        self.status_name = status_name 
+        self.protocol_name = protocol_name
+
+        self.labels_txt = self.update_labels()
+
+
+    def set_send_parameters(self, config_method_wifi: bool, send_method_wifi: bool, status_name: str, protocol_name: str):
+        self.config_method_wifi = config_method_wifi
+        self.send_method_wifi = send_method_wifi
+        self.status_name = status_name 
+        self.protocol_name = protocol_name
+
+        self.labels_txt = self.update_labels()
+
+    def update_labels(self):
+        return {
+            "config": "Configuring",
+            "deepsleep": "Deep Sleep: {} :{}".format(self.status_name, self.protocol_name),
+            "send": "Sending: {} :{}".format(self.status_name, self.protocol_name),
+            "error": "Error",
+            "dead": "Dead"
+        }
+
+    def set_send_status(self, mode, configuring = False, extra_msg=""):
+        if (configuring and self.config_method_wifi) or (not configuring and self.send_method_wifi):
+            self.status_icon.setPixmap(self.wifi_icons[mode])
+        else:
+            self.status_icon.setPixmap(self.bluetooth_icons[mode])
+        
+        self.status_label.setText(self._translate("Form_esp_active", self.labels_txt[mode]+extra_msg))
+
+    def set_send_status_default(self):
+        self.status_icon.setPixmap(self.default_active)
+        self.status_label.setText(self._translate("Form_esp_active", "Active"))
+
+    def set_send_status_config(self):
+        self.set_send_status("config", True)
+
+    def set_send_status_send(self):
+        self.set_send_status("send")
+
+    def set_send_status_deepsleep(self):
+        self.set_send_status("deepsleep")
+
+    def set_send_status_error(self, configuring):
+        if configuring:
+            extra_msg = " while configuring"
+        else:
+            extra_msg = " while sending"
+        self.set_send_status("error", configuring, extra_msg)
+
+    def set_send_status_dead(self):
+        self.status_icon.setPixmap(self.dead_icon)
+        self.status_label.setText(self._translate("Form_esp_active", self.labels_txt["dead"]))
+
+    
 
 
 class ESP:
@@ -1666,7 +1818,9 @@ class ESP:
         self.active_widget.setVisible(False)
 
         self.start_btn = StartButtonUI(self.ui_active.pushButton_esp_active_restart)
-
+        self.send_status = SendStatusUI(
+            self.ui_active.label_esp_active_status_icon, 
+            self.ui_active.label_esp_active_status_edit)
 
 
     def set_machine(self) -> None:
@@ -1702,20 +1856,67 @@ class ESP:
         trans_begin_send.setTargetState(state_proceso_envio)
         state_activo.addTransition(trans_begin_send)
 
-        def print_owo():
-            print("owo")
+        state_proceso_envio.entered.connect(lambda:
+            self.send_status.set_send_parameters(
+                self.config.config_wifi,
+                self.config.send_wifi,
+                self.config.status_ui.actual_status.name,
+                self.ui_config_win.comboBox_protocol.currentText()
+            ))
 
-        trans_begin_send.triggered.connect(print_owo)
 
-        state_configurando.entered.connect(self._on_send_process)
+        trans_conf_to_send = ESPSendingTransition(state_configurando)
+        trans_conf_to_send.setTargetState(state_envio)
 
+        trans_send_to_sleep = ESPSleepingTransition(state_envio)
+        trans_send_to_sleep.setTargetState(state_mimir)
 
+        trans_sleep_to_send = ESPSendingTransition(state_mimir)
+        trans_sleep_to_send.setTargetState(state_envio)
+
+        trans_stop_send = ESPActiveTransition(state_envio)
+        trans_stop_send.setTargetState(state_activo)
+
+        trans_stop_sleep = ESPActiveTransition(state_mimir)
+        trans_stop_sleep.setTargetState(state_activo)
+
+        state_proceso_envio.entered.connect(self._on_send_process)
+        state_configurando.entered.connect(self._on_send_configure)
+        state_envio.entered.connect(self._on_send_send)
+        state_mimir.entered.connect(self._on_send_sleep)
+        state_activo.entered.connect(self._on_active)
+
+        self.ui_active.pushButton_esp_active_start_stop.clicked.connect(lambda: self.machine.postEvent(ESPActiveEvent()))
+    
         state_proceso_envio.setInitialState(state_configurando)
         self.machine.setInitialState(state_encontrado)
         self.machine.start()
 
+    def _on_active(self):
+        self.start_btn.set_start_button()
+        self.send_status.set_send_status_default()
+        self.ui_active.pushButton_remove.setDisabled(False)
+
+
     def _on_send_process(self):
         self.start_btn.set_restart_button()
+        self.ui_active.pushButton_remove.setDisabled(True)
+        self.ui_active.pushButton_esp_active_start_stop.setDisabled(True)
+
+    def _on_send_configure(self):
+        self.start_btn.ui_button.setDisabled(True)
+        self.ui_active.pushButton_esp_active_start_stop.setDisabled(True)
+        self.send_status.set_send_status_config()
+
+    def _on_send_send(self):
+        self.start_btn.ui_button.setDisabled(False)
+        self.ui_active.pushButton_esp_active_start_stop.setDisabled(False)
+        self.send_status.set_send_status_send()
+
+    def _on_send_sleep(self):
+        self.start_btn.ui_button.setDisabled(False)
+        self.ui_active.pushButton_esp_active_start_stop.setDisabled(False)
+        self.send_status.set_send_status_deepsleep()
 
     def _on_finish(self):
         self.config.machine.postEvent(InactiveESPEvent())
@@ -1940,11 +2141,17 @@ if __name__ == '__main__':
     btn_end_find = QPushButton("End find", debug_dialog)
     esp_1_label = QtWidgets.QLabel("ESP1", debug_dialog)
     esp_1_btn_found = QtWidgets.QPushButton("found", debug_dialog)
+    esp_2_btn_found = QtWidgets.QPushButton("sending", debug_dialog)
+    esp_3_btn_found = QtWidgets.QPushButton("sleeping", debug_dialog)
+    esp_4_btn_found = QtWidgets.QPushButton("error", debug_dialog)
 
     verticalLayout_debug.addWidget(esp_found_label)
     verticalLayout_debug.addWidget(btn_end_find)
     verticalLayout_debug.addWidget(esp_1_label)
     verticalLayout_debug.addWidget(esp_1_btn_found)
+    verticalLayout_debug.addWidget(esp_2_btn_found)
+    verticalLayout_debug.addWidget(esp_3_btn_found)
+    verticalLayout_debug.addWidget(esp_4_btn_found)
 
 
     ## machinery
@@ -1979,11 +2186,14 @@ if __name__ == '__main__':
 
     
 
-    
+    def post_ev():
+        esp_dict_list.esp_dict[1110].machine.postEvent(ESPSendingEvent())
 
     ## Buttons signals
     btn_end_find.clicked.connect(lambda: machine_buscando.postEvent(EndFindEvent()))
     esp_1_btn_found.clicked.connect(lambda: machine_buscando.postEvent(ESPFoundEvent(1110, "aa-bb-cc-dd-ee-ff")))
+    esp_2_btn_found.clicked.connect(post_ev)
+    esp_3_btn_found.clicked.connect(lambda: esp_dict_list.esp_dict[1110].machine.postEvent(ESPSleepingEvent()))
 
 
 
