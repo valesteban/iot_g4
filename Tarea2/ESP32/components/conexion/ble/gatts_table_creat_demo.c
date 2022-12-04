@@ -61,7 +61,7 @@
 
 
 
-
+uint8_t * value_config = NULL;
 
 
 
@@ -365,6 +365,8 @@ void example_prepare_write_event_env(esp_gatt_if_t gatts_if, prepare_type_env_t 
            param->write.value,
            param->write.len);
     prepare_write_env->prepare_len += param->write.len;
+    ESP_LOGI(GATTS_TABLE_TAG, "Supuestamente escribo en bbdd");
+    
 
 }
 
@@ -415,6 +417,9 @@ static void gatts_profile_event_handler(esp_gatts_cb_event_t event, esp_gatt_if_
             adv_config_done |= SCAN_RSP_CONFIG_FLAG;
     #endif
             esp_err_t create_attr_ret = esp_ble_gatts_create_attr_tab(gatt_db, gatts_if, HRS_IDX_NB, SVC_INST_ID);
+            ESP_LOGI(GATTS_TABLE_TAG, "attr db");
+            
+
             if (create_attr_ret){
                 ESP_LOGE(GATTS_TABLE_TAG, "create attr table failed, error code = %x", create_attr_ret);
             }
@@ -434,7 +439,7 @@ static void gatts_profile_event_handler(esp_gatts_cb_event_t event, esp_gatt_if_
                 // Configuracion conf = construccion_conf(param->write.value);
                 
 
-                // char * value =( char *) param->write.value;
+                //  char * value = param->write.value;
                 // // IF UUID ES DE LA CONFIG??
                 // // FIX CREAR FUNCION CON ESTO 
                 // // char str[] = "(3, 20, 2, 400, 16, 200, 4, 420, 5010, 5010, 3232242689, 'ssid', 'pass')";
@@ -467,10 +472,22 @@ static void gatts_profile_event_handler(esp_gatts_cb_event_t event, esp_gatt_if_
                     
                 // }
 
+                
+                
 
 
 
 
+                value_config =  param->write.value;
+                ESP_LOGI(GATTS_TABLE_TAG, "value_global -> %s",value_config);
+                
+
+                esp_err_t ret = esp_bluedroid_disable();
+                if (ret){
+                    ESP_LOGE(GATTS_TABLE_TAG, "Error desabilitar buetooth");
+                }
+
+                break;
 
 
 
@@ -503,6 +520,8 @@ static void gatts_profile_event_handler(esp_gatts_cb_event_t event, esp_gatt_if_
                         //the size of indicate_data[] need less than MTU size
                         esp_ble_gatts_send_indicate(gatts_if, param->write.conn_id, heart_rate_handle_table[IDX_CHAR_VAL_A],
                                             sizeof(indicate_data), indicate_data, true);
+                        ESP_LOGE(GATTS_TABLE_TAG, "-------------> %d",heart_rate_handle_table[1]);
+                        esp_bluedroid_disable();
                     }
                     else if (descr_value == 0x0000){
                         ESP_LOGI(GATTS_TABLE_TAG, "notify/indicate disable ");
@@ -512,15 +531,21 @@ static void gatts_profile_event_handler(esp_gatts_cb_event_t event, esp_gatt_if_
                     }
 
                 }
+                // return 1;
                 /* send response when param->write.need_rsp is true*/
-                if (param->write.need_rsp){
-                    ESP_LOGI(GATTS_TABLE_TAG, "necesita responder");
-                    esp_ble_gatts_send_response(gatts_if, param->write.conn_id, param->write.trans_id, ESP_GATT_OK, NULL);
-                }
+                // if (param->write.need_rsp){
+                //     ESP_LOGI(GATTS_TABLE_TAG, "necesita responder");
+                //     esp_ble_gatts_send_response(gatts_if, param->write.conn_id, param->write.trans_id, ESP_GATT_OK, NULL);
+                // }
             }else{
                 /* handle prepare write */
                 example_prepare_write_event_env(gatts_if, &prepare_write_env, param);
             }
+            // example_prepare_write_event_env(gatts_if, &prepare_write_env, param); //!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+
+
+                        
       	    break;
         case ESP_GATTS_EXEC_WRITE_EVT:
             // the length of gattc prepare write data must be less than GATTS_DEMO_CHAR_VAL_LEN_MAX.
@@ -609,7 +634,7 @@ static void gatts_event_handler(esp_gatts_cb_event_t event, esp_gatt_if_t gatts_
     } while (0);
 }
 
-int  protocolo_ble(void){
+void  protocolo_ble(void){
     esp_err_t ret;
     // !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! 
     /* Initialize NVS. */    //inicializa memoria no volatil
