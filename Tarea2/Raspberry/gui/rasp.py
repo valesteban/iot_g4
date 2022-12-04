@@ -10,6 +10,9 @@ from gui.esp_dev import ESPDicts
 
 class Controller:
     def __init__(self, db_config_set, db_config_get, db_get_ids, db_get_data) -> None:
+        self.set_methods(db_config_set, db_config_get, db_get_ids, db_get_data)
+
+    def set_methods(self, db_config_set, db_config_get, db_get_ids, db_get_data):
         self.config_set = db_config_set
         self.config_get = db_config_get
         self.keys_get = db_get_ids
