@@ -132,7 +132,7 @@ char* tcp_initial_connection(void){
 // - status = 21
 // - id_protocols ->1-2-3-4-5
 // - Raspeberry detiene conexion (interfaz gráfica) 
-void tcp_continuo(int id_protocol){
+void tcp_continuo(char id_protocol){
     // lo estoy haciendo .....
 
 
@@ -173,46 +173,46 @@ void tcp_continuo(int id_protocol){
         
         while (status == 21) {
             //LLAMAMOS AL PROTOCOLO QU ECREA EL PAQUETE
-            char *data = "Paquete hardcodeao\n";                       
+            // char *data = "Paquete hardcodeao\n";                       
 
-        //    unsigned char *data = NULL;
-        //    int data_size = 0;
-        //    uint8_t mac[6];
-        //    esp_base_mac_addr_get(mac);
+           unsigned char *data = NULL;
+           int data_size = 0;
+           uint8_t mac[6];
+           esp_base_mac_addr_get(mac);
 
-        //    encode_pkg(id_protocol, mac, DEVICE_ID, TCP_LAYER_ID, &data, &data_size);
+           encode_pkg(id_protocol, mac, DEVICE_ID, TCP_LAYER_ID, &data, &data_size);
 
             //ENVIAMOS DATA---------------------------------------------------------------------------
             
-            // if(id_protocol == 4){
-            //     //FRAGMENTACIÓN
-            //     int err = fragmentation(data, data_size, sock);
-            //     free(data);
-            //     if (err < 0) {
-            //         ESP_LOGE(TAG2, "Error occurred during sending: errno %d", errno);
-            //         break;
-            //     }
-            //     ESP_LOGI("Envio tcp", "Completado envío TCP de protocolo 4! err: %d", err);
-            // }else{
-            //     ESP_LOGI(TAG2, "Paquete encodeado: \n");
-            //     ESP_LOG_BUFFER_HEX("Hexadecimal: ", data, data_size);
-            //     int err = send(sock, data, data_size, 0);
-            //     free(data);
-            //     if (err < 0) {
-            //         ESP_LOGE(TAG2, "Error occurred during sending: errno %d", errno);
-            //         break;
-            //     }
+            if(id_protocol == '4'){
 
-            // }  
+                //FRAGMENTACIÓN
+                int err = fragmentation(data, data_size, sock);
+                free(data);
+                if (err < 0) {
+                    ESP_LOGE(TAG2, "Error occurred during sending: errno %d", errno);
+                    break;
+                }
+                ESP_LOGI("Envio tcp", "Completado envío TCP de protocolo 4! err: %d", err);
+            }else{
+                ESP_LOGI(TAG2, "Paquete encodeado:");
+                ESP_LOG_BUFFER_HEX("Hexadecimal: ", data, data_size);
+                //ENVIAMOS DATA
+                int err = send(sock, data, data_size, 0);
+                free(data);
+                if (err < 0) {
+                    ESP_LOGE(TAG2, "Error occurred during sending: errno %d", errno);
+                    break;
+                }
+
+            }  
             //--------------------------------------------------------------------------------------
 
 
-            //ENVIAMOS DATA
-            int err = send(sock, data, strlen(data), 0);
-            if (err < 0) {
-                ESP_LOGE(TAG2, "Error occurred during sending: errno %d", errno);
-                break;
-            }
+            
+
+            
+        
             
             //RECIVIMOS RESPUESTA
             int len = recv(sock, rx_buffer, sizeof(rx_buffer) - 1, 0);
@@ -224,7 +224,7 @@ void tcp_continuo(int id_protocol){
             else {
                 rx_buffer[len] = 0; // Null-terminate whatever we received and treat like a string
                 ESP_LOGI(TAG2, "Received %d bytes from %s:", len, host_ip);
-                ESP_LOGI(TAG2, "%s", rx_buffer);
+                ESP_LOGI(TAG2, "Paquete recibido: %s", rx_buffer);
             }
             
             
@@ -257,7 +257,7 @@ void tcp_continuo(int id_protocol){
 // - según el valor de Discontinuous_Time el ESP32 entrara por ese tiempo en modo Deep_sleep.
 // - Raspeberry detiene conexion (interfaz gráfica) 
 // - se recomienda que el Discontinuous_Time tenga como unidad minutos y que su valor mínimo sea 1.
-void tcp_discontinuo(int8_t id_protocol, int32_t tiempo_discontinuo ){
+void tcp_discontinuo(char id_protocol, int32_t tiempo_discontinuo ){
     // lo estoy haciendo .....
     ESP_LOGI("tcp client", "Protocolo en uso: %c", id_protocol);
 
@@ -296,46 +296,50 @@ void tcp_discontinuo(int8_t id_protocol, int32_t tiempo_discontinuo ){
         
         while (status == 21) {
             //LLAMAMOS AL PROTOCOLO QU ECREA EL PAQUETE
-            char *data = "Paquete hardcodeao\n";                       
+            // char *data = "Paquete hardcodeao\n";                       
 
-        //    unsigned char *data = NULL;
-        //    int data_size = 0;
-        //    uint8_t mac[6];
-        //    esp_base_mac_addr_get(mac);
+           unsigned char *data = NULL;
+           int data_size = 0;
+           uint8_t mac[6];
+           esp_base_mac_addr_get(mac);
 
-        //    encode_pkg(id_protocol, mac, DEVICE_ID, TCP_LAYER_ID, &data, &data_size);
-
+            ESP_LOGE(TAG2, "?????????????????");
+           encode_pkg(id_protocol, mac, DEVICE_ID, TCP_LAYER_ID, &data, &data_size);
+ESP_LOGE(TAG2, "?????????????????");
             //ENVIAMOS DATA---------------------------------------------------------------------------
             
-            // if(id_protocol == 4){
-            //     //FRAGMENTACIÓN
-            //     int err = fragmentation(data, data_size, sock);
-            //     free(data);
-            //     if (err < 0) {
-            //         ESP_LOGE(TAG2, "Error occurred during sending: errno %d", errno);
-            //         break;
-            //     }
-            //     ESP_LOGI("Envio tcp", "Completado envío TCP de protocolo 4! err: %d", err);
-            // }else{
-            //     ESP_LOGI(TAG2, "Paquete encodeado: \n");
-            //     ESP_LOG_BUFFER_HEX("Hexadecimal: ", data, data_size);
-            //     int err = send(sock, data, data_size, 0);
-            //     free(data);
-            //     if (err < 0) {
-            //         ESP_LOGE(TAG2, "Error occurred during sending: errno %d", errno);
-            //         break;
-            //     }
+            if(id_protocol == '4'){
+                //FRAGMENTACIÓN
+                ESP_LOGE(TAG2, "????????anets sde frag?????????");
+                int err = fragmentation(data, data_size, sock);
+                sleep(10);
+                ESP_LOGE(TAG2, "????????despues sde frag?????????");
+                free(data);
+                if (err < 0) {
+                    ESP_LOGE(TAG2, "Error occurred during sending: errno %d", errno);
+                    break;
+                }
+                ESP_LOGI("Envio tcp", "Completado envío TCP de protocolo 4! err: %d", err);
+            }else{
+                ESP_LOGI(TAG2, "Paquete encodeado: \n");
+                ESP_LOG_BUFFER_HEX("Hexadecimal: ", data, data_size);
+                int err = send(sock, data, data_size, 0);
+                free(data);
+                if (err < 0) {
+                    ESP_LOGE(TAG2, "Error occurred during sending: errno %d", errno);
+                    break;
+                }
 
-            // }  
+            }  
             //--------------------------------------------------------------------------------------
 
 
             //ENVIAMOS DATA
-            int err = send(sock, data, strlen(data), 0);
-            if (err < 0) {
-                ESP_LOGE(TAG2, "Error occurred during sending: errno %d", errno);
-                break;
-            }
+            // int err = send(sock, data, strlen(data), 0);
+            // if (err < 0) {
+            //     ESP_LOGE(TAG2, "Error occurred during sending: errno %d", errno);
+            //     break;
+            // }
             
             //RECIVIMOS RESPUESTA
             int len = recv(sock, rx_buffer, sizeof(rx_buffer) - 1, 0);
@@ -387,7 +391,10 @@ void tcp_discontinuo(int8_t id_protocol, int32_t tiempo_discontinuo ){
 // - Ssid, Pass y Port_TCP toman de valores configurados por la interfaz
 // - En este modo el ESP32 puede actualizar cualquiera valores de la tabla Parámetros de Configuración
 // - status = 20
-void tcp_configuracion(int8_t id_protocol ){
+void tcp_configuracion(char id_protocol ){
+    ESP_LOGI(TAG2, "Configuracion WIFI");
+    esp_wifi_init(WIFI_INIT_CONFIG_DEFAULT);
+
     ESP_LOGI(TAG2, "TCP configuracion \n Status 20");
 
     
