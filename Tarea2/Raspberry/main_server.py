@@ -6,34 +6,42 @@ import json
 import sys
 
 from db import *
-from desempaquetamiento import Protocol
-from desempaquetamiento import decode_pkg, print_hex
+# from desempaquetamiento import Protocol
+# from desempaquetamiento import decode_pkg, print_hex
 import ConnectBLE
-import tcp
+import json
 
-# "192.168.5.177"  # Standard loopback interface address (localhost)
-HOST = "192.168.28.1" #"localhost"
-PORT = 5010  # Port to listen on (non-privileged ports are > 1023)
+
 
 # Atributos
 # status: int
 class Raspberry:
 
     def __init__(self) -> None:
-        self.__configuracion = None
-        self.__nueva_configuracion = None
-        self.status = 0
+        self.__configuracion:tuple = None
+        self.__nueva_configuracion:tuple = None
         self.__HOST_IP = "192.168.28.1"
         self.__PORT = 5010
 
     def setConfiguracion(self, configuracion:tuple) -> None:
         self.__configuracion = configuracion
+    
+    def set_nueva_configuracion(self, nueva_configuracion:tuple) -> None:
+        self.__nueva_configuracion = nueva_configuracion
 
     def setStatus(self, status:int) -> None:
         self.__status:tuple = status
 
-    def getStatus(self) -> int:
-        return self.__status                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                
+    def set_HostIp(self, host_ip):
+        self.__HOST_IP = host_ip
+        
+    def set_Port(self, port):
+        self.__PORT = port
+
+    def get_current_status(self):
+        return self.__configuracion[1]
+
+
 
     def actualizarConfiguracion(self):
         """
@@ -44,12 +52,12 @@ class Raspberry:
 
         # host | user | pass | database
         db = DB("localhost", "iot4", "12345678", "IoT_Tarea2")
-        nueva_configuracion = db.get_config()[0]
+        nueva_configuracion = db.get_all_config()[0]
 
         self.__nueva_configuracion = nueva_configuracion
          
 
-    def start_status20(self):
+    def start_status20(self) -> None:
         """
         El ESP32 tendrá un Cliente TCP y la Raspberry un Servidor TCP (el Ssid, Pass y Port_TCP se
         toman de los valores configurados por la interfaz). En este modo el ESP32 puede actualizar cualquiera
@@ -57,39 +65,53 @@ class Raspberry:
         se adquieren de la tabla config de la DB
         """
 
+        print("== INICIANDO STATUS 20 ==")
         # Iniciamos conexion TCP
         s = socket.socket(socket.AF_INET,socket.SOCK_STREAM)
         s.setsockopt(socket.SOL_SOCKET,socket.SO_REUSEADDR,1)
         s.bind((self.__HOST_IP, self.__PORT))
         s.listen()
+        print(f"Iniciando Socket HOST_IP: {self.__HOST_IP}, PORT: {self.__PORT}")
         print("Listening.....")
         conn,addr = s.accept()
         
         print(f"Conectado con {addr}")
 
-        # TODO
-        # Probablemente se tenga que hacer un recv()
+        # Mensanje inicial de conexion de la esp32
+        # conn.recv(1024)
 
         # Quedamos esperando hasta que haya un cambio de Configuracion
         while True:
+            # Mensaje para mantener conexion
+
             # Hubo un cambio de configuracion
             if self.__configuracion != self.__nueva_configuracion:
+                print("Enviar Cambio de configuracion")
                 # Envio la nueva configuracion a la ESP32
 
                 # Obtengo la configuracion y encode()
                 data = str(self.__nueva_configuracion).encode()
-                s.sendall(data)
+                conn.sendall(data)
                 
                 # Cambio la antigua configuracion por la nueva
                 self.__configuracion = self.__nueva_configuracion
                 self.status = self.__configuracion[1] # Cambio tambien el atributo estado
 
-            # Si Hay un cambio de status se debe terminar el ciclo
+                conn.recv(1024)
+                # Si Hay un cambio de status se debe terminar el ciclo
+                if self.get_current_status() != 20:
+                    break
 
-            if self.setStatus != 20:
-                break
+            # Si no ha pasado envio un dato vacio
+            conn.sendall("Ningun Cambio".encode())
+            conn.recv(1024)
+        
+        print("== FIN STATUS 20 ==")
+        s.close()
+        return None
+
                 
-    def start_status21(self):
+    def start_status21(self) -> None:
         """
         El ESP32 tendrá un Cliente TCP y la Raspberry un Servidor TCP (Este debe poder iniciarse
         desde la interfaz con la configuración puesta ahí). Según el valor de ID_Protocol es el paquete de
@@ -102,13 +124,63 @@ class Raspberry:
         s.setsockopt(socket.SOL_SOCKET,socket.SO_REUSEADDR,1)
         s.bind((self.__HOST_IP, self.__PORT))
         s.listen()
+        print(f"Iniciando Socket HOST_IP: {self.__HOST_IP}, PORT: {self.__PORT}")
         print("Listening.....")
         conn,addr = s.accept()
 
         print(f"Conectado con {addr}")
 
-        #while True:
+        while True:
 
+                #Protocolos 1 al 4
+                # Recibo mensaje de la ESP32 y lo decodifico
+                # data = {
+                #   "id_device": ,
+                #   "status_report": ,
+                #   "protocol_report" ,
+                #   "batterry_level": ,
+                #   "conf_peripheral": ,
+                #   "time_client": ,
+                #   "configuracion.id_device": ,
+                #   "data": {...}  
+                # }
+                raw_data = conn.recv(1024)   
+                data = raw_data.decode()
+
+                # Si llega un dato entonces debemos guardarlo y generar un log
+                if data:
+                    # Creo conexion a la base de datos:
+                    # host | user | pass | database
+                    db = DB("localhost", "iot4", "12345678", "IoT_Tarea2")
+
+                    # Creo diccionario con la info para el Log
+                    log_dict = {}
+                    log_dict["id_device"] = data["id_device"] 
+                    log_dict["status_report"] = data["status_report"] 
+                    log_dict["protocol_report"] = data["protocol_report"] 
+                    log_dict["battery_level"] = data["battery_level"] 
+                    log_dict["conf_peripheral"] = data["conf_peripheral"] 
+                    log_dict["time_client"] = data["time_client"] 
+                    log_dict["configuration_id_device"] = data["id_device"] 
+
+                    db.save_log(log_dict) # Guardo el log
+
+
+                    # Creo diccionario con la data a guardar
+                    data_dict = {}
+                    data_dict["id_device"] = data["id_device"]
+                    data_dict["data"] = json.dumps(data["data"])
+                    data_dict["log_id_device"] = data["id_device"]
+
+                    db.save_data(data_dict) # Guarda la data
+
+                
+                else:
+                    print('no data from', addr)
+                    break
+                    
+
+        return None
 
 
 
@@ -148,19 +220,7 @@ def init_server():
         elif status == 31:
             # == Status 31 ==
             raspberry.start_status31()
-        
-
-    
+            
 
 
 
-
-
-
-
-  
-if __name__ == "__main__":
-    """
-    Inicializar el servidor
-    """
-    init_server()

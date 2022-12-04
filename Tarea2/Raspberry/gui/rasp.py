@@ -7,6 +7,17 @@ from gui.transitions import EndFindTransition, ESPFoundTransition
 from gui.esp_lists import ListsMachine
 from gui.esp_dev import ESPDicts
 
+
+class Controller:
+    def __init__(self, db_config_set, db_config_get, db_get_ids, db_get_data) -> None:
+        self.set_methods(db_config_set, db_config_get, db_get_ids, db_get_data)
+
+    def set_methods(self, db_config_set, db_config_get, db_get_ids, db_get_data):
+        self.config_set = db_config_set
+        self.config_get = db_config_get
+        self.keys_get = db_get_ids
+        self.data_get = db_get_data
+
 class DeviceSearch:
     def __init__(self, main_disp: main_display.Ui_MainWindow, esp_dict_list: ESPDicts) -> None:
         self.main_disp = main_disp
@@ -36,12 +47,13 @@ class DeviceSearch:
 
 
 class Rasp:
-    def __init__(self, window: QMainWindow) -> None:
+    def __init__(self, window: QMainWindow, controller: Controller) -> None:
         self.window = window
         self.ui_main_disp = main_display.Ui_MainWindow()
         self.ui_main_disp.setupUi(self.window)
+        self.controller = controller
 
-        self.plot_manager = LivePlotManager(self.ui_main_disp)
+        self.plot_manager = LivePlotManager(self.ui_main_disp, controller)
 
         self.esp_disp_list = ListsMachine(
             self.ui_main_disp.scrollAreaWidgetContents_found_area, 
@@ -49,6 +61,6 @@ class Rasp:
             self.ui_main_disp.scrollAreaWidgetContents_active_esp,
             self.ui_main_disp.verticalLayout_active_list)
         
-        self.esp_dict_list = ESPDicts(self.esp_disp_list, self.window)
+        self.esp_dict_list = ESPDicts(self.esp_disp_list, self.window, controller)
 
         self.device_search = DeviceSearch(self.ui_main_disp, self.esp_dict_list)

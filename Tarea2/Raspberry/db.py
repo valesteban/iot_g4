@@ -46,8 +46,36 @@ class DB:
             DELETE FROM Log
         '''
         self.cursor.execute(sql)
-
         self.db.commit()
+
+
+    def get_all_id_device(self) -> tuple:
+        """
+            Obtiene todos Id_devices registrados en la base de datos
+        """
+
+        sql = """
+            SELECT id_device
+            FROM Configuration
+        """
+
+        self.cursor.execute(sql)
+        return self.cursor.fetchall()
+
+    def get_all_data_from_id_device(self, id_device):
+        """
+            Obtiene la data y la data_acc_sensor asociada a una id_device
+        """
+
+        sql = """
+            SELECT data, data_acceloremeter_sensor
+            FROM Data, Data_acceloremeter_sensor
+            WHERE id_device = %s
+            AND LOG.id_device = %s
+        """
+
+        self.cursor.execute(sql, (id_device,))
+        return self.cursor.fetchall()
 
 
     """
@@ -56,16 +84,16 @@ class DB:
 
     def get_device_config(self, id_device) -> tuple:
         """
-            Metodo que entrega la configuracion de un device
+            Metodo que entrega la configuracion especifica de un device
         """
 
         sql = """
             SELECT *
-            FROM Configuracion
+            FROM Configuration
             WHERE id_device = %s
         """
 
-        self.cursor.execute(sql, id_device)
+        self.cursor.execute(sql, (id_device, ))
         return self.cursor.fetchall()
 
 

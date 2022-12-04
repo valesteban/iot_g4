@@ -33,7 +33,7 @@ def change_db_config(configuration_dict:dict) -> None:
 def return_db_config() -> tuple:
     # host | user | pass | database
     db = DB("localhost", "iot4", "12345678", "IoT_Tarea2")
-    return db.get_config()
+    return db.get_all_config()
 
 def add_default_config() -> None:
     # host | user | pass | database
@@ -122,7 +122,7 @@ if __name__ == "__main__":
 
                 configuration_dict = {
                     "id_device": 3,
-                    "status_conf": 20,
+                    "status_conf": 23,
                     "protocol_conf": 2,
                     "acc_sampling": 400,
                     "acc_sensibility": 16,
