@@ -6,15 +6,12 @@ import json
 import sys
 
 from db import *
-from desempaquetamiento import Protocol
-from desempaquetamiento import decode_pkg, print_hex
+# from desempaquetamiento import Protocol
+# from desempaquetamiento import decode_pkg, print_hex
 import ConnectBLE
 import json
 
 
-# "192.168.5.177"  # Standard loopback interface address (localhost)
-HOST = "192.168.28.1" #"localhost"
-PORT = 5010  # Port to listen on (non-privileged ports are > 1023)
 
 # Atributos
 # status: int
@@ -32,6 +29,12 @@ class Raspberry:
 
     def setStatus(self, status:int) -> None:
         self.__status:tuple = status
+
+    def set_HostIp(self, host_ip):
+        self.__HOST_IP = host_ip
+        
+    def set_Port(self, port):
+        self.__PORT = port
 
     def getStatus(self) -> int:
         return self.__status                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                
@@ -58,21 +61,25 @@ class Raspberry:
         se adquieren de la tabla config de la DB
         """
 
+        print("== INICIANDO STATUS 20 ==")
         # Iniciamos conexion TCP
         s = socket.socket(socket.AF_INET,socket.SOCK_STREAM)
         s.setsockopt(socket.SOL_SOCKET,socket.SO_REUSEADDR,1)
         s.bind((self.__HOST_IP, self.__PORT))
         s.listen()
+        print(f"Iniciando Socket HOST_IP: {self.__HOST_IP}, PORT: {self.__PORT}")
         print("Listening.....")
         conn,addr = s.accept()
         
         print(f"Conectado con {addr}")
 
-        # TODO
-        # Probablemente se tenga que hacer un recv()
+        # Mensanje inicial de conexion de la esp32
+        # conn.recv(1024)
 
         # Quedamos esperando hasta que haya un cambio de Configuracion
         while True:
+            # Mensaje para mantener conexion
+
             # Hubo un cambio de configuracion
             if self.__configuracion != self.__nueva_configuracion:
                 # Envio la nueva configuracion a la ESP32
@@ -87,9 +94,15 @@ class Raspberry:
 
             # Si Hay un cambio de status se debe terminar el ciclo
 
-            if self.setStatus != 20:
+            if self.__status != 20:
                 break
+
+            # Si no ha pasado envio un dato vacio
+            conn.sendall("Ningun Cambio".encode())
+            conn.recv(1024)
         
+        print("== FIN STATUS 20 ==")
+        s.close()
         return None
 
                 
@@ -106,6 +119,7 @@ class Raspberry:
         s.setsockopt(socket.SOL_SOCKET,socket.SO_REUSEADDR,1)
         s.bind((self.__HOST_IP, self.__PORT))
         s.listen()
+        print(f"Iniciando Socket HOST_IP: {self.__HOST_IP}, PORT: {self.__PORT}")
         print("Listening.....")
         conn,addr = s.accept()
 
@@ -201,19 +215,7 @@ def init_server():
         elif status == 31:
             # == Status 31 ==
             raspberry.start_status31()
-        
-
-    
+            
 
 
 
-
-
-
-
-  
-if __name__ == "__main__":
-    """
-    Inicializar el servidor
-    """
-    init_server()
