@@ -18,14 +18,16 @@ import json
 class Raspberry:
 
     def __init__(self) -> None:
-        self.__configuracion = None
-        self.__nueva_configuracion = None
-        self.status = 0
+        self.__configuracion:tuple = None
+        self.__nueva_configuracion:tuple = None
         self.__HOST_IP = "192.168.28.1"
         self.__PORT = 5010
 
     def setConfiguracion(self, configuracion:tuple) -> None:
         self.__configuracion = configuracion
+    
+    def set_nueva_configuracion(self, nueva_configuracion:tuple) -> None:
+        self.__nueva_configuracion = nueva_configuracion
 
     def setStatus(self, status:int) -> None:
         self.__status:tuple = status
@@ -36,8 +38,10 @@ class Raspberry:
     def set_Port(self, port):
         self.__PORT = port
 
-    def getStatus(self) -> int:
-        return self.__status                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                
+    def get_current_status(self):
+        return self.__configuracion[1]
+
+
 
     def actualizarConfiguracion(self):
         """
@@ -82,20 +86,21 @@ class Raspberry:
 
             # Hubo un cambio de configuracion
             if self.__configuracion != self.__nueva_configuracion:
+                print("Enviar Cambio de configuracion")
                 # Envio la nueva configuracion a la ESP32
 
                 # Obtengo la configuracion y encode()
                 data = str(self.__nueva_configuracion).encode()
-                s.sendall(data)
+                conn.sendall(data)
                 
                 # Cambio la antigua configuracion por la nueva
                 self.__configuracion = self.__nueva_configuracion
                 self.status = self.__configuracion[1] # Cambio tambien el atributo estado
 
-            # Si Hay un cambio de status se debe terminar el ciclo
-
-            if self.__status != 20:
-                break
+                conn.recv(1024)
+                # Si Hay un cambio de status se debe terminar el ciclo
+                if self.get_current_status() != 20:
+                    break
 
             # Si no ha pasado envio un dato vacio
             conn.sendall("Ningun Cambio".encode())
