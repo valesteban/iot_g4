@@ -205,7 +205,8 @@ class ESPConfig:
         self.machine.start()
     
     def _load_config_from_model(self):
-        res = self.esp.controller.config_get()
+        print(self.esp.esp_id)
+        res = self.esp.controller.config_get(self.esp.esp_id)
         print(res)
 
 
