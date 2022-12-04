@@ -44,7 +44,7 @@ class Raspberry:
 
         # host | user | pass | database
         db = DB("localhost", "iot4", "12345678", "IoT_Tarea2")
-        nueva_configuracion = db.get_config()[0]
+        nueva_configuracion = db.get_all_config()[0]
 
         self.__nueva_configuracion = nueva_configuracion
          
@@ -107,7 +107,24 @@ class Raspberry:
 
         print(f"Conectado con {addr}")
 
-        #while True:
+        while True:
+
+                #Protocolos 1 al 4
+                raw_data = conn.recv(1024)   
+                data = raw_data.decode()
+
+                if data:
+
+                
+                else:
+                    print('no data from', addr)
+                    break
+                    
+
+                # Printeamos la data recibida
+                print(f"Paquete recibido: {data} \n")
+
+    
 
 
 
