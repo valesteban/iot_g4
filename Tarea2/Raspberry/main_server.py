@@ -9,7 +9,8 @@ from db import *
 from desempaquetamiento import Protocol
 from desempaquetamiento import decode_pkg, print_hex
 import ConnectBLE
-import tcp
+import json
+
 
 # "192.168.5.177"  # Standard loopback interface address (localhost)
 HOST = "192.168.28.1" #"localhost"
@@ -49,7 +50,7 @@ class Raspberry:
         self.__nueva_configuracion = nueva_configuracion
          
 
-    def start_status20(self):
+    def start_status20(self) -> None:
         """
         El ESP32 tendrá un Cliente TCP y la Raspberry un Servidor TCP (el Ssid, Pass y Port_TCP se
         toman de los valores configurados por la interfaz). En este modo el ESP32 puede actualizar cualquiera
@@ -88,8 +89,11 @@ class Raspberry:
 
             if self.setStatus != 20:
                 break
+        
+        return None
+
                 
-    def start_status21(self):
+    def start_status21(self) -> None:
         """
         El ESP32 tendrá un Cliente TCP y la Raspberry un Servidor TCP (Este debe poder iniciarse
         desde la interfaz con la configuración puesta ahí). Según el valor de ID_Protocol es el paquete de
@@ -110,10 +114,46 @@ class Raspberry:
         while True:
 
                 #Protocolos 1 al 4
+                # Recibo mensaje de la ESP32 y lo decodifico
+                # data = {
+                #   "id_device": ,
+                #   "status_report": ,
+                #   "protocol_report" ,
+                #   "batterry_level": ,
+                #   "conf_peripheral": ,
+                #   "time_client": ,
+                #   "configuracion.id_device": ,
+                #   "data": {...}  
+                # }
                 raw_data = conn.recv(1024)   
                 data = raw_data.decode()
 
+                # Si llega un dato entonces debemos guardarlo y generar un log
                 if data:
+                    # Creo conexion a la base de datos:
+                    # host | user | pass | database
+                    db = DB("localhost", "iot4", "12345678", "IoT_Tarea2")
+
+                    # Creo diccionario con la info para el Log
+                    log_dict = {}
+                    log_dict["id_device"] = data["id_device"] 
+                    log_dict["status_report"] = data["status_report"] 
+                    log_dict["protocol_report"] = data["protocol_report"] 
+                    log_dict["battery_level"] = data["battery_level"] 
+                    log_dict["conf_peripheral"] = data["conf_peripheral"] 
+                    log_dict["time_client"] = data["time_client"] 
+                    log_dict["configuration_id_device"] = data["id_device"] 
+
+                    db.save_log(log_dict) # Guardo el log
+
+
+                    # Creo diccionario con la data a guardar
+                    data_dict = {}
+                    data_dict["id_device"] = data["id_device"]
+                    data_dict["data"] = json.dumps(data["data"])
+                    data_dict["log_id_device"] = data["id_device"]
+
+                    db.save_data(data_dict) # Guarda la data
 
                 
                 else:
@@ -121,11 +161,7 @@ class Raspberry:
                     break
                     
 
-                # Printeamos la data recibida
-                print(f"Paquete recibido: {data} \n")
-
-    
-
+        return None
 
 
 
