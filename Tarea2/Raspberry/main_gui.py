@@ -1,13 +1,9 @@
+from PyQt5.QtWidgets import QApplication, QMainWindow, QDialog, QPushButton, QLabel
+from PyQt5 import QtWidgets
 
-from queue import Queue
-from multiprocessing import Process, Lock
+from gui.rasp import Rasp
+from gui.all_events import ESPSendingEvent, ESPSleepingEvent, EndFindEvent, ESPFoundEvent
 
-from PyQt5.QtWidgets import QApplication, QMainWindow, QFrame, QPushButton, QLabel, QWidget, QLayout, QSpinBox, QLineEdit, QComboBox, QStackedWidget, QVBoxLayout
-from PyQt5 import QtCore, QtWidgets, QtGui
-from PyQt5.QtCore import QStateMachine, QState, QFinalState, QAbstractTransition, QEventTransition, pyqtProperty, pyqtSignal, QSignalTransition, pyqtBoundSignal
-import typing
-
-from gui.forms import main_display, esp_found_item, esp_active_item,  esp_wifi_config, esp_config_win, live_plot
 
 
 if __name__ == '__main__':
@@ -17,8 +13,7 @@ if __name__ == '__main__':
     app = QApplication(sys.argv)
     window = QMainWindow()
 
-    
-
+    rasp = Rasp(window)
 
     debug_dialog = QDialog(window)
     verticalLayout_debug= QtWidgets.QVBoxLayout(debug_dialog)
@@ -39,25 +34,15 @@ if __name__ == '__main__':
     verticalLayout_debug.addWidget(esp_3_btn_found)
     verticalLayout_debug.addWidget(esp_4_btn_found)
 
-
-    ## machinery
-
-    
-
-    
-
     def post_ev():
-        esp_dict_list.esp_dict[1110].machine.postEvent(ESPSendingEvent())
+        rasp.esp_dict_list.esp_dict[1110].machine.postEvent(ESPSendingEvent())
 
     ## Buttons signals
-    btn_end_find.clicked.connect(lambda: machine_buscando.postEvent(EndFindEvent()))
-    esp_1_btn_found.clicked.connect(lambda: machine_buscando.postEvent(ESPFoundEvent(1110, "aa-bb-cc-dd-ee-ff")))
+    btn_end_find.clicked.connect(lambda: rasp.device_search.machine.postEvent(EndFindEvent()))
+    esp_1_btn_found.clicked.connect(lambda: rasp.device_search.machine.postEvent(ESPFoundEvent(1110, "aa-bb-cc-dd-ee-ff")))
     esp_2_btn_found.clicked.connect(post_ev)
-    esp_3_btn_found.clicked.connect(lambda: esp_dict_list.esp_dict[1110].machine.postEvent(ESPSleepingEvent()))
+    esp_3_btn_found.clicked.connect(lambda: rasp.esp_dict_list.esp_dict[1110].machine.postEvent(ESPSleepingEvent()))
 
-
-
-    #ui_main_disp.pushButton_search_refresh.clicked.connect(add_active_item)
     window.show()
     debug_dialog.show()
 
