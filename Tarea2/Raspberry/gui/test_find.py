@@ -4,7 +4,7 @@ from multiprocessing import Process, Lock
 
 from PyQt5.QtWidgets import QApplication, QMainWindow, QFrame, QDialog, QPushButton, QLabel, QWidget, QLayout, QSpinBox, QLineEdit, QComboBox, QStackedWidget, QVBoxLayout
 from PyQt5 import QtCore, QtWidgets, QtGui
-from PyQt5.QtCore import QStateMachine, QState, QFinalState, QTimer, QObject, QEvent, QAbstractTransition, QEventTransition, pyqtProperty, pyqtSignal, QMetaType, QSignalTransition
+from PyQt5.QtCore import QStateMachine, QState, QFinalState, QTimer, QObject, QEvent, QAbstractTransition, QEventTransition, pyqtProperty, pyqtSignal, QMetaType, QSignalTransition, pyqtBoundSignal
 import typing
 
 from forms import main_display, esp_found_item, esp_active_item,  esp_wifi_config, esp_config_win, live_plot
@@ -79,8 +79,9 @@ class AbleToSendEvent(QEvent):
 
 class InvalidWifiConfigEvent(QEvent):
     EVENT_TYPE = QEvent.Type.User+11
-    def __init__(self) -> None:
+    def __init__(self, should_transition) -> None:
         super().__init__(self.EVENT_TYPE)
+        self.should_transition = should_transition
 
 class ValidWifiConfigEvent(QEvent):
     EVENT_TYPE = QEvent.Type.User+12
@@ -197,7 +198,7 @@ class ESPRemoveFoundTransition(QAbstractTransition):
 
 
 class ESPActiveTransition(QAbstractTransition):
-    def __init__(self, sourceState: typing.Optional['QState'] = ...) -> None:
+    def __init__(self, sourceState: typing.Optional['QState'] = None) -> None:
         super().__init__(sourceState)
 
     def eventTest(self, event: 'QEvent') -> bool:
@@ -205,6 +206,9 @@ class ESPActiveTransition(QAbstractTransition):
             return False
         else:
             return True
+
+    def onTransition(self, event: 'QEvent') -> None:
+        return 
             
 
 class ESPAddActiveTransition(QAbstractTransition):
@@ -299,7 +303,9 @@ class InvalidWifiConfigTransition(QAbstractTransition):
         if event.type() != InvalidWifiConfigEvent.EVENT_TYPE:
             return False
         else:
-            return True
+            if event.should_transition:
+                return True
+            return False
 
     def onTransition(self, event: 'QEvent') -> None:
         return
@@ -1396,6 +1402,20 @@ class ESPDicts:
             self.mutex.release()
 
 
+class WifiState(QState):
+    def __init__(self, parent: typing.Optional['QState'] = None) -> None:
+        super().__init__(parent)
+
+    def should_send(self, a_bool):
+        return a_bool
+
+
+class NoWifiState(QState):
+    def __init__(self, parent: typing.Optional['QState'] = None) -> None:
+        super().__init__(parent)
+
+    def should_send(self, a_bool):
+        return True
 
 
 class ESPConfig:
@@ -1431,8 +1451,8 @@ class ESPConfig:
         state_can_send = QState(state_config_paralell)
 
         state_no_config = QState(state_configs)
-        state_config_wifi = QState(state_configs)
-        state_config_no_wifi = QState(state_configs)
+        state_config_wifi = WifiState(state_configs)
+        state_config_no_wifi = NoWifiState(state_configs)
         state_wifi_error = QState(state_configs)
 
         state_unable_to_send = QState(state_can_send)
@@ -1528,6 +1548,8 @@ class ESPConfig:
         trans_wifi_to_error.setTargetState(state_wifi_error)
         state_config_wifi.addTransition(trans_wifi_to_error)
 
+        trans_wifi_to_error.triggered.connect(lambda: print("uwu"))
+
         for signal in self.wifi_ui.get_signals():
             trans_wifi_error = QSignalTransition(signal)
             trans_wifi_error.setTargetState(state_wifi_error)
@@ -1536,6 +1558,7 @@ class ESPConfig:
         trans_error_to_wifi = ValidWifiConfigTransition()
         trans_error_to_wifi.setTargetState(state_config_wifi)
         state_wifi_error.addTransition(trans_error_to_wifi)
+        state_wifi_error.entered.connect(lambda: self.machine.postEvent(UnableToSendEvent()))
 
         def _check_valid_wifi():
             print("checking stuff")
@@ -1547,21 +1570,48 @@ class ESPConfig:
 
         state_wifi_error.entered.connect(_check_valid_wifi)
 
+        trans_send_clicked_wifi = StartClickTransition(self, self.esp.ui_active.pushButton_esp_active_restart.clicked)
+        state_config_wifi.addTransition(trans_send_clicked_wifi)
+
+        trans_send_clicked_nowifi = StartClickTransition(self, self.esp.ui_active.pushButton_esp_active_restart.clicked)
+        state_config_no_wifi.addTransition(trans_send_clicked_nowifi)
+
 
         def _on_start_click():
             result = self.wifi_properties.validate_all(*self.wifi_ui.get_all_ui_values())
+            self.machine.postEvent(InvalidWifiConfigEvent(not result))
             if result:
                 self.esp.machine.postEvent(SendStartEvent())
             else:
-                self.machine.postEvent(InvalidWifiConfigEvent())
-                self.machine.postEvent(UnableToSendEvent())
+                pass
+                
 
-        self.esp.ui_active.pushButton_esp_active_restart.clicked.connect(_on_start_click)
+        #self.esp.ui_active.pushButton_esp_active_restart.clicked.connect(_on_start_click)
 
         self.machine.start()
-    
 
-class startButtonUI:
+
+class StartClickTransition(QSignalTransition):
+    def __init__(self, esp_config: ESPConfig, signal: pyqtBoundSignal, sourceState: typing.Optional['QState'] = None) -> None: 
+        super().__init__(signal, sourceState)
+        self.esp_config = esp_config
+
+    def eventTest(self, event: 'QEvent') -> bool:
+        if not super().eventTest(event):
+            return False
+        else:
+            result = self.esp_config.wifi_properties.validate_all(*self.esp_config.wifi_ui.get_all_ui_values())
+            self.esp_config.machine.postEvent(InvalidWifiConfigEvent(not result))
+            if hasattr(self.sourceState(), "should_send") and self.sourceState().should_send(result):
+                self.esp_config.esp.machine.postEvent(SendStartEvent())
+                return True
+            else:
+                return False
+
+
+class StartButtonUI:
+    _translate = QtCore.QCoreApplication.translate
+
     def __init__(self, button_start: QPushButton) -> None:
         self.ui_button = button_start
 
@@ -1572,9 +1622,19 @@ class startButtonUI:
         self.icon_play = icon_play
 
         icon_restart = QtGui.QIcon()
-        icon_restart
-        
-        self.ui_button.setIcon(icon_play)      
+        icon_restart.addPixmap(QtGui.QPixmap(":/icon_restart/images/restart_enabled.png"), QtGui.QIcon.Normal, QtGui.QIcon.Off)
+        icon_restart.addPixmap(QtGui.QPixmap(":/icon_restart/images/restart_disabled.png"), QtGui.QIcon.Disabled, QtGui.QIcon.Off)
+        icon_restart.addPixmap(QtGui.QPixmap(":/icon_restart/images/restart_disabled.png"), QtGui.QIcon.Disabled, QtGui.QIcon.On)
+        self.icon_restart = icon_restart
+         
+
+    def set_start_button(self):
+        self.ui_button.setIcon(self.icon_play)  
+        self.ui_button.setText(self._translate("Form_esp_active", "Start"))
+
+    def set_restart_button(self):
+        self.ui_button.setIcon(self.icon_restart)
+        self.ui_button.setText(self._translate("Form_esp_active", "Restart"))
     
 
 
@@ -1605,7 +1665,8 @@ class ESP:
         self.set_active_widget()
         self.active_widget.setVisible(False)
 
-        
+        self.start_btn = StartButtonUI(self.ui_active.pushButton_esp_active_restart)
+
 
 
     def set_machine(self) -> None:
@@ -1629,6 +1690,9 @@ class ESP:
             trans_make_inactive.setTargetState(state_finished)
             source_state.addTransition(trans_make_inactive)
 
+        trans_found_to_active = ESPActiveTransition()
+        trans_found_to_active.setTargetState(state_activo)
+        state_encontrado.addTransition(trans_found_to_active)
 
         trans_make_active = ESPFoundTransition(self.esp_dict)
         trans_make_active.setTargetState(state_activo)
@@ -1638,12 +1702,20 @@ class ESP:
         trans_begin_send.setTargetState(state_proceso_envio)
         state_activo.addTransition(trans_begin_send)
 
-        state_configurando.entered.connect()
+        def print_owo():
+            print("owo")
+
+        trans_begin_send.triggered.connect(print_owo)
+
+        state_configurando.entered.connect(self._on_send_process)
 
 
         state_proceso_envio.setInitialState(state_configurando)
         self.machine.setInitialState(state_encontrado)
         self.machine.start()
+
+    def _on_send_process(self):
+        self.start_btn.set_restart_button()
 
     def _on_finish(self):
         self.config.machine.postEvent(InactiveESPEvent())
