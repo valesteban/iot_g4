@@ -24,12 +24,52 @@ class DB:
         self.cursor = self.db.cursor()
 
     """
+    ===    Metodos globales ===
+    """
+
+    def delete_all(self) -> None:
+        """
+            Elimina todos los Logs y Datas
+        """
+
+        sql = '''
+            DELETE FROM Data
+        '''
+        self.cursor.execute(sql)
+
+        sql = '''
+            DELETE FROM Data_acceloremeter_sensor
+        '''
+        self.cursor.execute(sql)
+
+        sql = '''
+            DELETE FROM Log
+        '''
+        self.cursor.execute(sql)
+
+        self.db.commit()
+
+
+    """
     ===    Tabla Configuracion    ===
     """
 
+    def get_config(self) -> tuple:
+        """
+            Metodo que entrega la configuracion actual
+        """
+
+        sql_show_config = '''
+            SELECT *
+            FROM Configuration
+        '''
+        self.cursor.execute(sql_show_config)
+        return self.cursor.fetchall()
+
+
     def change_config(self, configuration_dict:dict) -> None:
         """
-            Meotodo que cambia la configuracionde la BBDD por una nueva.
+            Meotodo que cambia la tabla configuracion de la BBDD por una nueva.
 
             Example:
                 configuration_dict = {
@@ -41,10 +81,10 @@ class DB:
         """
 
         sql = '''
-            UPDATE configuracion
+            UPDATE Configuration
             SET id_device = %s, status_conf = %s, protocol_conf = %s, acc_sampling = %s, acc_sensibility = %s,
             gyro_sensibility = %s, bme688_sampling = %s, discontinuos_time = %s, tcp_port = %s, udp_port = %s,
-            host_ip_addr = %s, ssid = %s, pas = %s   
+            host_ip_addr = %s, ssid = %s, pass = %s   
         '''
 
         id_device = configuration_dict["id_device"] # primary key
@@ -66,18 +106,34 @@ class DB:
                 tcp_port, udp_port, host_ip_addr, ssid, pas)
         self.cursor.execute(sql, new_config)
         self.db.commit() # actualizo la db
-    
 
-    def get_data(self) -> tuple:
+    def insert_default_configuration(self):
         """
-            Metodo que entrega los datos ingresados
+            Metodo que insertar un valor por defecto de configuracion.
+            Para que luego pueda ser modificado.
         """
+        
+        # Primero limpiamos la tabla
         sql = '''
-            SELECT *
-            FROM datos
+            DELETE FROM Configuration
         '''
         self.cursor.execute(sql)
-        return self.cursor.fetchall()
+
+        # Agregamos valor por defecto
+        sql = '''
+            INSERT INTO Configuration
+            VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s);
+        '''
+
+        default_value = (0,0,0,0,0,0,0,0,0,0,0,"0","0")
+        self.cursor.execute(sql, default_value)
+        self.db.commit()
+        
+    
+
+    """
+    ===    Tabla Log    ===
+    """
 
     def get_logs(self) -> tuple:
         """
@@ -85,110 +141,136 @@ class DB:
         """
         sql = '''
             SELECT *
-            FROM logs
+            FROM Log
         '''
         self.cursor.execute(sql)
         return self.cursor.fetchall()
 
-    def get_protocol(self) -> tuple:
-        """
-            Metodo que consulta la base de datos preguntando por el procolo a utilizar
-
-            returns: ((protocolId), transportLayer), ) 
-        """ 
-        sql = '''
-            SELECT protocolId, transportLayer
-            FROM configuracion
-        '''
-        self.cursor.execute(sql)
-        return self.cursor.fetchall()
-
-    def save_data(self, protocol_values:dict) -> None:
-        """
-            Metodo que guarda datos en la DB
-        """
-
-        #try:
-        sql_save_data = '''
-            INSERT INTO datos (deviceId, timestamp, mac_address, data)
-            VALUES (%s, %s, %s, %s)
-        '''
-
-        # (id_device, timestamp, mac_address, data)
-        new_data = (protocol_values["id_device"], protocol_values["timestamp"], protocol_values["mac"], protocol_values["data"],)
-        print("NEW DATA:", new_data)
-        self.cursor.execute(sql_save_data, new_data)
-        self.db.commit() # actualizo la db
-
-        #except:
-        #    print("ERROR AL GUARDAR NUEVO DATO EN LA BASE DE DATOS")
-
-    
-    def save_log(self, protocol_values:dict) -> None:
+    def save_log(self, log_dict:dict) -> None:
         """
             Metodo que guarda un log en la DB
+
+            Example:
+            log_dict = {
+                "id_device": 12,
+                "status_report": 20,
+                ...
+            }
+            DB.save_log(log_dict)
         """
-        # Obtener id del dato
-        #try:
-        sql = '''
-            SELECT id
-            FROM datos
-            WHERE deviceId = %s
-            AND timestamp = %s
-        '''
-        self.cursor.execute(sql, (protocol_values["id_device"], protocol_values["timestamp"],))
-        dato_id = self.cursor.fetchall()[0][0]
-        #except:
-        #pprint("logs: ERROR AL ENCONTRAR EL DATO")
 
         # Guardar el log
-        #try:
-        sql_save_log = '''
-            INSERT INTO logs
-            VALUES (%s, %s, %s, %s, %s)
+        sql = '''
+            INSERT INTO Log (id_device, status_report, protocol_report, battery_level, conf_peripheral,
+                                time_client, configuration.id_device)
+            VALUES (%s, %s, %s, %s, %s, %s, %s)
         '''
-        # (datos_id, deviceId, timestamp, protocolId, transportLayer)
-        new_log = (dato_id, protocol_values["id_device"], protocol_values["timestamp"], protocol_values["id_protocol"], protocol_values["transport_layer"])
-        self.cursor.execute(sql_save_log, new_log)
+
+        # Obtengo los valores del diccionario para guardar
+        # El timestamp del server, lo guarda automaticamente la DB
+        id_device = log_dict["id_device"] # primary key
+        status_report = log_dict["status_report"]
+        protocol_report = log_dict["protocol_report"]
+        battery_level = log_dict["battery_level"]
+        conf_peripheral = log_dict["conf_peripheral"]
+        time_client = log_dict["time_client"]
+        # time_server, se calcula automaticamente
+        configuracion_id_device = log_dict["configuracion_id_device"]
+
+        
+        new_log = (id_device, status_report, protocol_report, battery_level, conf_peripheral, \
+            time_client, configuracion_id_device)
+        self.cursor.execute(sql, new_log)
         self.db.commit() # actualizo la db
 
-        #except:
-        #    print("ERROR AL GUARDAR NUEVO DATO EN LA BASE DE DATOS")
 
+    """
+    ===    Tabla Data    ===
+    """
 
-    def return_config(self) -> tuple:
+    def get_data(self) -> tuple:
         """
-            Metodo que entrega la configuracion actual
+            Metodo que entrega los datos ingresados
         """
-
-        sql_show_config = '''
+        sql = '''
             SELECT *
-            FROM configuracion
+            FROM Data
         '''
-        self.cursor.execute(sql_show_config)
+        self.cursor.execute(sql)
         return self.cursor.fetchall()
 
-    def delete_all_data(self) -> None:
+    def save_data(self, data_dict:dict) -> None:
         """
-            Metodo que limpia la tabla de datos
-        """
+            Metodo que guarda datos en la DB
 
-        sql = '''
-            DELETE FROM datos
-        '''
+            Example:    
+                data_dict = {
+                    "id_device": 20,
+                    "data": {},
+                    "log_id_device: 20
+                }
 
-        self.cursor.execute(sql)
-        self.db.commit()
-
-    def delete_all_logs(self) -> None:
-        """
-            Metodo que elimina los logs
+                DB.save_data(data_dict)
+            
         """
 
         sql = '''
-            DELETE FROM logs
+            INSERT INTO Data (id_device, data, Log.id_device)
+            VALUES (%s, %s, %s)
         '''
 
+        # Obtengo la info del diccionario
+        id_device = data_dict["id_device"]
+        data = data_dict["data"]
+        log_id_device = data_dict["log_id_device"]
+
+        new_data = (id_device, data, log_id_device)
+        self.cursor.execute(sql, new_data)
+        self.db.commit() # actualizo la db
+
+
+    """
+    ===    Tabla Data_acc_sensor    ===
+    """
+    def get_data_acc_sensor(self) -> tuple:
+        """
+            Metodo que entrega los datos del acc_sensor
+        """
+        sql = '''
+            SELECT *
+            FROM Data_acceloremeter_sensor
+        '''
         self.cursor.execute(sql)
-        self.db.commit()
+        return self.cursor.fetchall()
+
+    def save_data_acc_sensor(self, data_acc_sensor_dict:dict) -> None:
+        """
+            Metodo que guarda datos del acc_sensor en la DB
+
+            Example:    
+                data_acc_sensor_dict = {
+                    "id_device": 20,
+                    "data_acc_sensor": {},
+                    "log_id_device: 20
+                }
+
+                DB.save_data(data_acc_sensor_dict)
+            
+        """
+
+        sql = '''
+            INSERT INTO Data_acceloremeter_sensor (id_device, data_acceloremeter_sensor, Log.id_device)
+            VALUES (%s, %s, %s)
+        '''
+
+        # Obtengo la info del diccionario
+        id_device = data_acc_sensor_dict["id_device"]
+        data_acc_sensor = data_acc_sensor_dict["data_acc_sensor"]
+        log_id_device = data_acc_sensor_dict["log_id_device"]
+
+        new_data = (id_device, data_acc_sensor, log_id_device)
+        self.cursor.execute(sql, new_data)
+        self.db.commit() # actualizo la db
+
+
 
