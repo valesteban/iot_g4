@@ -16,10 +16,17 @@ def findAddresses():
     async def main():
         devices = await BleakScanner.discover()
         for d in devices:
-            # Nos quedamos solo con los device con nombre
+            # Nos quedamos solo con los device con nombre que empiezan con ESP
+            if d.name[:3] == "ESP":
+                names.append(d.name)
+                macs.append(d.address)
+                UUIDs.append(d.details["props"]["UUIDs"])
+            """
+            
             if d.name != None:
                 names.append(d.name)
                 macs.append(d.macs)
+            """
         return devices
 
     devices = asyncio.run(main())
@@ -40,6 +47,6 @@ def handle_data(handle, value):
 
 if __name__ == "__main__":
     """
-    Inicializar el servidor
+    Buscar direcciones
     """
     findAddresses()
