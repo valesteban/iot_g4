@@ -16,13 +16,33 @@
 
 
 // #include "../components/conexion/ble.c"
-
-// #include "../components/conexion/tcp.c"
-// #include "../components/conexion/udp.c"
+#include "../components/conexion/wifi/wifi.c"
+#include "../components/conexion/tcp.c"
+#include "../components/conexion/udp.c"
 #include "../components/conexion/ble/gatts_table_creat_demo.c"
+#include "../components/cambiar_conexion.c"
 
 
-#include "../components/utils.c"
+// #include "../components/utils.c"
+// #include "../components/config.c"
+
+
+// VARIABLES GLOBALES
+// Configuracion conf_struct ;
+Configuracion conf_struct = {
+    20 ,
+    '1' ,
+    10,
+    2,
+    200 ,
+    1 ,
+    10 ,
+    5000,
+    5001,
+    "192.168.28.1",
+    "iot4",
+    "12345678",
+};
 
 
 
@@ -33,8 +53,10 @@ char *getSubstring(char* dst,const char *src,size_t start,size_t ens){
 }
 
 
+
+
 void app_main(void){
-    // ESP_LOGI(TAG, "****************COMIENZO***********************************************");
+    ESP_LOGI(TAG, "****************COMIENZO***********************************************");
 
     // Test 0.2.0
     // ESP_ERROR_CHECK(nvs_flash_init());
@@ -68,26 +90,14 @@ void app_main(void){
 
     // IF STATUS ES 0 
     // ELIMINAMOS WIFI ---> ESP_ERR_WIFI_NOT_INIT:WIFI
-    // ESP_LOGE(TAG, "****************TCP-CONFIGURACION***********************************************");
-    // int8_t id_protocol = 1 ;
-    // tcp_configuracion(id_protocol);
 
 
-    // ESP_LOGE(TAG, "****************TCP-CONTINUO***********************************************");
-    // char id_protocol = '1' ;
-    // tcp_continuo(id_protocol);
 
-    // ESP_LOGE(TAG, "****************TCP-DISCONTINUO***********************************************");
-    // char id_protocolo = '4';
-    // int32_t tiempo_discontinuo = 100;
-    // tcp_discontinuo(id_protocolo, tiempo_discontinuo);
 
-    // ESP_LOGE(TAG, "****************UDP***********************************************");
-    // char id_protocol = '1';
-    // char* host_ip_addr = "192.168.28.1";
-    // int port_udp = 5010;
-    // char* ssid = "iot4";
-    // char* pass = "12345678" ;
+
+
+
+
 
 
 
@@ -96,19 +106,28 @@ void app_main(void){
     // protocolo_udp(host_ip_addr,port_udp,ssid,pass,id_protocol);
 
     ESP_LOGE(TAG,"*******************BLE CONF*************************************");
-    int i = protocolo_ble();
-    ESP_LOGE(TAG,"%d",i);
+    // funcion ble
+    // protocolo_ble(); !!
 
+    //espera hasta que se se envie configuracion por ble
+    // while (value_config == NULL){   !!
+    //     ESP_LOGE(TAG,"aun nada");
+    //     sleep(10);
+    // }
+
+    // uint8_t *   config_char = (char*) value_config ;  !!
+    // char * config_char = "(3, 21, 2, 400, 16, 200, 4, 400, 5010, 5010, 3232242689, 'iot', '12345678')";
+    // value_config = NULL;                                            //para reiniciar valor
+    // ESP_LOGI(TAG,"valor main -> %s" , config_char);
     
-    // if ( transport_layer == '0'){
-    //     ESP_LOGE(TAG, "Conexion TCP");
-    //     tcp_client(id_protocol);
-    // }
-    // else{
-    //     ESP_LOGE(TAG, "Conexion UDP");
-    //     udp_client(id_protocol);
+    // //de datos recibidos por ble construimos estructura
+    // conf_struct  = construccion_conf(config_char, conf_struct);
 
-    // }
+    // // 
+    ESP_LOGE(TAG,"---> %d",conf_struct.Status);
+    //     sleep(10);
 
+    // Empieza conexion segun status de la configuracion
+    cambiar_coenxion(conf_struct);
 }
 
