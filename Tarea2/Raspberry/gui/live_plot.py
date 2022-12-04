@@ -82,7 +82,7 @@ class MatplotlibCanvas(FigureCanvasQTAgg):
             self.layout.addWidget(self.toolbar)
 
 class LivePlot:
-    def __init__(self, plot_id, plot_list: PlotListsMachine, plot_manager: "LivePlotManager") -> None:
+    def __init__(self, plot_id, plot_list: PlotListsMachine, plot_manager: "LivePlotManager", controller: "Controller") -> None:
         self.plot_id = plot_id
         self.plot_list = plot_list
         self.plot_manager = plot_manager
@@ -116,6 +116,11 @@ class LivePlot:
         self.plot_manager.live_plots.pop(self.plot_id)
         self.plot_list.machine.postEvent(LivePlotRemoveEvent(self.plot_frame))
 
+    def refresh_available_ids(self):
+        self.ui_plot.comboBox_live_plot_id_select.clear()
+        self.ui_plot.comboBox_live_plot_id_select.addItems
+
+
 class LivePlotManager:
     def __init__(self, ui_main: main_display.Ui_MainWindow) -> None:
         self.plot_list = PlotListsMachine(
@@ -132,4 +137,5 @@ class LivePlotManager:
         self.live_plots[self.plot_list.num_plots] = new_plot
         self.plot_list.machine.postEvent(LivePlotAddEvent(new_plot.plot_frame))
 
+ids = ["3", "4"]
 
