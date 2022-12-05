@@ -46,7 +46,7 @@
 #include "esp_bt_main.h"
 #include "gatts_table_creat_demo.h"
 #include "esp_gatt_common_api.h"
-// #include "../../config.c"
+
 #define GATTS_TABLE_TAG "GATTS_TABLE_DEMO"
 
 #define PROFILE_NUM                 1
@@ -61,7 +61,7 @@
 
 
 
-uint8_t * value_config = NULL;
+uint8_t* value_config = NULL;
 
 
 

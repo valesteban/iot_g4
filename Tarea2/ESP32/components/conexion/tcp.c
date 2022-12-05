@@ -32,10 +32,9 @@
 #include "lwip/sys.h"
 #include <lwip/netdb.h>
 #include "addr_from_stdin.h"
-
 #include "../payload/empaquetamiento.c"
 #include "../payload/fragmentacion.c"
-#include "../components/config.c"
+
 
 #include "../deep_sleep.c"
 
@@ -53,16 +52,17 @@ int ip_protocol = 0;
 // - Raspeberry detiene conexion (interfaz gráfica) 
 void tcp_continuo(Configuracion conf_struct){
 
+
     ESP_LOGI(TAG2, "Configurando wifi...");
     // ESP_ERROR_CHECK(example_connect());
     wifi_iniciate();
 
     char* host_ip_addr = conf_struct.Host_IP_Addr;
     int32_t port_tcp = conf_struct.Port_TCP;
-    char id_protocol = conf_struct.ID_Protocol;
+    int id_protocol = conf_struct.ID_Protocol;
     int device_id = 1113;
     int tcp_layer_id = 0;
-    int udp_layer_id = 1;
+    // int udp_layer_id = 1;
 
     // LOOP CREA SOCKET
     while (true) {
@@ -108,7 +108,7 @@ void tcp_continuo(Configuracion conf_struct){
 
             //ENVIAMOS DATA---------------------------------------------------------------------------
             
-            if(id_protocol == '4'){
+            if(id_protocol == 4){
 
                 //FRAGMENTACIÓN
                 int err = fragmentation(data, data_size, sock);
@@ -143,25 +143,38 @@ void tcp_continuo(Configuracion conf_struct){
                 ESP_LOGI(TAG2, "Paquete recibido: %s", rx_buffer);
             }
             
-//             // SI DATA RECIBIDA PIDE PARAR (por interfaz) 
-//             // BREAK Y RETURN
+      // Guardamos paquete recibido con la nueva configuracion 
 
-//             // SI DATA ENVIADA CAMBIA STATUS A 20
-//             // retornamos 20 para que la funcion main se encarge de llamar
-//             // a la funcion tcp_configuracion()
+            conf_struct = construccion_conf(rx_buffer, conf_struct);
 
-
-//             // SI DATA ENVIADA CAMBIA STATUS A 0
-//             // retornamos 0 para que la funcion main se encarge de llamar
-//             // a la funcion ble_configuracion()
+            int8_t nuevo_status = conf_struct.Status;
             
-//         } //cierre while status = 21
+            // SI HAY CAMBIO DE STATUS
+            if (nuevo_status == 20 ||nuevo_status == 0 ){
+                // desactivar wifi
+                esp_wifi_stop();
+                esp_wifi_disconnect();
 
-//         //CERRAMOS SOCKET Y CHAO
-//         if (sock != -1) {
-//             ESP_LOGE(TAG2, "Shutting down socket and restarting...");
-//             shutdown(sock, 0);
-//             close(sock);
+                return;
+            }else 
+                if (nuevo_status != 22){  // SI DATA ENVIADA CAMBIA STATUS A 0
+                    ESP_LOGE(TAG2, "Error, si quiere cambiar tipo de conexion cambie a status 0 o 20");
+            }
+
+            // SI DATA RECIBIDA PIDE PARAR (por interfaz) 
+            // BREAK Y RETURN
+            // else if (/* condition */)
+            // {
+            //     /* code */
+            // }
+            
+        } //cierre while status = 21
+
+        //CERRAMOS SOCKET Y CHAO
+        if (sock != -1) {
+            ESP_LOGE(TAG2, "Shutting down socket and restarting...");
+            shutdown(sock, 0);
+            close(sock);
         }
     }
 }
@@ -182,7 +195,7 @@ void tcp_discontinuo(Configuracion conf_struct ){
     char id_protocol = conf_struct.ID_Protocol;
     int device_id = 1113;
     int tcp_layer_id = 0;
-    int udp_layer_id = 1;
+    // int udp_layer_id = 1;
 
 
 
@@ -272,17 +285,30 @@ void tcp_discontinuo(Configuracion conf_struct ){
                 ESP_LOGI(TAG2, "%s", rx_buffer);
             }
 
+            // Guardamos paquete recibido con la nueva configuracion 
+
+            conf_struct = construccion_conf(rx_buffer, conf_struct);
+
+            int8_t nuevo_status = conf_struct.Status;
+            
+            // SI HAY CAMBIO DE STATUS
+            if (nuevo_status == 20 ||nuevo_status == 0 ){
+                // desactivar wifi
+                esp_wifi_stop();
+                esp_wifi_disconnect();
+
+                return;
+            }else 
+                if (nuevo_status != 22){  // SI DATA ENVIADA CAMBIA STATUS A 0
+                    ESP_LOGE(TAG2, "Error, si quiere cambiar tipo de conexion cambie a status 0 o 20");
+            }
+
             // SI DATA RECIBIDA PIDE PARAR (por interfaz) 
             // BREAK Y RETURN
-
-            // SI DATA ENVIADA CAMBIA STATUS A 20
-            // retornamos 20 para que la funcion main se encarge de llamar
-            // a la funcion tcp_configuracion()
-
-
-            // SI DATA ENVIADA CAMBIA STATUS A 0
-            // retornamos 0 para que la funcion main se encarge de llamar
-            // a la funcion ble_configuracion()
+            // else if (/* condition */)
+            // {
+            //     /* code */
+            // }
             
             
             // Data received
@@ -313,7 +339,6 @@ void tcp_discontinuo(Configuracion conf_struct ){
 void tcp_configuracion(Configuracion conf_struct  ){
     
     ESP_LOGI(TAG2, "Configurando wifi...");
-    // ESP_ERROR_CHECK(example_connect());
     wifi_iniciate();
 
     char* host_ip_addr = conf_struct.Host_IP_Addr;
@@ -324,30 +349,13 @@ void tcp_configuracion(Configuracion conf_struct  ){
     addr.sin_family = AF_INET;
     addr.sin_port = htons(port_tcp);
     addr_family = AF_INET;
-    ip_protocol = IPPROTO_IP;
-
-    // ESP_LOGI(TAG2, "Configuracion WIFI");
+    ip_protocol = IPPROTO_IP; 
     
-    
-
     // ESP_LOGI(TAG2, "TCP configuracion \n Status 20");
 
     
     // LOOP CREA SOCKET
     while (1) {
-        
-        // #if defined(CONFIG_EXAMPLE_IPV4)
-        //         struct sockaddr_in dest_addr;
-        //         inet_pton(AF_INET, HOST_IP_ADDR, &dest_addr.sin_addr);
-        //         dest_addr.sin_family = AF_INET;
-        //         dest_addr.sin_port = htons(PORT);
-        //         addr_family = AF_INET;
-        //         ip_protocol = IPPROTO_IP;
-        // #elif defined(CONFIG_EXAMPLE_SOCKET_IP_INPUT_STDIN)
-        //         struct sockaddr_storage dest_addr = { 0 };
-        //         ESP_ERROR_CHECK(get_addr_from_stdin(PORT, SOCK_STREAM, &ip_protocol, &addr_family, &dest_addr));
-        // #endif
-        // ESP_LOGI(TAG2, "...");
 
         //CREAMOS SOCKET
         int sock =  socket(addr_family, SOCK_STREAM, ip_protocol);
@@ -382,18 +390,9 @@ void tcp_configuracion(Configuracion conf_struct  ){
         }
         
         
-        // SI DATA RECIBIDA PIDE PARAR (por interfaz) 
-        // BREAK Y RETURN
+      
+            
 
-        // SI DATA ENVIADA CAMBIA STATUS A 20
-        // retornamos 20 para que la funcion main se encarge de llamar
-        // a la funcion tcp_configuracion()
-
-
-        // SI DATA ENVIADA CAMBIA STATUS A 0
-        // retornamos 0 para que la funcion main se encarge de llamar
-        // a la funcion ble_configuracion()
-        
         
 
         //CERRAMOS SOCKET Y CHAO
