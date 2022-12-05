@@ -79,8 +79,11 @@ char* tcp_initial_connection(void){
         }
         ESP_LOGI("Socket", "Socket created, connecting to %s:%d", host_ip, PORT);
 
+        ESP_LOGI("Socket", "-> %s",dest_addr);
+
         //CONECTA SOCKET CON SERVODIR/RASPBERRY
         int err = connect(sock, (struct sockaddr *)&dest_addr, sizeof(dest_addr));
+
         if (err != 0) {
             ESP_LOGE(TAG, "Socket unable to connect: errno %d", errno);
            

@@ -147,12 +147,7 @@ Configuracion construccion_conf(char * paquete, Configuracion conf){
 
         }
 
-          
-
-            
-
-
-        // }
+    
     }
     return conf;
 }

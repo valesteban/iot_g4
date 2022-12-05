@@ -11,23 +11,19 @@
 char * TAG_CONEXION = "Seleccion conexion ";
 
 
-void cambiar_coenxion(Configuracion conf_struct){
+void cambiar_conexion(Configuracion conf_struct){
     switch (conf_struct.Status){
         case 20:
             ESP_LOGI(TAG_CONEXION, "****************TCP-CONFIGURACION***********************************************");
-            // int8_t id_protocol = 1 ;
             tcp_configuracion(conf_struct);
             break;
         case 21:
             ESP_LOGI(TAG_CONEXION, "****************TCP-CONTINUO***********************************************");
-            // char id_protocol = '1' ;
-            // tcp_continuo(conf_struct);
+            tcp_continuo(conf_struct);
             break;
         case 22:
             ESP_LOGI(TAG_CONEXION, "****************TCP-DISCONTINUO***********************************************");
-            // char id_protocolo = '4';
-            // int32_t tiempo_discontinuo = 100;
-            // tcp_discontinuo(id_protocolo, tiempo_discontinuo);
+            tcp_discontinuo(conf_struct);
             break;
         case 23:
             ESP_LOGI(TAG_CONEXION, "****************UDP***********************************************");
