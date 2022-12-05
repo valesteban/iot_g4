@@ -1,28 +1,18 @@
-#!/usr/bin/python3
-# -- coding: utf-8 --
+
+from db import DB
 import socket
-from xmlrpc.client import TRANSPORT_ERROR
 import json
-import sys
-import pprint
-
-from db import *
-# from desempaquetamiento import Protocol
-# from desempaquetamiento import decode_pkg, print_hex
-#import ConnectBLE
-import json
-
-
 
 # Atributos
 # status: int
 class Raspberry:
+    """
+        Clase que representa la Raspberry
+    """
 
     def __init__(self) -> None:
         self.__configuracion:tuple = None
         self.__nueva_configuracion:tuple = None
-        self.__HOST_IP = "192.168.28.1"
-        self.__PORT = 5010
 
     def setConfiguracion(self, configuracion:tuple) -> None:
         self.__configuracion = configuracion
@@ -30,21 +20,20 @@ class Raspberry:
     def set_nueva_configuracion(self, nueva_configuracion:tuple) -> None:
         self.__nueva_configuracion = nueva_configuracion
 
-    def setStatus(self, status:int) -> None:
-        self.__status:tuple = status
-
-    def set_HostIp(self, host_ip):
-        self.__HOST_IP = host_ip
-        
-    def set_Port(self, port):
-        self.__PORT = port
-
-    def get_current_configuracion(self):
+    def get_current_configuracion(self) -> tuple:
         return self.__configuracion
 
-    def get_current_status(self):
+    def get_current_status(self) -> int:
         return self.__configuracion[1]
 
+    def get_HOST_IP(self) -> str:
+        return self.__configuracion[10]
+
+    def get_UDP_PORT(self) -> int:
+        return self.__configuracion[9]
+
+    def get_TCP_PORT(self) -> int:
+        return self.__configuracion[8]
 
 
     def actualizarConfiguracion(self):
@@ -59,6 +48,8 @@ class Raspberry:
         nueva_configuracion = db.get_all_config()[0]
 
         self.__nueva_configuracion = nueva_configuracion
+        print("Raspberry: Nueva configuracion seteada:")
+        print(nueva_configuracion)
          
 
     def start_status20(self) -> None:
@@ -73,9 +64,9 @@ class Raspberry:
         # Iniciamos conexion TCP
         s = socket.socket(socket.AF_INET,socket.SOCK_STREAM)
         s.setsockopt(socket.SOL_SOCKET,socket.SO_REUSEADDR,1)
-        s.bind((self.__HOST_IP, self.__PORT))
+        s.bind((self.get_HOST_IP(), self.get_TCP_PORT()))
         s.listen()
-        print(f"Iniciando Socket HOST_IP: {self.__HOST_IP}, PORT: {self.__PORT}")
+        print(f"Iniciando Socket HOST_IP: {self.get_HOST_IP()}, PORT: {self.get_TCP_PORT}")
         print("Listening.....")
         conn,addr = s.accept()
         
@@ -126,9 +117,9 @@ class Raspberry:
         # Iniciamos conexion TCP
         s = socket.socket(socket.AF_INET,socket.SOCK_STREAM)
         s.setsockopt(socket.SOL_SOCKET,socket.SO_REUSEADDR,1)
-        s.bind((self.__HOST_IP, self.__PORT))
+        s.bind((self.get_HOST_IP(), self.get_TCP_PORT()))
         s.listen()
-        print(f"Iniciando Socket HOST_IP: {self.__HOST_IP}, PORT: {self.__PORT}")
+        print(f"Iniciando Socket HOST_IP: {self.get_HOST_IP()}, PORT: {self.get_TCP_PORT()}")
         print("Listening.....")
         conn,addr = s.accept()
 
@@ -184,46 +175,3 @@ class Raspberry:
                     
 
         return None
-
-
-
-
-
-def init_server():
-
-    raspberry = Raspberry()
-
-    # == STATUS 0 ==
-    # Buscamos dispositivos ESP BLE
-    # Y le entregamos la configuracion
-    gui_controller = ConnectBLE.GUIController(raspberry)
-    gui_controller.actualizarMacs() # Buscamos dispositivos BLE (ESP)
-    # Iniciamos conexion con la ESP y enviamos la configuracion
-    gui_controller.configSetup()
-
-
-    # Iniciamos el servidor dependiendo del status
-    while True:
-        status = raspberry.getStatus()
-        if status == 20:
-            # == Status 20 ==
-            raspberry.start_status20()
-        elif status == 21:
-            # == Status 21 ==
-            raspberry.start_status21()
-        elif status == 22:
-            # == Status 22 ==
-            raspberry.start_status22()
-        elif status == 23:
-            # == Status 23 ==
-            raspberry.start_status23()
-        elif status == 30:
-            # == Status 30 ==
-            raspberry.start_status30()
-        elif status == 31:
-            # == Status 31 ==
-            raspberry.start_status31()
-            
-
-
-

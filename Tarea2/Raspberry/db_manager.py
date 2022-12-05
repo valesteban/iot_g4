@@ -131,7 +131,7 @@ if __name__ == "__main__":
 
                 configuration_dict = {
                     "id_device": 3,
-                    "status_conf": 23,
+                    "status_conf": 20,
                     "protocol_conf": 2,
                     "acc_sampling": 400,
                     "acc_sensibility": 16,
@@ -139,7 +139,7 @@ if __name__ == "__main__":
                     "bme688_sampling": 4,
                     "discontinuos_time": 420,
                     "tcp_port": 5010,
-                    "udp_port": 5010,
+                    "udp_port": 5011,
                     "host_ip_addr": int(ipaddress.IPv4Address("192.168.28.1")),
                     "ssid": "ssid",
                     "pass": "pass"

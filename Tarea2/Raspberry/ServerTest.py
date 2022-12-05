@@ -34,14 +34,14 @@ def cambiarConfiguracion(raspberry):
 
 def test_status_20():
     raspberry = Raspberry()
-    raspberry.set_HostIp("192.168.28.1")
-    raspberry.set_Port(5011)
-    configuracion = (3,23,2,400,16,200,4,420,5011,5011,int(ipaddress.IPv4Address("192.168.28.1")),"ssid","pass")
+    configuracion = (3,20,1,400,16,200,4,420,5010,5011,int(ipaddress.IPv4Address("192.168.28.1")),"ssid","pass")
     raspberry.setConfiguracion(configuracion)
     raspberry.set_nueva_configuracion(configuracion)
 
-    new_thread = Thread(target=cambiarConfiguracion, args=(raspberry,))
-    new_thread.start()
+    
+    # new_thread = Thread(target=cambiarConfiguracion, args=(raspberry,))
+    # new_thread.start()
+    
 
     raspberry.start_status20()
 
@@ -85,10 +85,11 @@ def test_status_21():
     raspberry.set_nueva_configuracion(configuracion)
 
     raspberry.start_status21()
+    
 
 
 if __name__ == "__main__":
     """
     Inicializar el servidor
     """
-    test_status_21()
+    test_status_20()

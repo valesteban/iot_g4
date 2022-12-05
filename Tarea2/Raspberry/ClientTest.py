@@ -71,7 +71,7 @@ class TCP_Client_Test:
 
 if __name__ == '__main__':
     IP_HOST = "192.168.28.1" 
-    PORT = 5000
+    TCP_PORT = 5010
     
-    tcp_client = TCP_Client_Test(IP_HOST, PORT)
-    tcp_client.test_status21_client()
+    tcp_client = TCP_Client_Test(IP_HOST, TCP_PORT)
+    tcp_client.test_status20_client()
