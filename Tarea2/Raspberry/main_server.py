@@ -148,13 +148,12 @@ class Raspberry:
                 #   "configuracion.id_device": ,
                 #   "data": {...}  
                 # }
-                raw_data = conn.recv(1024)   
-                data = json.loads(raw_data.decode())
+                data = conn.recv(1024)   
 
                 # Si llega un dato entonces debemos guardarlo y generar un log
                 if data:
-
-                    pprint.pprint(f"Data y Log a guardar: {data}")
+                    print(f"Data y Log a guardar: {data}")
+                    data = json.loads(data)
                     # Creo conexion a la base de datos:
                     # host | user | pass | database
                     db = DB("localhost", "iot4", "12345678", "IoT_Tarea2")
@@ -178,7 +177,7 @@ class Raspberry:
 
                     db.save_data(data_dict) # Guarda la data
 
-                
+                    conn.sendall("Datos recibidos y guardados".encode())
                 else:
                     print('no data from', addr)
                     break

@@ -1,3 +1,4 @@
+import random
 import socket
 import json
 
@@ -54,12 +55,16 @@ class TCP_Client_Test:
                 "configuration_id_device": 3,
                 "data": {
                     "test": "data de testeo"
+                }
             }
-}
             # Envio los datos dependiendo del protocol_conf
             s.sendall(json.dumps(data_test).encode())
 
-            break
+            s.recv(1024)
+
+            r = random.random()
+            if r < 0.2:
+                break
 
         s.close()
         
