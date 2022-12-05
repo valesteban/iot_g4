@@ -107,13 +107,13 @@ void app_main(void){
 
     ESP_LOGE(TAG,"*******************BLE CONF*************************************");
     // funcion ble
-    // protocolo_ble(); !!
+     protocolo_ble(); !!
 
     //espera hasta que se se envie configuracion por ble
-    // while (value_config == NULL){   !!
-    //     ESP_LOGE(TAG,"aun nada");
-    //     sleep(10);
-    // }
+     while (value_config == NULL){   !!
+         ESP_LOGE(TAG,"aun nada");
+        sleep(10);
+     }
 
     // uint8_t *   config_char = (char*) value_config ;  !!
     // char * config_char = "(3, 21, 2, 400, 16, 200, 4, 400, 5010, 5010, 3232242689, 'iot', '12345678')";
