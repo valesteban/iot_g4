@@ -8,6 +8,15 @@ from gui.transitions import EndFindTransition, ESPFoundTransition
 from gui.esp_lists import ListsMachine
 from gui.esp_dev import ESPDicts
 from gui.workers import FindESPWorker
+import typing
+
+class CustomMachine(QStateMachine):
+    def __init__(self, parent: typing.Optional["QObject"] = None) -> None:
+        super().__init__(parent)
+
+    def postEvent(self, event: "QEvent", priority: 'QStateMachine.EventPriority' = QStateMachine.NormalPriority) -> None:
+        print("Inside custom machine", event)
+        return super().postEvent(event, priority)
 
 
 class Controller:
@@ -30,9 +39,13 @@ class DeviceSearch:
         self.gui_controller = self.controller.ble_controller(self)
         self.worker = FindESPWorker(self.main_disp.centralwidget, self, self.gui_controller.actualizarMacs)
 
-        self.machine = QStateMachine()
+        #self.machine = QStateMachine()
+        self.machine = CustomMachine()
+        print("machine: ", self.machine)
         state_buscando = QState(self.machine)
+        print("state_buscando: ", state_buscando)
         state_sin_buscar = QState(self.machine)
+        print("state sin buscar: ", state_sin_buscar)
         
         trans_no_a_buscar = QSignalTransition(self.main_disp.pushButton_search_refresh.clicked, state_sin_buscar)
         trans_no_a_buscar.setTargetState(state_buscando)
@@ -42,6 +55,7 @@ class DeviceSearch:
         endfind_transition = EndFindTransition()
         endfind_transition.setTargetState(state_sin_buscar)
         state_buscando.addTransition(endfind_transition)
+        endfind_transition.triggered.connect(lambda: print("Término de búsqueda!"))
 
         state_buscando.assignProperty(self.main_disp.pushButton_search_refresh, "enabled", False)
         state_sin_buscar.assignProperty(self.main_disp.pushButton_search_refresh, "enabled", True)
@@ -55,6 +69,7 @@ class DeviceSearch:
         self.machine.start()
 
     def perform_search(self):
+        self.worker = FindESPWorker(self.main_disp.centralwidget, self, self.gui_controller.actualizarMacs)
         thread = QThread()
         #worker.moveToThread(thread)
         #thread.started.connect(worker.process)
@@ -64,7 +79,6 @@ class DeviceSearch:
         self.worker.setup_thread(thread)
         # necesario hacer self. para que quede una referencia a los objetos y no se maten solos :(
         self.thread = thread
-        self.worker = self.worker
         thread.start()
 
     def notify_esp_found(self, esp_id: str, esp_mac: str):
