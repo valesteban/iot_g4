@@ -1,0 +1,12 @@
+{
+    "id_device": 3,
+    "status_report": 21,
+    "protocol_report": 0,
+    "battery_level": 100,
+    "conf_peripheral": 3123311,
+    "time_client": 9999,
+    "configuration_id_device": 3,
+    "data": {
+        "test": "data de testeo"
+    }
+}
