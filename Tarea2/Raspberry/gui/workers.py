@@ -53,3 +53,8 @@ class ConfigESPBLEWorker(Worker):
         self.caller = caller
         self.error_msg = ErrorMessage(self.window_parent)
 
+    def on_error(self, error_instance):
+        super().on_error(error_instance)
+        self.error_msg.launch_critical_exception_message(error_instance, "A fatal error has occurred while configuring the ESP through BLE.\nSend process has been stopped.")
+        self.caller.machine.postEvent()
+        self.caller.send_status.set_send_status_error(configuring=True, extra_msg=". Configuración cancelada")
