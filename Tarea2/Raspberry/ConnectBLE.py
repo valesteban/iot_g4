@@ -3,6 +3,7 @@ import pygatt
 import time
 import pyqtgraph as pg
 import logging
+import ipaddress
 
 #pyuic5 ejemplo_tarea2.ui -o ex.py
 
@@ -12,12 +13,14 @@ from db import DB
 
 
 class GUIController:
-    def __init__(self):
+    def __init__(self, gui_obj):
         #self.raspberry = raspberry
         # TODO:
         # Descomentar Ui
         #self.ui = Ui_Dialog()
         #self.parent = parent
+
+        self.gui_obj = gui_obj
         
         self.macs = []
         self.UUIDs = []
@@ -32,10 +35,18 @@ class GUIController:
         """
             Busca la MAC de la ESP32 y la guarda
         """
+        print("buscanding")
         # actualiza la lista de dispositivos con bluetooth disponibles
         adrs = findAddresses()
+
+        self.gui_obj.notify_end_find()
+
         self.macs = adrs[1]
         self.UUIDs = adrs[2]
+
+        for i in range(len(self.macs)):
+            self.gui_obj.notify_esp_found(self.UUIDs[i], self.macs[i])
+
         # TODO: UI
         #self.ui.selec_7.clear()
         #self.ui.selec_7.addItems(adrs[0])
@@ -71,7 +82,7 @@ class GUIController:
                 self.adapter.stop()
         print("Termino de test de conexión")
 
-    def getDBConfigParams(self):
+    def get_DB_ConfigParams(self):
         """
             Obtiene la Configuracion
         """
@@ -84,9 +95,15 @@ class GUIController:
             Inicia la configuracion BLE para enviar la configuracion a la ESP32
         """
         # envía una configuración indicada por BLE al dispositivo conectado
-        ESPconf = str(self.getDBConfigParams())
+        ESPconf = str(self.get_DB_ConfigParams())
         print("CONFIGURACION A ENVIAR:")
         print(ESPconf)
+
+        # Enviar la configuracion como formato ipv4
+        ESPconf = list(ESPconf)
+        ESPconf[11] = str(ipaddress.IPv4Address(ESPconf[11]))
+        ESPconf = tuple(ESPconf)
+
 
         pack = ESPconf.encode()
         print("El largo del paquete es:" + str(len(pack)))

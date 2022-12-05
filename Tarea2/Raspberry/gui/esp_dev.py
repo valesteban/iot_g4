@@ -16,6 +16,7 @@ from gui.active_ui import StartButtonUI, SendStatusUI, ESPInfo
 
 from gui.forms import esp_found_item, esp_active_item,  esp_wifi_config, esp_config_win
 
+
 class ESPDicts:
     def __init__(self, esp_lists_machine, main_win, controller: "Controller") -> None:
         self.mutex = Lock()

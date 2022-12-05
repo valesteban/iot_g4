@@ -74,11 +74,11 @@ void app_main(void){
 
 
     ESP_LOGE(TAG,"*******************BLE CONF*************************************");
-    // // funcion ble
-    // protocolo_ble(); 
+    // funcion ble
+    // protocolo_ble(); !!
 
-    // // espera hasta que se se envie configuracion por ble
-    // while (value_config == NULL){   
+    //espera hasta que se se envie configuracion por ble
+    // while (value_config == NULL){   !!
     //     ESP_LOGE(TAG,"aun nada");
     //     sleep(10);
     // }

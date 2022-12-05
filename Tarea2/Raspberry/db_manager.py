@@ -17,6 +17,15 @@ def delete_db_all() -> None:
     # Eliminamos los datos de la tabla datos.
     db.delete_all()
 
+def delete_db_tables() -> None:
+    """
+        Elimina todas las tablas de la DB
+    """
+    # host | user | pass | database
+    db = DB("localhost", "iot4", "12345678", "IoT_Tarea2")
+    # Eliminamos los datos de la tabla datos.
+    db.delete_tables()
+
 
 """
 Configuracion
@@ -102,7 +111,7 @@ if __name__ == "__main__":
     """
     while True: 
         print("\n----- Opciones para la BBDD ----- ")
-        print("[1] Configuracion\n[2] Log\n[3] Data\n[4] Data Acc sensor\n[5] Borrar todo\n[exit] Salir\n")
+        print("[1] Configuracion\n[2] Log\n[3] Data\n[4] Data Acc sensor\n[5] Borrar todos los Logs y Data\n[exit] Salir\n")
         opcion = input("Elija una opcion: ")
 
         if opcion == "exit":
@@ -183,6 +192,9 @@ if __name__ == "__main__":
         elif opcion == 5:
             delete_db_all()
             print("!! Log y Datos removidos !!")
+        elif opcion == 6:
+            delete_db_tables()
+            print("Tablas eliminadas")
         
 
         
