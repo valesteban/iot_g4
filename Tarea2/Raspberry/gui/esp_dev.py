@@ -5,7 +5,7 @@ from multiprocessing import Lock
 
 import ipaddress
 
-from gui.all_events import CheckNoWifiEvent, ValidWifiConfigEvent, InvalidWifiConfigEvent, InactiveESPEvent, AbleToSendEvent, UnableToSendEvent, SendStartEvent, ESPActiveEvent, ESPRemoveActiveEvent, ESPAddActiveEvent, ESPRemoveFoundEvent, ESPAddFoundEvent, ESPFoundEvent
+from gui.all_events import CheckNoWifiEvent, ValidWifiConfigEvent, InvalidWifiConfigEvent, InactiveESPEvent, AbleToSendEvent, UnableToSendEvent, SendStartEvent, ESPActiveEvent, ESPRemoveActiveEvent, ESPAddActiveEvent, ESPRemoveFoundEvent, ESPAddFoundEvent, ESPFoundEvent, ESPSendingEvent
 from gui.states import WifiState, NoWifiState, FoundState
 from gui.transitions import InactiveESPTransition, CheckNoWifiTransition, AbleToSendTransition, UnableToSendTransition, ValidWifiConfigTransition, InvalidWifiConfigTransition, StartClickTransition, ESPActiveTransition, ESPFoundTransition, SendStartTransition, ESPSendingTransition, ESPSleepingTransition
 from gui.esp_lists import ListsMachine
@@ -13,6 +13,7 @@ from gui.properties import WifiProperties, ConfigProperties
 from gui.wifi_ui import WifiDisplay
 from gui.config_ui import StatusConfigUI
 from gui.active_ui import StartButtonUI, SendStatusUI, ESPInfo
+from gui.workers import ConfigESPBLEWorker
 
 from gui.forms import esp_found_item, esp_active_item,  esp_wifi_config, esp_config_win
 
@@ -206,6 +207,7 @@ class ESPConfig:
 
         self.machine.start()
 
+
     def _enter_no_config(self):
         self.wifi_ui.set_ui_to_default_view()
         self._load_config_from_model()
@@ -262,6 +264,10 @@ class ESPDevice:
         self.esp_dict = esp_dict_list
         self.main_win = main_win
         self.controller = controller
+
+        self.worker_ble =
+
+        self.config_worker
 
         self.ui_found: esp_found_item.Ui_Form_esp_found_item = None
 
@@ -411,6 +417,12 @@ class ESPDevice:
         self.esp_lists_machine.machine.postEvent(ESPAddActiveEvent(self.active_widget))
         self.esp_lists_machine.machine.postEvent(ESPRemoveFoundEvent(self.found_widget))
 
+    def notify_config_success(self):
+        self.send_status.set_send_status_config(". Succeded!")
+        self.machine.postEvent(ESPSendingEvent())
+
+    def  notify_ble_try_failed(self, qty):
+        self.send_status.set_send_status_error(configuring=True, extra_msg=". Tried {} times.".format(qty))
 
     def set_found_widget(self) -> QFrame:
         ui_found = esp_found_item.Ui_Form_esp_found_item()

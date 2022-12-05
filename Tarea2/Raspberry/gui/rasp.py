@@ -7,7 +7,7 @@ from gui.live_plot import LivePlotManager
 from gui.transitions import EndFindTransition, ESPFoundTransition
 from gui.esp_lists import ListsMachine
 from gui.esp_dev import ESPDicts
-from gui.workers import Worker
+from gui.workers import FindESPWorker
 
 
 class Controller:
@@ -28,6 +28,7 @@ class DeviceSearch:
         self.controller = controller
 
         self.gui_controller = self.controller.ble_controller(self)
+        self.worker = FindESPWorker(self.main_disp.centralwidget, self, self.gui_controller.actualizarMacs)
 
         self.machine = QStateMachine()
         state_buscando = QState(self.machine)
@@ -54,16 +55,16 @@ class DeviceSearch:
         self.machine.start()
 
     def perform_search(self):
-        worker = Worker(self.gui_controller.actualizarMacs)
         thread = QThread()
-        worker.moveToThread(thread)
-        thread.started.connect(worker.process)
-        worker.finished.connect(thread.quit)
-        worker.finished.connect(worker.deleteLater)
-        thread.finished.connect(thread.deleteLater)
+        #worker.moveToThread(thread)
+        #thread.started.connect(worker.process)
+        #worker.finished.connect(thread.quit)
+        #worker.finished.connect(worker.deleteLater)
+        #thread.finished.connect(thread.deleteLater)
+        self.worker.setup_thread(thread)
         # necesario hacer self. para que quede una referencia a los objetos y no se maten solos :(
         self.thread = thread
-        self.worker = worker
+        self.worker = self.worker
         thread.start()
 
     def notify_esp_found(self, esp_id: str, esp_mac: str):

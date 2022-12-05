@@ -71,12 +71,14 @@ class GUIController:
                 characteristics = device.discover_characteristics()
                 for i in characteristics.keys():
                     print('Caracteristicas: '+str(i))#list(characteristics.keys())))
+                
                 time.sleep(1)
                 qty = 100
             except pygatt.exceptions.NotConnectedError:
                 qty += 1
                 print("Se han fallado: {qty} intentos" )
                 print("Not connected")
+                
                 time.sleep(1)
             finally:
                 self.adapter.stop()
@@ -120,6 +122,7 @@ class GUIController:
                 # sabe la UUID de la caracteristica a escribir, este misma funcion para leer es tan solo char_read
                 # Recomiendo leer acerca del sistema de Subscribe para recibir notificaciones del cambio u otros
                 device.char_write(list(characteristics)[4], pack)   #hay q poner el uid
+                self.gui_obj.notify_config_success()
                 print("Se escribio el paquete")
                 qty = 100
                 #en caso de read siempre hay que ponerle un id para tomar el paquete
@@ -128,6 +131,7 @@ class GUIController:
                 qty += 1
                 print(f"Se han fallado: {qty} intentos" )
                 print("Not connected")
+                self.gui_obj.notify_ble_try_failed(qty)
                 time.sleep(1)
             finally:
                 self.adapter.stop()
