@@ -4,11 +4,12 @@ import socket
 from xmlrpc.client import TRANSPORT_ERROR
 import json
 import sys
+import pprint
 
 from db import *
 # from desempaquetamiento import Protocol
 # from desempaquetamiento import decode_pkg, print_hex
-import ConnectBLE
+#import ConnectBLE
 import json
 
 
@@ -37,6 +38,9 @@ class Raspberry:
         
     def set_Port(self, port):
         self.__PORT = port
+
+    def get_current_configuracion(self):
+        return self.__configuracion
 
     def get_current_status(self):
         return self.__configuracion[1]
@@ -145,24 +149,24 @@ class Raspberry:
                 #   "data": {...}  
                 # }
                 raw_data = conn.recv(1024)   
-                data = raw_data.decode()
+                data = json.loads(raw_data.decode())
 
                 # Si llega un dato entonces debemos guardarlo y generar un log
                 if data:
+
+                    pprint.pprint(f"Data y Log a guardar: {data}")
                     # Creo conexion a la base de datos:
                     # host | user | pass | database
                     db = DB("localhost", "iot4", "12345678", "IoT_Tarea2")
 
                     # Creo diccionario con la info para el Log
                     log_dict = {}
-                    log_dict["id_device"] = data["id_device"] 
                     log_dict["status_report"] = data["status_report"] 
                     log_dict["protocol_report"] = data["protocol_report"] 
                     log_dict["battery_level"] = data["battery_level"] 
                     log_dict["conf_peripheral"] = data["conf_peripheral"] 
                     log_dict["time_client"] = data["time_client"] 
                     log_dict["configuration_id_device"] = data["id_device"] 
-
                     db.save_log(log_dict) # Guardo el log
 
 

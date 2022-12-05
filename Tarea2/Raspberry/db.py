@@ -48,6 +48,32 @@ class DB:
         self.cursor.execute(sql)
         self.db.commit()
 
+    def delete_tables(self) -> None:
+        """
+            Elimina todas las tablas de la DB
+        """
+        sql = '''
+            drop table Data
+        '''
+        self.cursor.execute(sql)
+
+        sql = '''
+            drop table Data_acceloremeter_sensor
+        '''
+        self.cursor.execute(sql)
+
+        sql = '''
+            drop table Log
+        '''
+        self.cursor.execute(sql)
+
+        sql = '''
+            drop table Configuration
+        '''
+        self.cursor.execute(sql)
+
+        self.db.commit()
+
 
     def get_all_id_device(self) -> tuple:
         """
@@ -71,7 +97,7 @@ class DB:
             SELECT data, data_acceloremeter_sensor
             FROM Data, Data_acceloremeter_sensor
             WHERE id_device = %s
-            AND LOG.id_device = %s
+            AND Log_id_device = %s
         """
 
         self.cursor.execute(sql, (id_device,))
@@ -203,29 +229,28 @@ class DB:
                 ...
             }
             DB.save_log(log_dict)
-        """
+        """ 
 
         # Guardar el log
         sql = '''
-            INSERT INTO Log (id_device, status_report, protocol_report, battery_level, conf_peripheral,
-                                time_client, configuration.id_device)
-            VALUES (%s, %s, %s, %s, %s, %s, %s)
+            INSERT INTO Log (status_report, protocol_report, battery_level, conf_peripheral,
+                                time_client, Configuration_id_device)
+            VALUES (%s, %s, %s, %s, %s, %s)
         '''
 
         # Obtengo los valores del diccionario para guardar
         # El timestamp del server, lo guarda automaticamente la DB
-        id_device = log_dict["id_device"] # primary key
         status_report = log_dict["status_report"]
         protocol_report = log_dict["protocol_report"]
         battery_level = log_dict["battery_level"]
         conf_peripheral = log_dict["conf_peripheral"]
         time_client = log_dict["time_client"]
         # time_server, se calcula automaticamente
-        configuracion_id_device = log_dict["configuracion_id_device"]
+        configuration_id_device = log_dict["configuration_id_device"]
 
         
-        new_log = (id_device, status_report, protocol_report, battery_level, conf_peripheral, \
-            time_client, configuracion_id_device)
+        new_log = (status_report, protocol_report, battery_level, conf_peripheral, \
+            time_client, configuration_id_device)
         self.cursor.execute(sql, new_log)
         self.db.commit() # actualizo la db
 
@@ -260,17 +285,26 @@ class DB:
             
         """
 
+        # Obtengo la ultima id generada en el Log.
         sql = '''
-            INSERT INTO Data (id_device, data, Log.id_device)
+            SELECT id
+            FROM Log
+            ORDER BY id DESC
+            LIMIT 1
+        '''
+        self.cursor.execute(sql)
+        log_id = self.cursor.fetchall()[0][0]
+
+        sql = '''
+            INSERT INTO Data (id_device, Log_id, data)
             VALUES (%s, %s, %s)
         '''
 
         # Obtengo la info del diccionario
         id_device = data_dict["id_device"]
         data = data_dict["data"]
-        log_id_device = data_dict["log_id_device"]
 
-        new_data = (id_device, data, log_id_device)
+        new_data = (id_device, log_id, data)
         self.cursor.execute(sql, new_data)
         self.db.commit() # actualizo la db
 
@@ -304,17 +338,26 @@ class DB:
             
         """
 
+        # Obtengo la ultima id generada en el Log.
         sql = '''
-            INSERT INTO Data_acceloremeter_sensor (id_device, data_acceloremeter_sensor, Log.id_device)
+            SELECT id
+            FROM Log
+            ORDER BY id DESC
+            LIMIT 1
+        '''
+        self.cursor.execute(sql)
+        log_id = self.cursor.fetchall()[0][0]
+
+        sql = '''
+            INSERT INTO Data_acceloremeter_sensor (id_device, Log_id, data_acceloremeter_sensor)
             VALUES (%s, %s, %s)
         '''
 
         # Obtengo la info del diccionario
         id_device = data_acc_sensor_dict["id_device"]
         data_acc_sensor = data_acc_sensor_dict["data_acc_sensor"]
-        log_id_device = data_acc_sensor_dict["log_id_device"]
 
-        new_data = (id_device, data_acc_sensor, log_id_device)
+        new_data = (id_device, log_id, data_acc_sensor)
         self.cursor.execute(sql, new_data)
         self.db.commit() # actualizo la db
 
