@@ -9,9 +9,14 @@ from gui.esp_dev import ESPDicts
 
 
 class Controller:
-    def __init__(self, db_config_set, db_config_get) -> None:
+    def __init__(self, db_config_set, db_config_get, db_get_ids, db_get_data) -> None:
+        self.set_methods(db_config_set, db_config_get, db_get_ids, db_get_data)
+
+    def set_methods(self, db_config_set, db_config_get, db_get_ids, db_get_data):
         self.config_set = db_config_set
         self.config_get = db_config_get
+        self.keys_get = db_get_ids
+        self.data_get = db_get_data
 
 class DeviceSearch:
     def __init__(self, main_disp: main_display.Ui_MainWindow, esp_dict_list: ESPDicts) -> None:
@@ -48,7 +53,7 @@ class Rasp:
         self.ui_main_disp.setupUi(self.window)
         self.controller = controller
 
-        self.plot_manager = LivePlotManager(self.ui_main_disp)
+        self.plot_manager = LivePlotManager(self.ui_main_disp, controller)
 
         self.esp_disp_list = ListsMachine(
             self.ui_main_disp.scrollAreaWidgetContents_found_area, 

@@ -352,3 +352,42 @@ class StartClickTransition(QSignalTransition):
                 return True
             else:
                 return False
+
+class LivePlotNoIDTransition(QAbstractTransition):
+    def __init__(self, sourceState: typing.Optional['QState'] = None) -> None:
+        super().__init__(sourceState)
+
+    def eventTest(self, event: 'QEvent') -> bool:
+        if event.type() != LivePlotNoIDEvent.EVENT_TYPE:
+            return False
+        else:
+            return True
+
+    def onTransition(self, event: 'QEvent') -> None:
+        return
+
+class LivePlotReadyTransition(QAbstractTransition):
+    def __init__(self, sourceState: typing.Optional['QState'] = None) -> None:
+        super().__init__(sourceState)
+
+    def eventTest(self, event: 'QEvent') -> bool:
+        if event.type() != LivePlotReadyEvent.EVENT_TYPE:
+            return False
+        else:
+            return True
+
+    def onTransition(self, event: 'QEvent') -> None:
+        return
+
+class LivePlotPlottingTransition(QAbstractTransition):
+    def __init__(self, sourceState: typing.Optional['QState'] = None) -> None:
+        super().__init__(sourceState)
+
+    def eventTest(self, event: 'QEvent') -> bool:
+        if event.type() != LivePlotPlottingEvent.EVENT_TYPE:
+            return False
+        else:
+            return True
+
+    def onTransition(self, event: 'QEvent') -> None:
+        return

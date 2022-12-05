@@ -113,3 +113,18 @@ class ESPErroringEvent(QEvent):
     EVENT_TYPE = QEvent.Type.User+20
     def __init__(self) -> None:
         super().__init__(self.EVENT_TYPE)
+
+class LivePlotNoIDEvent(QEvent):
+    EVENT_TYPE = QEvent.Type.User+21
+    def __init__(self) -> None:
+        super().__init__(self.EVENT_TYPE)
+
+class LivePlotReadyEvent(QEvent):
+    EVENT_TYPE = QEvent.Type.User+22
+    def __init__(self) -> None:
+        super().__init__(self.EVENT_TYPE)
+
+class LivePlotPlottingEvent(QEvent):
+    EVENT_TYPE = QEvent.Type.User+23
+    def __init__(self) -> None:
+        super().__init__(self.EVENT_TYPE)
