@@ -28,7 +28,7 @@ class Worker(QObject):
         self.error.connect(self.on_error)
         thread.started.connect(self.process)
         self.finished.connect(thread.quit)
-        self.finished.connect(self.deleteLater)
+        #self.finished.connect(self.deleteLater)
         thread.finished.connect(thread.deleteLater)
 
     def on_error(self, error_instance):
@@ -47,5 +47,9 @@ class FindESPWorker(Worker):
         self.caller.machine.postEvent(EndFindEvent())
 
 class ConfigESPBLEWorker(Worker):
-    def __init__(self, slot, slot_args=[], parent: typing.Optional['QObject'] = None) -> None:
+    def __init__(self, window_parent, caller, slot, slot_args=[], parent: typing.Optional['QObject'] = None) -> None:
         super().__init__(slot, slot_args, parent)
+        self.window_parent = window_parent
+        self.caller = caller
+        self.error_msg = ErrorMessage(self.window_parent)
+

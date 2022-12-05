@@ -53,6 +53,6 @@ if __name__ == '__main__':
     esp_3_btn_found.clicked.connect(lambda: rasp.esp_dict_list.esp_dict[3].machine.postEvent(ESPSleepingEvent()))
 
     window.show()
-    #debug_dialog.show()
+    debug_dialog.show()
 
     sys.exit(app.exec())

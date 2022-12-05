@@ -39,13 +39,15 @@ class GUIController:
         # actualiza la lista de dispositivos con bluetooth disponibles
         adrs = findAddresses()
 
-        self.gui_obj.notify_end_find()
-
         self.macs = adrs[1]
         self.UUIDs = adrs[2]
 
+        print(self.macs)
+
         for i in range(len(self.macs)):
-            self.gui_obj.notify_esp_found(self.UUIDs[i], self.macs[i])
+            self.gui_obj.notify_esp_found(self.UUIDs[i][0], self.macs[i])
+
+        self.gui_obj.notify_end_find()
 
         # TODO: UI
         #self.ui.selec_7.clear()

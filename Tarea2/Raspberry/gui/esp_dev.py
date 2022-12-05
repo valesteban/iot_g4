@@ -1,4 +1,4 @@
-from PyQt5.QtCore import QStateMachine, QState, QFinalState, QSignalTransition
+from PyQt5.QtCore import QStateMachine, QState, QFinalState, QSignalTransition, QThread
 
 from PyQt5.QtWidgets import QFrame, QDialog, QPushButton
 from multiprocessing import Lock
@@ -170,8 +170,8 @@ class ESPConfig:
         state_config_wifi.entered.connect(_auto_show_toolbar)
         state_config_no_wifi.entered.connect(_auto_hide_toolbar)
 
-        state_config_wifi.entered.connect(_check_valid_connections)
-        state_config_no_wifi.entered.connect(_check_valid_connections)
+        state_config_wifi.entered.connect(self._enter_wifi)
+        state_config_no_wifi.entered.connect(self._enter_no_wifi)
         
         trans_wifi_to_error = InvalidWifiConfigTransition()
         trans_wifi_to_error.setTargetState(state_wifi_error)
@@ -213,6 +213,14 @@ class ESPConfig:
         self._load_config_from_model()
         self.wifi_ui.load_from_properties_into_ui()
     
+    def _enter_no_wifi(self):
+        self._check_valid_connections()
+        self.esp.worker_slot = self.esp.perform_ble_config
+
+    def _enter_wifi(self):
+        self._check_valid_connections()
+        self.esp.worker_slot = self.esp.perform_wifi_config
+
     def _load_config_from_model(self):
         print(self.esp.esp_id)
         
@@ -264,10 +272,9 @@ class ESPDevice:
         self.esp_dict = esp_dict_list
         self.main_win = main_win
         self.controller = controller
+        self.gui_controller = self.controller.ble_controller(self)
 
-        self.worker_ble =
-
-        self.config_worker
+        self.worker_slot = self.perform_ble_config
 
         self.ui_found: esp_found_item.Ui_Form_esp_found_item = None
 
@@ -395,6 +402,11 @@ class ESPDevice:
         self.ui_active.pushButton_esp_active_start_stop.setDisabled(True)
         self.send_status.set_send_status_config()
 
+        self.worker_slot()
+        
+        
+
+
     def _on_send_send(self):
         self.start_btn.ui_button.setDisabled(False)
         self.ui_active.pushButton_esp_active_start_stop.setDisabled(False)
@@ -423,6 +435,17 @@ class ESPDevice:
 
     def  notify_ble_try_failed(self, qty):
         self.send_status.set_send_status_error(configuring=True, extra_msg=". Tried {} times.".format(qty))
+
+    def perform_ble_config(self):
+        self.worker_ble = ConfigESPBLEWorker(self.main_win, self, self.gui_controller.configSetup)
+        thread = QThread()
+        self.worker.setup_thread(thread)
+        self.thread = thread
+        self.worker = self.worker
+        thread.start()
+
+    def perform_wifi_config(self):
+        pass
 
     def set_found_widget(self) -> QFrame:
         ui_found = esp_found_item.Ui_Form_esp_found_item()

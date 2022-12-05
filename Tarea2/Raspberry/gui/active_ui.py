@@ -122,4 +122,4 @@ class ESPInfo:
         new_mac = str(new_mac)
 
         self.id_label.setText(self._translate("Form_esp_active", new_id))
-        self.id_label.setText(self._translate("Form_esp_active", new_mac))
+        self.mac_label.setText(self._translate("Form_esp_active", new_mac))
