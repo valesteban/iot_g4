@@ -365,6 +365,9 @@ class ESPDevice:
         trans_sleep_to_send = ESPSendingTransition(state_mimir)
         trans_sleep_to_send.setTargetState(state_envio)
 
+        trans_stop_config = ESPActiveTransition(state_configurando)
+        trans_stop_config.setTargetState(state_activo)
+
         trans_stop_send = ESPActiveTransition(state_envio)
         trans_stop_send.setTargetState(state_activo)
 
@@ -385,7 +388,7 @@ class ESPDevice:
 
     def _on_active(self):
         self.start_btn.set_start_button()
-        self.send_status.set_send_status_default()
+        #self.send_status.set_send_status_default()
         self.ui_active.pushButton_remove.setDisabled(False)
 
 
