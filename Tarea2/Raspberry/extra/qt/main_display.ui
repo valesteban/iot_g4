@@ -161,9 +161,9 @@
                    </property>
                    <property name="icon">
                     <iconset resource="icons.qrc">
-                     <normaloff>:/icon_refresh/images/refresh.png</normaloff>
+                     <normaloff>:/icon_refresh/images/refresh_active.png</normaloff>
                      <disabledoff>:/icon_refresh/images/refresh_disabled.png</disabledoff>
-                     <disabledon>:/icon_refresh/images/refresh_disabled.png</disabledon>:/icon_refresh/images/refresh.png</iconset>
+                     <disabledon>:/icon_refresh/images/refresh_disabled.png</disabledon>:/icon_refresh/images/refresh_active.png</iconset>
                    </property>
                   </widget>
                  </item>
@@ -429,8 +429,8 @@
                 <rect>
                  <x>0</x>
                  <y>0</y>
-                 <width>722</width>
-                 <height>547</height>
+                 <width>98</width>
+                 <height>28</height>
                 </rect>
                </property>
                <layout class="QVBoxLayout" name="verticalLayout_scroll_added_plots">
