@@ -11,7 +11,7 @@ from db import DB
 
 
 class GUIController:
-    def __init__(self, raspberry, gui_obj):
+    def __init__(self, raspberry):
         # Atributo raspberry para notificar cualquier cambio
         self.raspberry = raspberry
 
@@ -20,14 +20,12 @@ class GUIController:
         #self.ui = Ui_Dialog()
         #self.parent = parent
 
-        self.gui_obj = gui_obj
         
         self.macs = []
         self.UUIDs = []
         self.servers = []
         self.plot = None
-        self.g
-        rph = None
+        self.grph = None
         self.macindx = 0
 
         self.adapter = pygatt.GATTToolBackend() ##pygatt
@@ -40,20 +38,19 @@ class GUIController:
         # actualiza la lista de dispositivos con bluetooth disponibles
         adrs = findAddresses()
 
+        if adrs == [[], [], []]:
+            raise Exception("GUIController: No se encontraron direcciones MACs de ESP")
+
         self.macs = adrs[1]
         self.UUIDs = adrs[2]
 
-        print(self.macs)
 
-        for i in range(len(self.macs)):
-            self.gui_obj.notify_esp_found(self.UUIDs[i][0], self.macs[i])
-
-        self.gui_obj.notify_end_find()
 
         # TODO: UI
         #self.ui.selec_7.clear()
         #self.ui.selec_7.addItems(adrs[0])
         #print()
+        print(f"GUIController: MACs ESP encontradas y seteadas: {self.macs}")
 
     def conectarMac(self):
         # se conecta mediante BLE a un dispostivo disponible
@@ -74,14 +71,12 @@ class GUIController:
                 characteristics = device.discover_characteristics()
                 for i in characteristics.keys():
                     print('Caracteristicas: '+str(i))#list(characteristics.keys())))
-                
                 time.sleep(1)
                 qty = 100
             except pygatt.exceptions.NotConnectedError:
                 qty += 1
                 print("Se han fallado: {qty} intentos" )
                 print("Not connected")
-                
                 time.sleep(1)
             finally:
                 self.adapter.stop()
@@ -100,16 +95,18 @@ class GUIController:
             Inicia la configuracion BLE para enviar la configuracion a la ESP32
         """
         # envía una configuración indicada por BLE al dispositivo conectado
-        ESPconf = str(self.get_DB_ConfigParams())
-        print("CONFIGURACION A ENVIAR:")
-        print(ESPconf)
+        print("GUIController: Obtengo la configuracion de la DB")
+        ESPconf_db = self.get_DB_ConfigParams() # Configuracion a guardar
 
         # Enviar la configuracion como formato ipv4
-        ESPconf = list(ESPconf)
-        ESPconf[11] = str(ipaddress.IPv4Address(ESPconf[11]))
+        ESPconf = list(ESPconf_db)
+        print(ESPconf)
+        ESPconf[10] = str(ipaddress.IPv4Address(ESPconf[10]))
         ESPconf = tuple(ESPconf)
+        print("GUIController: CONFIGURACION A ENVIAR:")
+        print(ESPconf)
 
-
+        ESPconf = str(ESPconf)
         pack = ESPconf.encode()
         print("El largo del paquete es:" + str(len(pack)))
         qty=0
@@ -120,21 +117,22 @@ class GUIController:
                 device.exchange_mtu(80)
                 print(f'Se conecto!')
                 characteristics = device.discover_characteristics().keys()
-                print(characteristics)
                 # La siguiente linea es para escribir en la caracteristica de UUID list(characteristics)[4], puede hardcodear si
                 # sabe la UUID de la caracteristica a escribir, este misma funcion para leer es tan solo char_read
                 # Recomiendo leer acerca del sistema de Subscribe para recibir notificaciones del cambio u otros
                 device.char_write(list(characteristics)[4], pack)   #hay q poner el uid
-                self.gui_obj.notify_config_success()
                 print("Se escribio el paquete")
                 qty = 100
                 #en caso de read siempre hay que ponerle un id para tomar el paquete
                 #en caso de write hay que poner el uid y el apquete que queremos enviar uid -> list(characteristics)[4] 
+
+                # ACTUALIZO LA CONFIGURACION DE LA RASPBERRY
+                print("GUIController: Seteando configuracion a la raspberry")
+                self.raspberry.setConfiguracion(ESPconf_db)
             except pygatt.exceptions.NotConnectedError:
                 qty += 1
                 print(f"Se han fallado: {qty} intentos" )
                 print("Not connected")
-                self.gui_obj.notify_ble_try_failed(qty)
                 time.sleep(1)
             finally:
                 self.adapter.stop()
@@ -143,7 +141,7 @@ class GUIController:
         """
             Notifica un cambio de estado a la Raspberry
         """
-        self.raspberry.actualizarStatus()
+        self.raspberry.actualizarConfiguracion()
                 
     
 if __name__ == "__main__":
