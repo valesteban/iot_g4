@@ -85,7 +85,7 @@ def test_status_21():
 
 def test_status_23():
     raspberry = Raspberry()
-    configuracion = (3,21,2,400,16,200,4,420,5010,5011,int(ipaddress.IPv4Address("127.0.0.1")),"ssid","pass")
+    configuracion = (3,20,2,400,16,200,4,420,5010,5011,int(ipaddress.IPv4Address("192.168.28.1")),"ssid","pass")
     raspberry.setConfiguracion(configuracion)
     raspberry.set_nueva_configuracion(configuracion)
 

@@ -189,17 +189,18 @@ class Raspberry:
         # Iniciamos conexion UDP
         s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         s.bind((self.get_HOST_IP(), self.get_UDP_PORT()))
-        print(f"Iniciando Socket HOST_IP: {self.get_HOST_IP()}, PORT: {self.get_UDP_PORT}")
+        print(f"Iniciando Socket HOST_IP: {self.get_HOST_IP()}, PORT: {self.get_UDP_PORT()}")
         print("Listening.....")
         
         while True:
 
-            data = s.recvfrom(1024)
+            data, addr = s.recvfrom(1024)
 
             if data:
                 print(f"Data y Log a guardar: {data}")
-                s.sendto(data)
+                s.sendto(data, addr)
             else:
+                print('no data from', addr)
                 break
                 
 

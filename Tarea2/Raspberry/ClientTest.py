@@ -78,7 +78,7 @@ class UDP_Client_Test():
         s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         
         while True:
-            s.sendto("test".encode())
+            s.sendto("test".encode(), (self.HOST_IP, self.PORT))
             s.recvfrom(1024)
             break
         
@@ -86,7 +86,7 @@ class UDP_Client_Test():
 
 
 if __name__ == '__main__':
-    IP_HOST = "127.0.0.1" 
+    IP_HOST = "192.168.28.1" 
     TCP_PORT = 5010
     UDP_PORT = 5011
     
