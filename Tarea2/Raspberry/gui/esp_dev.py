@@ -161,12 +161,6 @@ class ESPConfig:
             if not self.esp.ui_active.toolButton_esp_active_wifi_config.isChecked():
                 self.esp.ui_active.toolButton_esp_active_wifi_config.click()
 
-        def _check_valid_connections():
-            if self.config_wifi is None or self.send_wifi is None:
-                self.machine.postEvent(UnableToSendEvent())
-            else:
-                self.machine.postEvent(AbleToSendEvent())
-
         state_config_wifi.entered.connect(_auto_show_toolbar)
         state_config_no_wifi.entered.connect(_auto_hide_toolbar)
 
@@ -207,6 +201,11 @@ class ESPConfig:
 
         self.machine.start()
 
+    def _check_valid_connections(self):
+        if self.config_wifi is None or self.send_wifi is None:
+            self.machine.postEvent(UnableToSendEvent())
+        else:
+            self.machine.postEvent(AbleToSendEvent())
 
     def _enter_no_config(self):
         self.wifi_ui.set_ui_to_default_view()
@@ -243,6 +242,8 @@ class ESPConfig:
 
         wifi_keys = WifiProperties.attrs
         status_keys = ConfigProperties.attrs
+
+        print("id esp:", self.esp.esp_id)
 
         host_ipv4 = int(ipaddress.IPv4Address(wifi_conf[0]))
         new_ = {
@@ -442,9 +443,8 @@ class ESPDevice:
     def perform_ble_config(self):
         self.worker_ble = ConfigESPBLEWorker(self.main_win, self, self.gui_controller.configSetup)
         thread = QThread()
-        self.worker.setup_thread(thread)
+        self.worker_ble.setup_thread(thread)
         self.thread = thread
-        self.worker = self.worker
         thread.start()
 
     def perform_wifi_config(self):

@@ -9,6 +9,9 @@ from gui.esp_lists import ListsMachine
 from gui.esp_dev import ESPDicts
 from gui.workers import FindESPWorker
 import typing
+import uuid
+import random
+
 
 class CustomMachine(QStateMachine):
     def __init__(self, parent: typing.Optional["QObject"] = None) -> None:
@@ -82,7 +85,11 @@ class DeviceSearch:
         thread.start()
 
     def notify_esp_found(self, esp_id: str, esp_mac: str):
-        self.machine.postEvent(ESPFoundEvent(esp_id, esp_mac))
+        #new_id = int(uuid.uuid4())
+        #self.machine.postEvent(ESPFoundEvent(new_id, esp_mac))
+        new_id = 5
+
+        self.machine.postEvent(ESPFoundEvent(new_id, esp_mac))
 
     def notify_end_find(self):
         self.machine.postEvent(EndFindEvent())
