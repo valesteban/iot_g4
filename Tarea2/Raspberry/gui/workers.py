@@ -1,7 +1,7 @@
 from PyQt5.QtCore import QObject, pyqtSignal
 
 from gui.error_handling import ErrorMessage
-from gui.all_events import EndFindEvent
+from gui.all_events import EndFindEvent, ESPActiveEvent
 
 import typing
 import sys
@@ -44,7 +44,7 @@ class FindESPWorker(Worker):
     def on_error(self, error_instance):
         super().on_error(error_instance)
         self.error_msg.launch_warning_exception_message(error_instance, "ESP Seach Error", "An error occurred during the search of an ESP device.\nClose this message and try again.")
-        self.caller.machine.postEvent(EndFindEvent())
+        self.caller.machine.postEvent(EndFindEvent(ESPActiveEvent()))
 
 class ConfigESPBLEWorker(Worker):
     def __init__(self, window_parent, caller, slot, slot_args=[], parent: typing.Optional['QObject'] = None) -> None:

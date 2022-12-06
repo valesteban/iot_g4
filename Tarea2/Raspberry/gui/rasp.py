@@ -86,9 +86,9 @@ class DeviceSearch:
         thread.start()
 
     def notify_esp_found(self, esp_id: str, esp_mac: str):
-        #new_id = int(uuid.uuid4())
         #self.machine.postEvent(ESPFoundEvent(new_id, esp_mac))
-        new_id = hash(esp_mac)%10000
+        #new_id = hash(esp_mac)%10000
+        new_id = 3
 
         self.machine.postEvent(ESPFoundEvent(new_id, esp_mac))
 

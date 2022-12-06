@@ -248,14 +248,14 @@ class ESPConfig:
 
         print("id esp:", self.esp.esp_id)
 
-        host_ipv4 = int(ipaddress.IPv4Address(wifi_conf[0]))
+        host_ipv4 = ipaddress.IPv4Address(wifi_conf[0])
         new_ = {
             "id_device": self.esp.esp_id,
             "discontinuos_time": status_conf[3],
             "host_ip_addr": host_ipv4,
             "tcp_port": wifi_conf[1],
             "udp_port": wifi_conf[2],
-            "host_ip_addr": int(ipaddress.IPv4Address("192.168.28.1")),
+            "host_ip_addr": str(host_ipv4),
             "pass": wifi_conf[4] 
         }
         

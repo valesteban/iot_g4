@@ -26,7 +26,6 @@ class GUIController:
         self.UUIDs = []
         self.servers = []
         self.plot = None
-        self.g
         rph = None
         self.macindx = 0
 
@@ -93,7 +92,7 @@ class GUIController:
         """
         # host | user | pass | database
         db = DB("localhost", "iot4", "12345678", "IoT_Tarea2")
-        return db.get_all_config()[0]
+        return db.get_all_config()[-1]
     
     def configSetup(self):
         """
