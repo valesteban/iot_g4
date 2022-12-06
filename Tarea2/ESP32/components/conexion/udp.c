@@ -33,7 +33,7 @@
 
 // #include "../../empaquetamiento.c"
 // #include "../../fragmentacion.c"
-
+char * host_ip_udp = "192.168.28.1";
 
 static const char *TAG_UDP = "conexion UDP";
 
@@ -44,14 +44,16 @@ static const char *TAG_UDP = "conexion UDP";
 // void protocolo_udp(char id_protocol ,int32_t Port_UDP, char* Host_IP_Addr ){
 void protocolo_udp(Configuracion conf_struct ){
     
-    ESP_LOGI(TAG_UDP, "Configurando wifi...");
-    wifi_iniciate();
+//     ESP_LOGI(TAG_UDP, "Configurando wifi...");
+//     wifi_iniciate();
 
     
-    char* host_ip_addr = conf_struct.Host_IP_Addr;
+    // char* host_ip_addr = conf_struct.Host_IP_Addr;
+    char * host_ip_addr = host_ip_udp;
     int32_t port_udp = conf_struct.Port_UDP;
     int id_protocol = conf_struct.ID_Protocol;
     int device_id = 1113;
+    Configuracion conf = conf_struct;
     // int tcp_layer_id = 0;
     // int udp_layer_id = 1;
 
@@ -88,17 +90,19 @@ void protocolo_udp(Configuracion conf_struct ){
 
         // LOOP ENVIO PAQUETES UDP
         while (1) {
+            
 
             //CREAMOS PAQUETE DEPENDIENDO DEL PROTOCOLO QUE NOS LLEGO
             // char *data = "paquete hardcodeado";
 
+                        
             unsigned char *data = NULL;
             int data_size = 0;
             uint8_t mac[6];
             esp_base_mac_addr_get(mac);
+            char id_char_protocol = id_protocol+'0';
             ddbb_layerProtocol =
-            encode_pkg(id_protocol, mac, device_id, ddbb_layerProtocol, &data, &data_size);
-
+            encode_pkg(id_char_protocol, mac, device_id, ddbb_layerProtocol, &data, &data_size);
 
             
             // int err = sendto(s}ock, data, strlen(data) , 0, (struct sockaddr *)&dest_addr, sizeof(dest_addr));
@@ -132,22 +136,28 @@ void protocolo_udp(Configuracion conf_struct ){
                 }
             }
 
-            // Guardamos paquete recibido con la nueva configuracion 
-
-            conf_struct = construccion_conf(rx_buffer, conf_struct);
-
-            int8_t nuevo_status = conf_struct.Status;
-            
-            // SI HAY CAMBIO DE STATUS
-            if (nuevo_status == 20 ||nuevo_status == 0 ){
-                // desactivar wifi
-                esp_wifi_stop();
-                esp_wifi_disconnect();
-                return;
-            }else 
-                if (nuevo_status != 22){  // SI DATA ENVIADA CAMBIA STATUS A 0
-                    ESP_LOGE(TAG2, "Error, si quiere cambiar tipo de conexion cambie a status 0 o 20");
+            int8_t status = atoi(rx_buffer);
+            if (status != 21){
+                shutdown(sock, 0);
+                close(sock);
+                // esp_wifi_stop();
+                // esp_wifi_disconnect();
+                return ;
+                break;
             }
+            
+            
+            // 
+            if (status == 20){
+                shutdown(sock, 0);
+                close(sock);
+                conf.Status = 20;
+                return ;
+                
+            }
+            
+
+            
             
             vTaskDelay(2000 / portTICK_PERIOD_MS);
 
@@ -157,6 +167,8 @@ void protocolo_udp(Configuracion conf_struct ){
             ESP_LOGE(TAG_UDP, "Shutting down socket and restarting...");
             shutdown(sock, 0);
             close(sock);
+            return ;
+        
         }
 
     }
