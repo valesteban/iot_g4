@@ -67,11 +67,31 @@ class TCP_Client_Test:
                 break
 
         s.close()
+
+class UDP_Client_Test():
+
+    def __init__(self, HOST_IP, UDP_PORT) -> None:
+        self.HOST_IP = HOST_IP
+        self.PORT = UDP_PORT
+    
+    def test_status23_client(self) -> None:
+        s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         
+        while True:
+            s.sendto("test".encode())
+            s.recvfrom(1024)
+            break
+        
+        s.close()
+
 
 if __name__ == '__main__':
-    IP_HOST = "192.168.28.1" 
+    IP_HOST = "127.0.0.1" 
     TCP_PORT = 5010
+    UDP_PORT = 5011
     
-    tcp_client = TCP_Client_Test(IP_HOST, TCP_PORT)
-    tcp_client.test_status20_client()
+    # tcp_client = TCP_Client_Test(IP_HOST, TCP_PORT)
+    # tcp_client.test_status20_client()
+
+    udp_client = UDP_Client_Test(IP_HOST, UDP_PORT)
+    udp_client.test_status23_client()

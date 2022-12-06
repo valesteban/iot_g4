@@ -175,6 +175,33 @@ class Raspberry:
                 else:
                     print('no data from', addr)
                     break
-                    
 
+    def start_status23(self) -> None:
+        """
+        El ESP32 tendrá un Cliente UDP y la Raspberry un Servidor UDP (Este debe poder iniciarse
+        desde la interfaz con la configuración puesta ahí). Según el valor de ID_Protocol es el paquete de
+        datos que se transferirá. (protocolos de datos se observan en la Tabla 3). El ESP32 deberá enviar
+        este paquete de forma continua hasta que desde la Raspberry se detenga la conexión (desde la interfaz
+        gráfica).
+        """
+
+        print("== INICIANDO STATUS 23 ==")
+        # Iniciamos conexion UDP
+        s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        s.bind((self.get_HOST_IP(), self.get_UDP_PORT()))
+        print(f"Iniciando Socket HOST_IP: {self.get_HOST_IP()}, PORT: {self.get_UDP_PORT}")
+        print("Listening.....")
+        
+        while True:
+
+            data = s.recvfrom(1024)
+
+            if data:
+                print(f"Data y Log a guardar: {data}")
+                s.sendto(data)
+            else:
+                break
+                
+
+        s.close()
         return None
