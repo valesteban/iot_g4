@@ -1,3 +1,4 @@
+import ipaddress
 import mariadb
 
 
@@ -168,7 +169,7 @@ class DB:
         discontinuos_time = configuration_dict["discontinuos_time"]
         tcp_port = configuration_dict["tcp_port"]
         udp_port = configuration_dict["udp_port"]
-        host_ip_addr = configuration_dict["host_ip_addr"]
+        host_ip_addr = int(ipaddress.IPv4Address(configuration_dict["host_ip_addr"]))
         ssid = configuration_dict["ssid"]
         pas = configuration_dict["pass"]
 
@@ -202,6 +203,8 @@ class DB:
         default_value = (0,0,0,0,0,0,0,0,0,0,0,"0","0")
         self.cursor.execute(sql, default_value)
         self.db.commit()
+
+    
         
     
 

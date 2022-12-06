@@ -1,5 +1,5 @@
 import json
-from desempaquetamiento import Protocol
+from mensaje.protocol import Protocol
 
 def get_protocol_values(data: Protocol) -> dict:
     """
@@ -28,3 +28,27 @@ def get_protocol_values(data: Protocol) -> dict:
     }
 
     return protocol_values
+
+
+
+def parse_config(configuracion:list) -> dict:
+    """
+        Recibe una configuracion en forma de lista y la entrega con forma de diccionario
+    """
+    d = {
+        "id_device": configuracion[0],
+        "status_conf": configuracion[1],
+        "protocol_conf": configuracion[2],
+        "acc_sampling": configuracion[3],
+        "acc_sensibility": configuracion[4],
+        "gyro_sensibility": configuracion[5],
+        "bme688_sampling": configuracion[6],
+        "discontinuos_time": configuracion[7],
+        "tcp_port": configuracion[8],
+        "udp_port": configuracion[9],
+        "host_ip_addr": configuracion[10],
+        "ssid": configuracion[11],
+        "pass": configuracion[12],
+    }
+
+    return d

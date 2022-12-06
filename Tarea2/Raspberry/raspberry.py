@@ -1,9 +1,11 @@
 
 import ipaddress
-import time
-from db import DB
 import socket
 import json
+
+from db import DB
+
+from mensaje import desempaquetamiento
 
 # Atributos
 # status: int
@@ -36,6 +38,44 @@ class Raspberry:
 
     def get_TCP_PORT(self) -> int:
         return self.__configuracion[8]
+    
+    def get_conf_peripheral(self) -> int:
+        return int(str(self.get_current_configuracion()[3]) + str(self.get_current_configuracion()[4]) + \
+            str(self.get_current_configuracion()[5]) + str(self.get_current_configuracion()[6]))
+
+    def save_data_db(self, data) -> None:
+        """
+            Metodo de la raspberry para guarda la data recibida en la DB
+
+            params:
+                data (decodificada)
+        """
+
+        # Creo conexion a la base de datos:
+        # host | user | pass | database
+        db = DB("localhost", "iot4", "12345678", "IoT_Tarea2")
+
+        # Creo diccionario con la info para el Log
+        log_dict = {}
+        log_dict["status_report"] = data["status_report"] 
+        log_dict["protocol_report"] = data["protocol_report"] 
+        log_dict["battery_level"] = data["battery_level"] 
+        log_dict["conf_peripheral"] = data["conf_peripheral"] 
+        log_dict["time_client"] = data["time_client"] 
+        log_dict["configuration_id_device"] = data["id_device"] 
+        db.save_log(log_dict) # Guardo el log
+
+
+        # Creo diccionario con la data a guardar
+        data_dict = {}
+        data_dict["id_device"] = data["id_device"]
+        data_dict["data"] = json.dumps(data["data"])
+        data_dict["log_id_device"] = data["id_device"]
+
+        db.save_data(data_dict) # Guarda la data
+
+        return None
+
 
 
     def actualizarConfiguracion(self):
@@ -49,10 +89,14 @@ class Raspberry:
         db = DB("localhost", "iot4", "12345678", "IoT_Tarea2")
         nueva_configuracion = db.get_all_config()[0]
 
+        # FIXME
+        nueva_configuracion = list(nueva_configuracion)
+        nueva_configuracion[10] = str(ipaddress.IPv4Address(nueva_configuracion[10]))
+        nueva_configuracion = tuple(nueva_configuracion)
+
         self.__nueva_configuracion = nueva_configuracion
         print("Raspberry: Nueva configuracion seteada:")
         print(nueva_configuracion)
-         
 
     def start_status20(self) -> None:
         """
@@ -63,12 +107,14 @@ class Raspberry:
         """
 
         print("== INICIANDO STATUS 20 ==")
+        print("raspberry: Configuracion actual:")
+        print(self.get_current_configuracion())
         # Iniciamos conexion TCP
         s = socket.socket(socket.AF_INET,socket.SOCK_STREAM)
         s.setsockopt(socket.SOL_SOCKET,socket.SO_REUSEADDR,1)
         s.bind((self.get_HOST_IP(), self.get_TCP_PORT()))
         s.listen()
-        print(f"Iniciando Socket HOST_IP: {self.get_HOST_IP()}, PORT: {self.get_TCP_PORT}")
+        print(f"Iniciando Socket TCP, HOST_IP: {self.get_HOST_IP()}, PORT: {self.get_TCP_PORT()}")
         print("Listening.....")
         conn,addr = s.accept()
         
@@ -83,7 +129,11 @@ class Raspberry:
 
             # Hubo un cambio de configuracion
             if self.__configuracion != self.__nueva_configuracion:
-                print("Enviar Cambio de configuracion")
+                print("raspberry: Avisando a la ESP el cambio de configuracion")
+                conn.sendall("1".encode())
+                conn.recv(1024)
+
+                print("raspberry: Enviando la nueva configuracion")
                 # Envio la nueva configuracion a la ESP32
 
                 # Obtengo la configuracion y encode()
@@ -100,10 +150,10 @@ class Raspberry:
                     break
 
             # Si no ha pasado envio un dato vacio
-            conn.sendall("Ningun Cambio".encode())
+            conn.sendall("0".encode())
             conn.recv(1024)
         
-        print("== FIN STATUS 20 ==")
+        print("== FIN STATUS 20 ==\n")
         s.close()
         return None
 
@@ -116,12 +166,15 @@ class Raspberry:
         este paquete de forma continua hasta que desde la Raspberry se detenga la conexión (desde la interfaz
         gráfica)
         """
+        print("== INICIANDO STATUS 21 ==")
+        print("raspberry: Configuracion actual:")
+        print(self.get_current_configuracion())
         # Iniciamos conexion TCP
         s = socket.socket(socket.AF_INET,socket.SOCK_STREAM)
         s.setsockopt(socket.SOL_SOCKET,socket.SO_REUSEADDR,1)
         s.bind((self.get_HOST_IP(), self.get_TCP_PORT()))
         s.listen()
-        print(f"Iniciando Socket HOST_IP: {self.get_HOST_IP()}, PORT: {self.get_TCP_PORT()}")
+        print(f"Iniciando Socket TCP, HOST_IP: {self.get_HOST_IP()}, PORT: {self.get_TCP_PORT()}")
         print("Listening.....")
         conn,addr = s.accept()
 
@@ -145,36 +198,31 @@ class Raspberry:
 
                 # Si llega un dato entonces debemos guardarlo y generar un log
                 if data:
-                    print(f"Data y Log a guardar: {data}")
-                    data = json.loads(data)
-                    # Creo conexion a la base de datos:
-                    # host | user | pass | database
-                    db = DB("localhost", "iot4", "12345678", "IoT_Tarea2")
+                    print(f"raspberry: data recibida {data}")
 
-                    # Creo diccionario con la info para el Log
-                    log_dict = {}
-                    log_dict["status_report"] = data["status_report"] 
-                    log_dict["protocol_report"] = data["protocol_report"] 
-                    log_dict["battery_level"] = data["battery_level"] 
-                    log_dict["conf_peripheral"] = data["conf_peripheral"] 
-                    log_dict["time_client"] = data["time_client"] 
-                    log_dict["configuration_id_device"] = data["id_device"] 
-                    db.save_log(log_dict) # Guardo el log
+                    # Para efectos de debuggins haremos un decode de string y un decode de protocolo
+                    try:
+                        data = desempaquetamiento.decode_pkg(data)
+                    except:
+                        raise Exception("Error al decodificar el protocolo")
+
+                    print(f"raspberry: data decodificada {data}")
 
 
-                    # Creo diccionario con la data a guardar
-                    data_dict = {}
-                    data_dict["id_device"] = data["id_device"]
-                    data_dict["data"] = json.dumps(data["data"])
-                    data_dict["log_id_device"] = data["id_device"]
+                    # Leo la clase Protocolo y extraigo la info para ser almacenada
+                    data = desempaquetamiento.get_protocol_values(data, 21, self.get_conf_peripheral())
 
-                    db.save_data(data_dict) # Guarda la data
+                    # Guardo la data decodificada en la DB
+                    self.save_data_db(data)
 
                     # Enviar configuracion
-                    conn.sendall(str(self.__nueva_configuracion).encode())
+                    conn.sendall(str(self.get_current_status()).encode())
                 else:
                     print('no data from', addr)
                     break
+        print("== FIN STATUS 21 ==\n")
+        s.close()
+        return None
 
     def start_status23(self) -> None:
         """
@@ -186,23 +234,42 @@ class Raspberry:
         """
 
         print("== INICIANDO STATUS 23 ==")
+        print("raspberry: Configuracion actual:")
+        print(self.get_current_configuracion())
         # Iniciamos conexion UDP
         s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         s.bind((self.get_HOST_IP(), self.get_UDP_PORT()))
-        print(f"Iniciando Socket HOST_IP: {self.get_HOST_IP()}, PORT: {self.get_UDP_PORT()}")
+        print(f"Iniciando Socket UDP, HOST_IP: {self.get_HOST_IP()}, PORT: {self.get_UDP_PORT()}")
         print("Listening.....")
         
         while True:
 
             data, addr = s.recvfrom(1024)
 
+
             if data:
                 print(f"Data y Log a guardar: {data}")
-                s.sendto(data, addr)
+                try:
+                    data = desempaquetamiento.decode_pkg(data)
+                except:
+                    raise Exception("Error al decodificar el protocolo")
+
+                print(f"raspberry: data decodificada {data}")
+
+
+                # Leo la clase Protocolo y extraigo la info para ser almacenada
+                data = desempaquetamiento.get_protocol_values(data, 23, self.get_conf_peripheral())
+
+                # Guardo la data decodificada en la DB
+                self.save_data_db(data)
+
+                # Enviar configuracion
+                s.sendto(str(self.get_current_status()).encode(), addr)
+
             else:
                 print('no data from', addr)
                 break
                 
-
+        print("== FIN STATUS 23 ==\n")
         s.close()
         return None

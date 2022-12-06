@@ -8,6 +8,7 @@ import ipaddress
 #pyuic5 ejemplo_tarea2.ui -o ex.py
 
 from db import DB
+import utils
 
 
 class GUIController:
@@ -94,6 +95,13 @@ class GUIController:
         """
             Inicia la configuracion BLE para enviar la configuracion a la ESP32
         """
+
+        # FIXME
+        CONFIGURACION = (3,20,0,400,16,200,4,420,5010,5011,"192.168.28.1","iot4","12345678")
+        db = DB("localhost", "iot4", "12345678", "IoT_Tarea2")
+        db.change_config(utils.parse_config(CONFIGURACION))
+
+
         # envía una configuración indicada por BLE al dispositivo conectado
         print("GUIController: Obtengo la configuracion de la DB")
         ESPconf_db = self.get_DB_ConfigParams() # Configuracion a guardar
