@@ -184,7 +184,10 @@ class DB:
             Metodo que insertar un valor por defecto de configuracion.
             Para que luego pueda ser modificado.
         """
-        
+
+        #FIXME
+        self.delete_all()
+
         # Primero limpiamos la tabla
         sql = '''
             DELETE FROM Configuration

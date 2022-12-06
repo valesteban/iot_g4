@@ -1,4 +1,6 @@
 
+import ipaddress
+import time
 from db import DB
 import socket
 import json
@@ -27,7 +29,7 @@ class Raspberry:
         return self.__configuracion[1]
 
     def get_HOST_IP(self) -> str:
-        return self.__configuracion[10]
+        return str(ipaddress.IPv4Address(self.__configuracion[10]))
 
     def get_UDP_PORT(self) -> int:
         return self.__configuracion[9]
@@ -168,7 +170,8 @@ class Raspberry:
 
                     db.save_data(data_dict) # Guarda la data
 
-                    conn.sendall("Datos recibidos y guardados".encode())
+                    # Enviar configuracion
+                    conn.sendall(str(self.__nueva_configuracion).encode())
                 else:
                     print('no data from', addr)
                     break

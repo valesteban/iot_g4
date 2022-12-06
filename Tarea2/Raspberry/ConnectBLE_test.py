@@ -128,7 +128,7 @@ class GUIController:
 
                 # ACTUALIZO LA CONFIGURACION DE LA RASPBERRY
                 print("GUIController: Seteando configuracion a la raspberry")
-                self.raspberry.setConfiguracion(ESPconf)
+                self.raspberry.setConfiguracion(ESPconf_db)
             except pygatt.exceptions.NotConnectedError:
                 qty += 1
                 print(f"Se han fallado: {qty} intentos" )
