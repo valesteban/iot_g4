@@ -4,6 +4,7 @@ from PyQt5.QtWidgets import QFrame, QDialog, QPushButton
 from multiprocessing import Lock
 
 import ipaddress
+import sys
 
 from gui.all_events import CheckNoWifiEvent, ValidWifiConfigEvent, InvalidWifiConfigEvent, InactiveESPEvent, AbleToSendEvent, UnableToSendEvent, SendStartEvent, ESPActiveEvent, ESPRemoveActiveEvent, ESPAddActiveEvent, ESPRemoveFoundEvent, ESPAddFoundEvent, ESPFoundEvent, ESPSendingEvent
 from gui.states import WifiState, NoWifiState, FoundState
@@ -265,7 +266,13 @@ class ESPConfig:
 
         print(new_)
 
-        self.esp.controller.config_set(new_)
+
+        try:
+            self.esp.controller.config_set(new_)
+        except Exception as e:
+            print("Falló la escritura en el DB *jabalí explotando*")
+            print(e, file= sys.stderr)
+            raise(e)
 
 class ESPDevice:
     def __init__(self, esp_id, esp_mac, esp_lists_machine: ListsMachine, esp_dict_list: "ESPDicts", main_win, controller: "Controller") -> None:
