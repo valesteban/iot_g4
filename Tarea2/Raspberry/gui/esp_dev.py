@@ -107,8 +107,8 @@ class ESPConfig:
 
         state_no_config.exited.connect(_activate_wifi_config_check)
 
-        self.esp.ui_active.pushButton_config_medium_bluetooth.clicked.connect(lambda: self.set_medium_and_post(config_wifi=False))
-        self.esp.ui_active.pushButton_config_medium_bd.clicked.connect(lambda: self.set_medium_and_post(config_wifi=True))
+        self.esp.ui_active.pushButton_config_medium_bluetooth.clicked.connect(self._click_bluetooth_config_slot)
+        self.esp.ui_active.pushButton_config_medium_bd.clicked.connect(self._click_db_config_slot)
         self.esp.ui_config_win.pushButton_send_bluetooth.clicked.connect(lambda: self.set_medium_and_post(send_wifi=False))
         self.esp.ui_config_win.pushButton_send_wifi.clicked.connect(lambda: self.set_medium_and_post(send_wifi=True))
 
@@ -208,6 +208,14 @@ class ESPConfig:
         else:
             self.machine.postEvent(AbleToSendEvent())
 
+    def _click_bluetooth_config_slot(self):
+        self.set_medium_and_post(config_wifi=False)
+        self.esp.worker_slot = self.esp.perform_ble_config
+
+    def _click_db_config_slot(self):
+        self.set_medium_and_post(config_wifi=True)
+        self.esp.worker_slot = self.esp.perform_wifi_config
+
     def _enter_no_config(self):
         self.wifi_ui.set_ui_to_default_view()
         self._load_config_from_model()
@@ -215,11 +223,10 @@ class ESPConfig:
     
     def _enter_no_wifi(self):
         self._check_valid_connections()
-        self.esp.worker_slot = self.esp.perform_ble_config
+        
 
     def _enter_wifi(self):
         self._check_valid_connections()
-        self.esp.worker_slot = self.esp.perform_wifi_config
 
     def _load_config_from_model(self):
         print(self.esp.esp_id)
@@ -250,6 +257,7 @@ class ESPConfig:
         print("id esp:", self.esp.esp_id)
 
         host_ipv4 = ipaddress.IPv4Address(wifi_conf[0])
+        print("Parsed host_ipv4: ", str(host_ipv4))
         new_ = {
             "id_device": self.esp.esp_id,
             "discontinuos_time": status_conf[3],
@@ -404,14 +412,17 @@ class ESPDevice:
 
 
     def _on_send_process(self):
+        print("STARTINGGGGGGG SEND PROCESS")
         self.start_btn.set_restart_button()
         self.ui_active.pushButton_remove.setDisabled(True)
         self.ui_active.pushButton_esp_active_start_stop.setDisabled(True)
         #save all values into BD
         self.config.wifi_ui.save_ui_into_properties()
         self.config._save_config_into_model()
+        print("SAVED DATA INTO DBBBBBBBBBB")
 
     def _on_send_configure(self):
+        print("inside config process")
         self.start_btn.ui_button.setDisabled(True)
         self.ui_active.pushButton_esp_active_start_stop.setDisabled(True)
         self.send_status.set_send_status_config()

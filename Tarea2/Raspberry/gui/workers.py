@@ -44,7 +44,7 @@ class FindESPWorker(Worker):
     def on_error(self, error_instance):
         super().on_error(error_instance)
         self.error_msg.launch_warning_exception_message(error_instance, "ESP Seach Error", "An error occurred during the search of an ESP device.\nClose this message and try again.")
-        self.caller.machine.postEvent(EndFindEvent(ESPActiveEvent()))
+        self.caller.machine.postEvent(EndFindEvent())
 
 class ConfigESPBLEWorker(Worker):
     def __init__(self, window_parent, caller, slot, slot_args=[], parent: typing.Optional['QObject'] = None) -> None:
@@ -56,7 +56,7 @@ class ConfigESPBLEWorker(Worker):
     def on_error(self, error_instance):
         super().on_error(error_instance)
         self.error_msg.launch_critical_exception_message(error_instance,"BLE conf error", "A fatal error has occurred while configuring the ESP through BLE.\nSend process has been stopped.")
-        self.caller.machine.postEvent()
+        self.caller.machine.postEvent(ESPActiveEvent())
         self.caller.send_status.set_send_status_error(configuring=True, extra_msg=". Configuración cancelada")
 
 class ConfigESPWifiWorker(Worker):
@@ -69,7 +69,7 @@ class ConfigESPWifiWorker(Worker):
     def on_error(self, error_instance):
         super().on_error(error_instance)
         self.error_msg.launch_critical_exception_message(error_instance,"Wifi conf error", "A fatal error has occurred while configuring the ESP through Wifi.\nSend process has been stopped.")
-        self.caller.machine.postEvent()
+        self.caller.machine.postEvent(ESPActiveEvent())
         self.caller.send_status.set_send_status_error(configuring=True, extra_msg=". Configuración cancelada")
 
     
