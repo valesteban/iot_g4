@@ -1,11 +1,12 @@
-from PyQt5.QtCore import QStateMachine, QState, QFinalState, QSignalTransition
+from PyQt5.QtCore import QStateMachine, QState, QFinalState, QSignalTransition, QThread
 
 from PyQt5.QtWidgets import QFrame, QDialog, QPushButton
 from multiprocessing import Lock
 
 import ipaddress
+import sys
 
-from gui.all_events import CheckNoWifiEvent, ValidWifiConfigEvent, InvalidWifiConfigEvent, InactiveESPEvent, AbleToSendEvent, UnableToSendEvent, SendStartEvent, ESPActiveEvent, ESPRemoveActiveEvent, ESPAddActiveEvent, ESPRemoveFoundEvent, ESPAddFoundEvent, ESPFoundEvent
+from gui.all_events import CheckNoWifiEvent, ValidWifiConfigEvent, InvalidWifiConfigEvent, InactiveESPEvent, AbleToSendEvent, UnableToSendEvent, SendStartEvent, ESPActiveEvent, ESPRemoveActiveEvent, ESPAddActiveEvent, ESPRemoveFoundEvent, ESPAddFoundEvent, ESPFoundEvent, ESPSendingEvent
 from gui.states import WifiState, NoWifiState, FoundState
 from gui.transitions import InactiveESPTransition, CheckNoWifiTransition, AbleToSendTransition, UnableToSendTransition, ValidWifiConfigTransition, InvalidWifiConfigTransition, StartClickTransition, ESPActiveTransition, ESPFoundTransition, SendStartTransition, ESPSendingTransition, ESPSleepingTransition
 from gui.esp_lists import ListsMachine
@@ -13,6 +14,7 @@ from gui.properties import WifiProperties, ConfigProperties
 from gui.wifi_ui import WifiDisplay
 from gui.config_ui import StatusConfigUI
 from gui.active_ui import StartButtonUI, SendStatusUI, ESPInfo
+from gui.workers import ConfigESPBLEWorker, ConfigESPWifiWorker
 
 from gui.forms import esp_found_item, esp_active_item,  esp_wifi_config, esp_config_win
 
@@ -105,8 +107,8 @@ class ESPConfig:
 
         state_no_config.exited.connect(_activate_wifi_config_check)
 
-        self.esp.ui_active.pushButton_config_medium_bluetooth.clicked.connect(lambda: self.set_medium_and_post(config_wifi=False))
-        self.esp.ui_active.pushButton_config_medium_bd.clicked.connect(lambda: self.set_medium_and_post(config_wifi=True))
+        self.esp.ui_active.pushButton_config_medium_bluetooth.clicked.connect(self._click_bluetooth_config_slot)
+        self.esp.ui_active.pushButton_config_medium_bd.clicked.connect(self._click_db_config_slot)
         self.esp.ui_config_win.pushButton_send_bluetooth.clicked.connect(lambda: self.set_medium_and_post(send_wifi=False))
         self.esp.ui_config_win.pushButton_send_wifi.clicked.connect(lambda: self.set_medium_and_post(send_wifi=True))
 
@@ -160,17 +162,11 @@ class ESPConfig:
             if not self.esp.ui_active.toolButton_esp_active_wifi_config.isChecked():
                 self.esp.ui_active.toolButton_esp_active_wifi_config.click()
 
-        def _check_valid_connections():
-            if self.config_wifi is None or self.send_wifi is None:
-                self.machine.postEvent(UnableToSendEvent())
-            else:
-                self.machine.postEvent(AbleToSendEvent())
-
         state_config_wifi.entered.connect(_auto_show_toolbar)
         state_config_no_wifi.entered.connect(_auto_hide_toolbar)
 
-        state_config_wifi.entered.connect(_check_valid_connections)
-        state_config_no_wifi.entered.connect(_check_valid_connections)
+        state_config_wifi.entered.connect(self._enter_wifi)
+        state_config_no_wifi.entered.connect(self._enter_no_wifi)
         
         trans_wifi_to_error = InvalidWifiConfigTransition()
         trans_wifi_to_error.setTargetState(state_wifi_error)
@@ -206,11 +202,32 @@ class ESPConfig:
 
         self.machine.start()
 
+    def _check_valid_connections(self):
+        if self.config_wifi is None or self.send_wifi is None:
+            self.machine.postEvent(UnableToSendEvent())
+        else:
+            self.machine.postEvent(AbleToSendEvent())
+
+    def _click_bluetooth_config_slot(self):
+        self.set_medium_and_post(config_wifi=False)
+        self.esp.worker_slot = self.esp.perform_ble_config
+
+    def _click_db_config_slot(self):
+        self.set_medium_and_post(config_wifi=True)
+        self.esp.worker_slot = self.esp.perform_wifi_config
+
     def _enter_no_config(self):
         self.wifi_ui.set_ui_to_default_view()
         self._load_config_from_model()
         self.wifi_ui.load_from_properties_into_ui()
     
+    def _enter_no_wifi(self):
+        self._check_valid_connections()
+        
+
+    def _enter_wifi(self):
+        self._check_valid_connections()
+
     def _load_config_from_model(self):
         print(self.esp.esp_id)
         
@@ -228,20 +245,26 @@ class ESPConfig:
             self.status_properties.set_all(*bd_status_conf)
 
     def _save_config_into_model(self):
+        self.wifi_properties.reset_invalid()
+        self.status_properties.reset_invalid()
+
         wifi_conf = self.wifi_properties.get_all()
         status_conf = self.status_properties.get_all()
 
         wifi_keys = WifiProperties.attrs
         status_keys = ConfigProperties.attrs
 
-        host_ipv4 = int(ipaddress.IPv4Address(wifi_conf[0]))
+        print("id esp:", self.esp.esp_id)
+
+        host_ipv4 = ipaddress.IPv4Address(wifi_conf[0])
+        print("Parsed host_ipv4: ", str(host_ipv4))
         new_ = {
             "id_device": self.esp.esp_id,
             "discontinuos_time": status_conf[3],
             "host_ip_addr": host_ipv4,
             "tcp_port": wifi_conf[1],
             "udp_port": wifi_conf[2],
-            "host_ip_addr": int(ipaddress.IPv4Address("192.168.28.1")),
+            "host_ip_addr": str(host_ipv4),
             "pass": wifi_conf[4] 
         }
         
@@ -251,7 +274,13 @@ class ESPConfig:
 
         print(new_)
 
-        self.esp.controller.config_set(new_)
+
+        try:
+            self.esp.controller.config_set(new_)
+        except Exception as e:
+            print("Falló la escritura en el DB *jabalí explotando*")
+            print(e, file= sys.stderr)
+            raise(e)
 
 class ESPDevice:
     def __init__(self, esp_id, esp_mac, esp_lists_machine: ListsMachine, esp_dict_list: "ESPDicts", main_win, controller: "Controller") -> None:
@@ -262,6 +291,9 @@ class ESPDevice:
         self.esp_dict = esp_dict_list
         self.main_win = main_win
         self.controller = controller
+        self.gui_controller = self.controller.ble_controller(self.controller.rasp_, self)
+
+        self.worker_slot = self.perform_ble_config
 
         self.ui_found: esp_found_item.Ui_Form_esp_found_item = None
 
@@ -352,6 +384,9 @@ class ESPDevice:
         trans_sleep_to_send = ESPSendingTransition(state_mimir)
         trans_sleep_to_send.setTargetState(state_envio)
 
+        trans_stop_config = ESPActiveTransition(state_configurando)
+        trans_stop_config.setTargetState(state_activo)
+
         trans_stop_send = ESPActiveTransition(state_envio)
         trans_stop_send.setTargetState(state_activo)
 
@@ -372,22 +407,30 @@ class ESPDevice:
 
     def _on_active(self):
         self.start_btn.set_start_button()
-        self.send_status.set_send_status_default()
+        #self.send_status.set_send_status_default()
         self.ui_active.pushButton_remove.setDisabled(False)
 
 
     def _on_send_process(self):
+        print("STARTINGGGGGGG SEND PROCESS")
         self.start_btn.set_restart_button()
         self.ui_active.pushButton_remove.setDisabled(True)
         self.ui_active.pushButton_esp_active_start_stop.setDisabled(True)
         #save all values into BD
         self.config.wifi_ui.save_ui_into_properties()
         self.config._save_config_into_model()
+        print("SAVED DATA INTO DBBBBBBBBBB")
 
     def _on_send_configure(self):
+        print("inside config process")
         self.start_btn.ui_button.setDisabled(True)
         self.ui_active.pushButton_esp_active_start_stop.setDisabled(True)
         self.send_status.set_send_status_config()
+
+        self.worker_slot()
+        
+        
+
 
     def _on_send_send(self):
         self.start_btn.ui_button.setDisabled(False)
@@ -411,6 +454,26 @@ class ESPDevice:
         self.esp_lists_machine.machine.postEvent(ESPAddActiveEvent(self.active_widget))
         self.esp_lists_machine.machine.postEvent(ESPRemoveFoundEvent(self.found_widget))
 
+    def notify_config_success(self):
+        self.send_status.set_send_status_config(". Succeded!")
+        self.machine.postEvent(ESPSendingEvent())
+
+    def  notify_ble_try_failed(self, qty):
+        self.send_status.set_send_status_error(configuring=True, extra_msg=". Tried {} times.".format(qty))
+
+    def perform_ble_config(self):
+        self.worker_ble = ConfigESPBLEWorker(self.main_win, self, self.gui_controller.configSetup)
+        thread = QThread()
+        self.worker_ble.setup_thread(thread)
+        self.thread = thread
+        thread.start()
+
+    def perform_wifi_config(self):
+        self.worker_wifi = ConfigESPWifiWorker(self.main_win, self, self.controller.rasp_.start_status20)
+        thread = QThread()
+        self.worker_wifi.setup_thread(thread)
+        self.thread = thread
+        thread.start()
 
     def set_found_widget(self) -> QFrame:
         ui_found = esp_found_item.Ui_Form_esp_found_item()

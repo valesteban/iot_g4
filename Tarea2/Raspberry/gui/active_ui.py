@@ -58,29 +58,29 @@ class SendStatusUI:
         
         self.status_label.setText(self._translate("Form_esp_active", self.labels_txt[mode]+extra_msg))
 
-    def set_send_status_default(self):
+    def set_send_status_default(self, extra_msg=""):
         self.status_icon.setPixmap(self.default_active)
-        self.status_label.setText(self._translate("Form_esp_active", "Active"))
+        self.status_label.setText(self._translate("Form_esp_active", "Active"+extra_msg))
 
-    def set_send_status_config(self):
-        self.set_send_status("config", True)
+    def set_send_status_config(self, extra_msg=""):
+        self.set_send_status("config", True, extra_msg=extra_msg)
 
-    def set_send_status_send(self):
-        self.set_send_status("send")
+    def set_send_status_send(self, extra_msg=""):
+        self.set_send_status("send", extra_msg=extra_msg)
 
-    def set_send_status_deepsleep(self):
-        self.set_send_status("deepsleep")
+    def set_send_status_deepsleep(self, extra_msg=""):
+        self.set_send_status("deepsleep", extra_msg=extra_msg)
 
-    def set_send_status_error(self, configuring):
+    def set_send_status_error(self, configuring, extra_msg=""):
         if configuring:
-            extra_msg = " while configuring"
+            extra_extra_msg = " while configuring"
         else:
-            extra_msg = " while sending"
-        self.set_send_status("error", configuring, extra_msg)
+            extra_extra_msg = " while sending"
+        self.set_send_status("error", configuring, extra_extra_msg+extra_msg)
 
-    def set_send_status_dead(self):
+    def set_send_status_dead(self, extra_msg=""):
         self.status_icon.setPixmap(self.dead_icon)
-        self.status_label.setText(self._translate("Form_esp_active", self.labels_txt["dead"]))
+        self.status_label.setText(self._translate("Form_esp_active", self.labels_txt["dead"]+extra_msg))
 
 
 class StartButtonUI:
@@ -122,4 +122,4 @@ class ESPInfo:
         new_mac = str(new_mac)
 
         self.id_label.setText(self._translate("Form_esp_active", new_id))
-        self.id_label.setText(self._translate("Form_esp_active", new_mac))
+        self.mac_label.setText(self._translate("Form_esp_active", new_mac))

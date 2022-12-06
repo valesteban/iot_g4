@@ -6,6 +6,7 @@ from gui.all_events import ESPSendingEvent, ESPSleepingEvent, EndFindEvent, ESPF
 
 from db_manager import change_db_config, DB
 from ConnectBLE import GUIController
+from raspberry import Raspberry
 
 
 if __name__ == '__main__':
@@ -15,11 +16,14 @@ if __name__ == '__main__':
     app = QApplication(sys.argv)
     window = QMainWindow()
 
+    rasp_ = Raspberry()
+
     controller = Controller(
         change_db_config, 
         DB("localhost", "iot4", "12345678", "IoT_Tarea2").get_device_config, 
         lambda: None, 
-        lambda: None, 
+        lambda: None,
+        rasp_, 
         GUIController)
         
     rasp = Rasp(window, controller)

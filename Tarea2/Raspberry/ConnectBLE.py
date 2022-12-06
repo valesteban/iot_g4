@@ -26,7 +26,6 @@ class GUIController:
         self.UUIDs = []
         self.servers = []
         self.plot = None
-        self.g
         rph = None
         self.macindx = 0
 
@@ -40,13 +39,15 @@ class GUIController:
         # actualiza la lista de dispositivos con bluetooth disponibles
         adrs = findAddresses()
 
-        self.gui_obj.notify_end_find()
-
         self.macs = adrs[1]
         self.UUIDs = adrs[2]
 
+        print(self.macs)
+
         for i in range(len(self.macs)):
-            self.gui_obj.notify_esp_found(self.UUIDs[i], self.macs[i])
+            self.gui_obj.notify_esp_found(self.UUIDs[i][0], self.macs[i])
+
+        self.gui_obj.notify_end_find()
 
         # TODO: UI
         #self.ui.selec_7.clear()
@@ -72,12 +73,14 @@ class GUIController:
                 characteristics = device.discover_characteristics()
                 for i in characteristics.keys():
                     print('Caracteristicas: '+str(i))#list(characteristics.keys())))
+                
                 time.sleep(1)
                 qty = 100
             except pygatt.exceptions.NotConnectedError:
                 qty += 1
                 print("Se han fallado: {qty} intentos" )
                 print("Not connected")
+                
                 time.sleep(1)
             finally:
                 self.adapter.stop()
@@ -89,7 +92,7 @@ class GUIController:
         """
         # host | user | pass | database
         db = DB("localhost", "iot4", "12345678", "IoT_Tarea2")
-        return db.get_all_config()[0]
+        return db.get_all_config()[-1]
     
     def configSetup(self):
         """
@@ -121,6 +124,7 @@ class GUIController:
                 # sabe la UUID de la caracteristica a escribir, este misma funcion para leer es tan solo char_read
                 # Recomiendo leer acerca del sistema de Subscribe para recibir notificaciones del cambio u otros
                 device.char_write(list(characteristics)[4], pack)   #hay q poner el uid
+                self.gui_obj.notify_config_success()
                 print("Se escribio el paquete")
                 qty = 100
                 #en caso de read siempre hay que ponerle un id para tomar el paquete
@@ -129,6 +133,7 @@ class GUIController:
                 qty += 1
                 print(f"Se han fallado: {qty} intentos" )
                 print("Not connected")
+                self.gui_obj.notify_ble_try_failed(qty)
                 time.sleep(1)
             finally:
                 self.adapter.stop()

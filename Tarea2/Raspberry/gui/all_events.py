@@ -13,6 +13,9 @@ class ESPFoundEvent(QEvent):
         self.esp_id = esp_id
         self.esp_mac = esp_mac
 
+    def __str__(self):
+        return "ESPFoundEvent" + super().__str__()
+
 class ESPAddFoundEvent(QEvent):
     EVENT_TYPE = QEvent.Type.User+3
     def __init__(self,esp_widget) -> None:

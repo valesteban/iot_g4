@@ -30,7 +30,10 @@ def findAddresses():
         return devices
 
     devices = asyncio.run(main())
-    return [names,macs,UUIDs]
+    res = [names,macs,UUIDs]
+    print(res)
+
+    return res
 
 
 def handle_data(handle, value):

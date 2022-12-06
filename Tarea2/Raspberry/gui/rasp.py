@@ -7,18 +7,31 @@ from gui.live_plot import LivePlotManager
 from gui.transitions import EndFindTransition, ESPFoundTransition
 from gui.esp_lists import ListsMachine
 from gui.esp_dev import ESPDicts
-from gui.workers import Worker
+from gui.workers import FindESPWorker
+import typing
+import uuid
+import random
+
+
+class CustomMachine(QStateMachine):
+    def __init__(self, parent: typing.Optional["QObject"] = None) -> None:
+        super().__init__(parent)
+
+    def postEvent(self, event: "QEvent", priority: 'QStateMachine.EventPriority' = QStateMachine.NormalPriority) -> None:
+        print("Inside custom machine", event)
+        return super().postEvent(event, priority)
 
 
 class Controller:
-    def __init__(self, db_config_set, db_config_get, db_get_ids, db_get_data, ble_controller_cls) -> None:
-        self.set_methods(db_config_set, db_config_get, db_get_ids, db_get_data, ble_controller_cls)
+    def __init__(self, db_config_set, db_config_get, db_get_ids, db_get_data, rasp_, ble_controller_cls) -> None:
+        self.set_methods(db_config_set, db_config_get, db_get_ids, db_get_data, rasp_, ble_controller_cls)
 
-    def set_methods(self, db_config_set, db_config_get, db_get_ids, db_get_data, ble_controller_cls):
+    def set_methods(self, db_config_set, db_config_get, db_get_ids, db_get_data, rasp_, ble_controller_cls):
         self.config_set = db_config_set
         self.config_get = db_config_get
         self.keys_get = db_get_ids
         self.data_get = db_get_data
+        self.rasp_ = rasp_
         self.ble_controller =ble_controller_cls
 
 class DeviceSearch:
@@ -27,11 +40,16 @@ class DeviceSearch:
         self.esp_dict_list = esp_dict_list
         self.controller = controller
 
-        self.gui_controller = self.controller.ble_controller(self)
+        self.gui_controller = self.controller.ble_controller(self.controller.rasp_, self)
+        self.worker = FindESPWorker(self.main_disp.centralwidget, self, self.gui_controller.actualizarMacs)
 
-        self.machine = QStateMachine()
+        #self.machine = QStateMachine()
+        self.machine = CustomMachine()
+        print("machine: ", self.machine)
         state_buscando = QState(self.machine)
+        print("state_buscando: ", state_buscando)
         state_sin_buscar = QState(self.machine)
+        print("state sin buscar: ", state_sin_buscar)
         
         trans_no_a_buscar = QSignalTransition(self.main_disp.pushButton_search_refresh.clicked, state_sin_buscar)
         trans_no_a_buscar.setTargetState(state_buscando)
@@ -41,6 +59,7 @@ class DeviceSearch:
         endfind_transition = EndFindTransition()
         endfind_transition.setTargetState(state_sin_buscar)
         state_buscando.addTransition(endfind_transition)
+        endfind_transition.triggered.connect(lambda: print("Término de búsqueda!"))
 
         state_buscando.assignProperty(self.main_disp.pushButton_search_refresh, "enabled", False)
         state_sin_buscar.assignProperty(self.main_disp.pushButton_search_refresh, "enabled", True)
@@ -54,20 +73,24 @@ class DeviceSearch:
         self.machine.start()
 
     def perform_search(self):
-        worker = Worker(self.gui_controller.actualizarMacs)
+        self.worker = FindESPWorker(self.main_disp.centralwidget, self, self.gui_controller.actualizarMacs)
         thread = QThread()
-        worker.moveToThread(thread)
-        thread.started.connect(worker.process)
-        worker.finished.connect(thread.quit)
-        worker.finished.connect(worker.deleteLater)
-        thread.finished.connect(thread.deleteLater)
+        #worker.moveToThread(thread)
+        #thread.started.connect(worker.process)
+        #worker.finished.connect(thread.quit)
+        #worker.finished.connect(worker.deleteLater)
+        #thread.finished.connect(thread.deleteLater)
+        self.worker.setup_thread(thread)
         # necesario hacer self. para que quede una referencia a los objetos y no se maten solos :(
         self.thread = thread
-        self.worker = worker
         thread.start()
 
     def notify_esp_found(self, esp_id: str, esp_mac: str):
-        self.machine.postEvent(ESPFoundEvent(esp_id, esp_mac))
+        #self.machine.postEvent(ESPFoundEvent(new_id, esp_mac))
+        #new_id = hash(esp_mac)%10000
+        new_id = 3
+
+        self.machine.postEvent(ESPFoundEvent(new_id, esp_mac))
 
     def notify_end_find(self):
         self.machine.postEvent(EndFindEvent())

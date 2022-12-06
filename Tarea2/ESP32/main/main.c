@@ -35,22 +35,24 @@ Configuracion conf_struct ;
 bool detener = 0;
 // Configuracion conf_struct = {
 //     20 ,
-//     '1' ,
+//     1 ,
 //     10,
 //     2,
 //     200 ,
 //     1 ,
 //     10 ,
-//     5000,
-//     5001,
+//     5010,
+//     5011,
 //     "192.168.28.1",
 //     "iot4",
 //     "12345678",
 // };
-
-
+char* ip_host = "192.168.28.1";
+char* ssid = "iot4";
+char* pass = "12345678";
 
 static const char *TAG = "";
+
 
 char *getSubstring(char* dst,const char *src,size_t start,size_t ens){
     return strncpy(dst,src+start,ens);
@@ -73,49 +75,43 @@ void app_main(void){
      */
 
 
-    ESP_LOGE(TAG,"*******************BLE CONF*************************************");
+   
     // funcion ble
-    // protocolo_ble(); !!
+    protocolo_ble(); 
 
-    //espera hasta que se se envie configuracion por ble
-    // while (value_config == NULL){   !!
-    //     ESP_LOGE(TAG,"aun nada");
-    //     sleep(10);
-    // }
+    // espera hasta que se se envie configuracion por ble
+    while (value_config == NULL){   
+        ESP_LOGE(TAG,"aun nada");
 
-    // uint8_t *   config_char = (char*) value_config ;  !!
-    char * config_char = "(21, 3, 2, 400, 16, 200, 4, 400, 5010, 5010, 192.168.28.1, iot4, 12345678)";
+        sleep(10);
+    }
+    esp_bluedroid_disable();
+    ESP_LOGI(TAG,"Se conectó");
+
+
+    char*   config_char = (char*) value_config ;  
+    ESP_LOGI(TAG,"Valores -> %s",config_char);
+
     value_config = NULL;                                            //para reiniciar valor
     
     //de datos recibidos por ble construimos estructura
     conf_struct  = construccion_conf(config_char, conf_struct);
-        ESP_LOGI(TAG,"valor main -> %s" , config_char);
+    conf_struct.Host_IP_Addr = host_ip;
+    conf_struct.Pass = pass;
+    conf_struct.SSID = ssid;
 
 
-    // 
-    // ESP_LOGE(TAG,"---> %d",conf_struct.Status);
-    //     sleep(10);
+    // // 
+    // // ESP_LOGE(TAG,"---> %d",conf_struct.Status);
+    // //     sleep(10);
 
-    //loop de conexiones termina cuando se poara por la gui
+    // //loop de conexiones termina cuando se poara por la gui
     while ( detener==0){
-        cambiar_conexion(conf_struct);
+        Configuracion  conf = cambiar_conexion(conf_struct);
+        conf_struct = conf;
     }
-
-    ESP_LOGE(TAG2, "Se solicito terminar");
-    //apagar
-    
-    
-
-
-
-
     
 }
 
 
-    // ARREGLAR
-    // - terminar wifi dexconectar
-    // - ver los ultimos valores de estructura de confi si van o no las comillas
-    // - id_protocol cambiar a char 
-    // - tema deep sleep
 

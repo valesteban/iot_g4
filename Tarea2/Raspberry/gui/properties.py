@@ -151,6 +151,16 @@ class WifiProperties(QObject):
     def get_all(self):
         return [getattr(self, attr) for attr in self.attrs]
 
+    # resets all invalid values
+    def reset_invalid(self):
+        vals_wifi = self.get_all()
+        for i in range(len(self.attrs)):
+            attr = self.attrs[i]
+            mid_result = getattr(self, "validate_"+attr)(vals_wifi[i])
+            if not mid_result:
+                getattr(self, "reset_"+attr)()
+
+
     host_ipv4 = pyqtProperty(str, read_host_ipv4, set_host_ipv4, notify=host_changed)
     port_tcp = pyqtProperty(int, read_port_tcp, set_port_tcp, notify=tcp_changed)
     port_udp = pyqtProperty(int, read_port_udp, set_port_udp, notify=udp_changed)
@@ -354,6 +364,15 @@ class ConfigProperties(QObject):
         
     def get_all(self):
         return [getattr(self, attr) for attr in self.attrs]
+
+    # resets all invalid values
+    def reset_invalid(self):
+        vals = self.get_all()
+        for i in range(len(self.attrs)):
+            attr = self.attrs[i]
+            mid_result = getattr(self, "validate_"+attr)(vals[i])
+            if not mid_result:
+                getattr(self, "reset_"+attr)()
 
     status_conf = pyqtProperty(int, read_status_conf, set_status_conf, freset=reset_status_conf, notify=status_conf_changed)
     protocol_conf = pyqtProperty(int, read_protocol_conf, set_protocol_conf, freset=reset_protocol_conf, notify=protocol_conf_changed)
