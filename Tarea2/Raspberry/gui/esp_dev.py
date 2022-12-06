@@ -13,7 +13,7 @@ from gui.properties import WifiProperties, ConfigProperties
 from gui.wifi_ui import WifiDisplay
 from gui.config_ui import StatusConfigUI
 from gui.active_ui import StartButtonUI, SendStatusUI, ESPInfo
-from gui.workers import ConfigESPBLEWorker
+from gui.workers import ConfigESPBLEWorker, ConfigESPWifiWorker
 
 from gui.forms import esp_found_item, esp_active_item,  esp_wifi_config, esp_config_win
 
@@ -237,6 +237,9 @@ class ESPConfig:
             self.status_properties.set_all(*bd_status_conf)
 
     def _save_config_into_model(self):
+        self.wifi_properties.reset_invalid()
+        self.status_properties.reset_invalid()
+
         wifi_conf = self.wifi_properties.get_all()
         status_conf = self.status_properties.get_all()
 
@@ -273,7 +276,7 @@ class ESPDevice:
         self.esp_dict = esp_dict_list
         self.main_win = main_win
         self.controller = controller
-        self.gui_controller = self.controller.ble_controller(self)
+        self.gui_controller = self.controller.ble_controller(self.controller.rasp_, self)
 
         self.worker_slot = self.perform_ble_config
 
@@ -448,7 +451,11 @@ class ESPDevice:
         thread.start()
 
     def perform_wifi_config(self):
-        pass
+        self.worker_wifi = ConfigESPWifiWorker(self.main_win, self, self.controller.rasp_.start_status20)
+        thread = QThread()
+        self.worker_wifi.setup_thread(thread)
+        self.thread = thread
+        thread.start()
 
     def set_found_widget(self) -> QFrame:
         ui_found = esp_found_item.Ui_Form_esp_found_item()

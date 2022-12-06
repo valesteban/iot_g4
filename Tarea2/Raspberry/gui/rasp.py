@@ -23,14 +23,15 @@ class CustomMachine(QStateMachine):
 
 
 class Controller:
-    def __init__(self, db_config_set, db_config_get, db_get_ids, db_get_data, ble_controller_cls) -> None:
-        self.set_methods(db_config_set, db_config_get, db_get_ids, db_get_data, ble_controller_cls)
+    def __init__(self, db_config_set, db_config_get, db_get_ids, db_get_data, rasp_, ble_controller_cls) -> None:
+        self.set_methods(db_config_set, db_config_get, db_get_ids, db_get_data, rasp_, ble_controller_cls)
 
-    def set_methods(self, db_config_set, db_config_get, db_get_ids, db_get_data, ble_controller_cls):
+    def set_methods(self, db_config_set, db_config_get, db_get_ids, db_get_data, rasp_, ble_controller_cls):
         self.config_set = db_config_set
         self.config_get = db_config_get
         self.keys_get = db_get_ids
         self.data_get = db_get_data
+        self.rasp_ = rasp_
         self.ble_controller =ble_controller_cls
 
 class DeviceSearch:
@@ -39,7 +40,7 @@ class DeviceSearch:
         self.esp_dict_list = esp_dict_list
         self.controller = controller
 
-        self.gui_controller = self.controller.ble_controller(self)
+        self.gui_controller = self.controller.ble_controller(self.controller.rasp_, self)
         self.worker = FindESPWorker(self.main_disp.centralwidget, self, self.gui_controller.actualizarMacs)
 
         #self.machine = QStateMachine()
@@ -87,7 +88,7 @@ class DeviceSearch:
     def notify_esp_found(self, esp_id: str, esp_mac: str):
         #new_id = int(uuid.uuid4())
         #self.machine.postEvent(ESPFoundEvent(new_id, esp_mac))
-        new_id = 5
+        new_id = hash(esp_mac)%10000
 
         self.machine.postEvent(ESPFoundEvent(new_id, esp_mac))
 
