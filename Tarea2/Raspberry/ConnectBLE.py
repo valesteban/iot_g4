@@ -9,6 +9,8 @@ import ipaddress
 
 from db import DB
 
+from mensaje.desempaquetamiento import print_hex
+
 
 class GUIController:
     def __init__(self, raspberry, gui_obj):
@@ -99,17 +101,19 @@ class GUIController:
             Inicia la configuracion BLE para enviar la configuracion a la ESP32
         """
         # envía una configuración indicada por BLE al dispositivo conectado
-        ESPconf = str(self.get_DB_ConfigParams())
+        ESPconf = self.get_DB_ConfigParams()
         print("CONFIGURACION A ENVIAR:")
         print(ESPconf)
 
         # Enviar la configuracion como formato ipv4
         ESPconf = list(ESPconf)
-        ESPconf[11] = str(ipaddress.IPv4Address(ESPconf[11]))
+
+        print(ipaddress.IPv4Address(ESPconf[10]))
+        ESPconf[10] = str(ipaddress.IPv4Address(ESPconf[10]))
         ESPconf = tuple(ESPconf)
 
-
-        pack = ESPconf.encode()
+        print("Encodeando ESPconf")
+        pack = str(ESPconf).encode()
         print("El largo del paquete es:" + str(len(pack)))
         qty=0
         while qty<100:
@@ -149,7 +153,7 @@ if __name__ == "__main__":
     """
     controller.actualizarMacs()
     """
-    controller = GUIController()
-    controller.actualizarMacs()
+    controller = GUIController(None,None)
+    #controller.actualizarMacs()
     controller.configSetup()
     

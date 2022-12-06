@@ -18,6 +18,7 @@ class Worker(QObject):
 
     def process(self):
         try:
+            print(self.__class__, "is working rn")
             self.slot(*self.slot_args)
             self.finished.emit()
         except Exception as e:
