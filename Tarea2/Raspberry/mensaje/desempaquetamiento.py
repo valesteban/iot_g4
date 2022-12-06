@@ -1,11 +1,13 @@
-from header import Header
+from mensaje.header import Header
 
-from protocol import Protocol
-from protocol import Protocol0
-from protocol import Protocol1
-from protocol import Protocol2
-from protocol import Protocol3
-from protocol import Protocol4
+from mensaje.protocol import Protocol
+from mensaje.protocol import Protocol0
+from mensaje.protocol import Protocol1
+from mensaje.protocol import Protocol2
+from mensaje.protocol import Protocol3
+from mensaje.protocol import Protocol4
+
+import json
 
 
 translation: dict[str, Protocol] = {
@@ -80,6 +82,39 @@ def print_hex(hex_str):
             print(hex_str[j:j+hex_stride], end=" ")
         print()
 
+
+def get_protocol_values(data: Protocol, status, conf_peripheral) -> dict:
+    """
+        Funcion auxiliar que procesa un protocolo y obtiene
+        toda la info necesaria para ser guardada en la DB
+    """
+
+    header = data.get_header()
+    id_device = header.get_device_id()
+    mac = header.get_mac()
+    transport_layer = header.get_transport_layer()
+    id_protocol = header.get_protocol_id()
+
+    battery = data.get_battery()
+    timestamp = battery.get_timestamp()
+
+    protocol_data = data.get_protocol_data()
+
+    # conf_peripheral = 
+    # acc_sampling + acc_sensibility + gyro_sensibility + bme688_sampling
+
+    protocol_values = {
+        "id_device" : 3,
+        "status_report" : status,
+        "protocol_report": id_protocol,
+        "battery_level": battery.get_level(),
+        "conf_peripheral": conf_peripheral,
+        "time_client" : timestamp,
+        "configuration_id_device": 3,
+        "data": protocol_data
+    }
+
+    return protocol_values 
 
 
 if __name__ == "__main__":

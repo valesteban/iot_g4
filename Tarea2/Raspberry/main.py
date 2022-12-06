@@ -38,6 +38,9 @@ def init_server():
         elif status == 21:
             # == Status 21 ==
             raspberry.start_status21()
+        elif status == 23:
+            # == Status 23 ==
+            raspberry.start_status23()
         else:
             break
         """

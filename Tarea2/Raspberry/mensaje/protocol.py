@@ -1,11 +1,11 @@
 import struct
 
-from header import Header
+from mensaje.header import Header
 
-from sensor import BattSensor
-from sensor import THPCSensor
-from sensor import AccelKPI
-from sensor import AccelSensor
+from mensaje.sensor import BattSensor
+from mensaje.sensor import THPCSensor
+from mensaje.sensor import AccelKPI
+from mensaje.sensor import AccelSensor
 
 class Protocol:
 
