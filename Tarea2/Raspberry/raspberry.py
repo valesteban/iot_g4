@@ -7,6 +7,9 @@ from db import DB
 
 from mensaje import desempaquetamiento
 
+
+
+
 # Atributos
 # status: int
 class Raspberry:
@@ -142,7 +145,6 @@ class Raspberry:
                 
                 # Cambio la antigua configuracion por la nueva
                 self.__configuracion = self.__nueva_configuracion
-                self.status = self.__configuracion[1] # Cambio tambien el atributo estado
 
                 conn.recv(1024)
                 # Si Hay un cambio de status se debe terminar el ciclo
@@ -273,3 +275,5 @@ class Raspberry:
         print("== FIN STATUS 23 ==\n")
         s.close()
         return None
+
+        
