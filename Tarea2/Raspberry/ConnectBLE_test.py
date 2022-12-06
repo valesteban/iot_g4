@@ -128,7 +128,7 @@ class GUIController:
                 # La siguiente linea es para escribir en la caracteristica de UUID list(characteristics)[4], puede hardcodear si
                 # sabe la UUID de la caracteristica a escribir, este misma funcion para leer es tan solo char_read
                 # Recomiendo leer acerca del sistema de Subscribe para recibir notificaciones del cambio u otros
-                device.char_write(list(characteristics)[4], pack)   #hay q poner el uid
+                device.char_write(list(characteristics)[5], pack)   #hay q poner el uid
                 print("Se escribio el paquete")
                 qty = 100
                 #en caso de read siempre hay que ponerle un id para tomar el paquete
@@ -137,6 +137,7 @@ class GUIController:
                 # ACTUALIZO LA CONFIGURACION DE LA RASPBERRY
                 print("GUIController: Seteando configuracion a la raspberry")
                 self.raspberry.setConfiguracion(ESPconf_db)
+                self.raspberry.set_nueva_configuracion(ESPconf_db)
             except pygatt.exceptions.NotConnectedError:
                 qty += 1
                 print(f"Se han fallado: {qty} intentos" )

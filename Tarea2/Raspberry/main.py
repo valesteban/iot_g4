@@ -3,6 +3,7 @@
 import ipaddress
 import socket
 import json
+from threading import Thread
 
 from db import *
 # from desempaquetamiento import Protocol
@@ -10,6 +11,21 @@ from db import *
 from ConnectBLE_test import GUIController
 import json
 from raspberry import Raspberry
+
+import time
+import utils
+NUEVA_CONFIGURACION = (3,21,1,400,16,200,4,420,5010,5011,"192.168.28.1","iot4","12345678")
+def cambiarConfiguracion(raspberry:Raspberry):
+    print("INICIANDO SLEEP THREAD")
+    time.sleep(20)
+
+    print("Thread:Agregando nueva configuracion:")
+    nueva_configuracion = NUEVA_CONFIGURACION
+    # Cambio la configuracion de la Base de datos
+    db = DB("localhost", "iot4", "12345678", "IoT_Tarea2")
+    db.change_config(utils.parse_config(nueva_configuracion))
+    print("Thread: CONFIGURACION CAMBIADA")
+    raspberry.actualizarConfiguracion()
 
 
 def init_server():
@@ -33,6 +49,10 @@ def init_server():
         status = raspberry.get_current_status()
         print(f"main: Iniciando status {status}")
         if status == 20:
+
+            # Simulacion de Cambio de config UI
+            new_thread = Thread(target=cambiarConfiguracion, args=(raspberry,))
+            new_thread.start()
             # == Status 20 ==
             raspberry.start_status20()
         elif status == 21:

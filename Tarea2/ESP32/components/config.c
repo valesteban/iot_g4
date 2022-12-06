@@ -55,11 +55,9 @@ Configuracion construccion_conf(char * paquete, Configuracion conf){
     char * valores =( char *) paquete;
     // char *valores = paquete+1; // removes first character
     ESP_LOGI("conf","%s",valores);
-    ESP_LOGI("conf","%c",valores[strlen(valores)-1]);
+    // ESP_LOGI("conf","%c",valores[strlen(valores)-1]);
 
-    // valores[strlen(valores)-1] = 'e'; // removing the last character i
-
-    ESP_LOGI("conf","%s",valores);
+    // ESP_LOGI("conf","%s",valores);
     int cant_valores = 0;
     char* ptr = paquete;
     char* ptr_coma = paquete;
@@ -68,105 +66,88 @@ Configuracion construccion_conf(char * paquete, Configuracion conf){
         int i = 0;
         ptr = ptr+1;
         ptr_coma = ptr_coma+1;
-        // ESP_LOGI("conf"," ptr --> %c",*ptr);
+        if (*ptr == '\''){
+            ptr ++;
+            ptr_coma ++;            
+        }
+        
 
-        while (*ptr_coma != ',' && *ptr_coma != ')' ){
-            ESP_LOGI("loop"," ptr_c --> %c",*ptr_coma);
+        while (*ptr_coma != ',' && *ptr_coma != ')' && *ptr_coma != '\'' ){
 
             ptr_coma = ptr_coma +1;
             i = i+1;
         }
-        // if (cant_valores == 12){
-        //     i = i-1;
-        // }
+
+        if (*ptr_coma == '\''){
+            ptr_coma ++;            
+        }
         
-        // ESP_LOGI("conf"," ptr_c --> %c",*ptr_coma);
         char valor[i];
         memcpy( valor, ptr, i);
         valor[i] = '\0';
-        // ESP_LOGI("conf"," --> %d",i);
-  
+
         ptr = ptr_coma +1;
         ptr_coma = ptr;
-        // ESP_LOGI("conf"," --> %s",valor);
-           
-        
-        cant_valores = cant_valores+1; 
-        // ESP_LOGI("conf","valor --> %s",valor);
-        // ESP_LOGI("conf"," ------------ "); 
 
 
         if(cant_valores ==1){
             conf.Status = atoi(valor);
-            // ESP_LOGI("test","--> %d",conf.Status);
+            // ESP_LOGI("test","status --> %d",conf.Status);
 
-        }else if(cant_valores ==2){
+        }else if(cant_valores ==3){
            conf.BMI270_Sampling = atoi(valor);
-        //    ESP_LOGI("test","--> %d",conf.BMI270_Sampling);
+        //    ESP_LOGI("test","sampling --> %d",conf.BMI270_Sampling);
 
         }
-        else if(cant_valores ==3){
+        else if(cant_valores ==2){
             conf.ID_Protocol = atoi(valor);
-            // ESP_LOGI("test","--> %d",conf.ID_Protocol);
+            // ESP_LOGI("test","id protocol--> %d",conf.ID_Protocol);
 
         }
         else if(cant_valores ==4){
             conf.BMI270_Acc_Sensibility = atoi(valor);
-            // ESP_LOGI("test","--> %d", conf.BMI270_Acc_Sensibility);
+            // ESP_LOGI("test","sensibility--> %d", conf.BMI270_Acc_Sensibility);
         }
         else if(cant_valores ==5){  
             conf.BMI270_Gyro_Sensibility =  atoi(valor);
-            // ESP_LOGI("test","--> %d",conf.BMI270_Gyro_Sensibility);
+            // ESP_LOGI("test","sentibility 2--> %d",conf.BMI270_Gyro_Sensibility);
         }
         else if(cant_valores ==6){
             conf.BME688_Sampling = atoi(valor);;
-            // ESP_LOGI("test","--> %d",conf.BME688_Sampling);
+            // ESP_LOGI("test","sampling --> %d",conf.BME688_Sampling);
         }
         else if(cant_valores ==7){
             conf.Discontinuos_Time = atoi(valor);;
-            // ESP_LOGI("test","--> %d",conf.Discontinuos_Time);
+            // ESP_LOGI("test","discontinuos time--> %d",conf.Discontinuos_Time);
         }else if(cant_valores ==8){
             conf.Port_TCP = atoi(valor);;
-            // ESP_LOGI("test","--> %d",conf.Port_TCP);
+            // ESP_LOGI("test","port tcp--> %d",conf.Port_TCP);
           
         }else if(cant_valores ==9){
             conf.Port_UDP = atoi(valor);;
-            // ESP_LOGI("test","--> %d",conf.Port_UDP);
-
-        }else if(cant_valores ==10){
-            conf.Host_IP_Addr = valor;
-            // ESP_LOGI("test","--> %s",conf.Host_IP_Addr);
-
-        }else if(cant_valores ==11){
-            conf.SSID = valor;
-            // ESP_LOGI("test","--> %s",conf.SSID);
+            // ESP_LOGI("test","port udp --> %d",conf.Port_UDP);
 
         }else if(cant_valores ==12){
             conf.Pass = valor;
-            // ESP_LOGI("test","--> %s",conf.Pass );
+            // ESP_LOGI("test","pass--> %s",conf.Pass );
+            
+
+        }else if(cant_valores ==11){
+            conf.SSID = valor;
+            // ESP_LOGI("test","ssid --> %s",conf.SSID);
+
+        }else if(cant_valores ==10){
+            conf.Host_IP_Addr = valor;
+            // ESP_LOGI("test","host --> %s",conf.Host_IP_Addr);
+            
 
         }
-
-    
+        
+        cant_valores = cant_valores+1; 
     }
     return conf;
 }
     
-
-    //eliminar primer y ultimo char
-
-    // removechar(valores, ")");
-    // ESP_LOGI("conf","%s",valores);
-    // ESP_LOGI("conf","%s",valores);
-    // // // int init_size = strlen(value);
-
-    // char *token = strtok(valores, ",");
-    // mostrarioa la uu
-                
-    // for (int i=0 ;i<= 12; i++){
-    //     printf("%s\n", token);
-    //     token = strtok(NULL, ",");
-    //     ESP_LOGI("test","--> %s",token);
-        
+  
         
     
